@@ -2,6 +2,7 @@ import ollama
 import chromadb
 import os
 from tqdm import tqdm
+import time
 
 MARKDOWN_BASE_DIR = "./data/cal-com"
 
@@ -75,32 +76,82 @@ def query_documents(query: str, collection, n_results: int = 5):
     
     return results
 
+def create_chatbot(collection):
+    """
+    Create an interactive chatbot using RAG system
+    """
+    print("\n🤖 Welcome to the Documentation Assistant!")
+    print("Ask any question about the documentation (type 'exit' to quit)")
+    
+    while True:
+        try:
+            # Get user input
+            print("\n👤 You:", end=" ")
+            question = input().strip()
+            
+            # Check for exit command
+            if question.lower() in ['exit', 'quit', 'bye']:
+                print("\n🤖 Goodbye! Have a great day!")
+                break
+            
+            if not question:
+                print("Please ask a question!")
+                continue
+            
+            # Show thinking animation
+            print("🤖 Thinking", end="")
+            for _ in range(3):
+                time.sleep(0.3)
+                print(".", end="", flush=True)
+            print("\n")
+            
+            # Query the RAG system
+            response = query_rag_system(question)
+            
+            # Print the response
+            print("\n🤖 Assistant:", response)
+            print("\n" + "-"*50)
+            
+        except KeyboardInterrupt:
+            print("\n\n🤖 Goodbye! Have a great day!")
+            break
+        except Exception as e:
+            print(f"\n❌ Error: {str(e)}")
+            print("Please try asking your question again.")
+
+def query_rag_system(question):
+    """
+    Process a question through the RAG system
+    """
+    # Get embeddings for the question
+    response = ollama.embed(model="mxbai-embed-large", input=question)
+    embedded = response["embeddings"]
+    
+    # Query the collection for relevant documents
+    results = collection.query(query_embeddings=embedded, n_results=3)
+    
+    # Combine the relevant documents
+    context = "\n".join([doc for sublist in results["documents"] for doc in sublist])
+    
+    # Create a prompt with the context and question
+    prompt = f"""Based on the following documentation, please answer the question. 
+      If the answer cannot be found in the documentation, say so.
+
+      Documentation:
+      {context}
+
+      Question: {question}
+
+      Answer:"""
+    
+    # Generate response using LLM
+    output = ollama.generate(model="llama3.2", prompt=prompt)
+    return output["response"]
+
 if __name__ == "__main__":
     # Process markdown files and get collection
     collection = process_markdown_files()
-
-    # Test questions and expected keywords
-    tests = [
-      {
-        "question": "explain me about booking-redirects...",
-        "expected_keywords": [""]
-      }
-    ]
-
-    # Function to run RAG query
-    def query_rag_system(question):
-        response = ollama.embed(model="mxbai-embed-large", input=question)
-        embedded = response["embeddings"]
-        results = collection.query(query_embeddings=embedded, n_results=3)
-        context = "\n".join([doc for sublist in results["documents"] for doc in sublist])
-        prompt = f"Using this data: {context}. Respond to this prompt: {question}"
-        output = ollama.generate(model="llama3.2", prompt=prompt)
-        return output["response"]
-
-    # Evaluation loop
-    for test in tests:
-        answer = query_rag_system(test["question"])
-        print(f"\nQ: {test['question']}\nA: {answer.strip()}")
-        matched = [kw for kw in test["expected_keywords"] if kw.lower() in answer.lower()]
-        print(f"Matched Keywords: {matched} / {len(test['expected_keywords'])}")
+    
+    # Start the interactive chatbot
+    create_chatbot(collection)
 
