@@ -77,9 +77,6 @@ def query_documents(query: str, collection, n_results: int = 5):
     return results
 
 def create_chatbot(collection):
-    """
-    Create an interactive chatbot using RAG system
-    """
     print("\n🤖 Welcome to the Documentation Assistant!")
     print("Ask any question about the documentation (type 'exit' to quit)")
     
