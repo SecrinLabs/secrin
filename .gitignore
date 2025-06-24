@@ -1,4 +1,4 @@
 /data/
 /chroma_store/
-
 .gitignore
+/node_modules/
