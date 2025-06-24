@@ -16,6 +16,10 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "run": {
+      "outputs": [],
+      "inputs": ["main.py"]
     }
   }
 }
