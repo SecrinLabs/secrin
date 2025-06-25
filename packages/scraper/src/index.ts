@@ -10,11 +10,10 @@ export class Scraper {
     this.sitemap = url;
   }
 
-  async _getUrls() {
+  private async _getUrls(): Promise<string[]> {
     try {
       const response = await axios.get(this.sitemap);
       const xml = response.data;
-
       const parsed = await parseStringPromise(xml);
 
       const urls: string[] = parsed.urlset.url.map(
@@ -23,40 +22,53 @@ export class Scraper {
 
       return urls;
     } catch (err) {
-      console.error("Failed to parse sitemap:", err);
+      console.error("❌ Failed to parse sitemap:", err);
       return [];
     }
   }
 
-  async scrape() {
+  public async scrape(): Promise<{ url: string; markdown: string }[]> {
+    const results: { url: string; markdown: string }[] = [];
+
     try {
       const urls = await this._getUrls();
+      const turndownService = new TurndownService({
+        headingStyle: "atx",
+        codeBlockStyle: "fenced",
+        bulletListMarker: "-",
+      });
 
-      var res = [];
+      for (const url of urls) {
+        try {
+          const response = await axios.get(
+            "https://cal.com/docs/self-hosting/installation"
+          );
+          const dom = new JSDOM(response.data);
+          const document = dom.window.document;
 
-      if (urls.length) {
-        for (var url of urls) {
-          const response = await axios(url);
-          if (response) {
-            const jsDOM = new JSDOM(response.data);
-            const document = jsDOM.window.document;
+          console.log(url);
 
-            const contentElement =
-              document.querySelector("main") || document.body;
+          const contentElement =
+            document.querySelector(".mdx-content") ||
+            document.querySelector("article") ||
+            document.body;
 
-            const turndownService = new TurndownService();
-            const markdown = turndownService.turndown(contentElement.innerHTML);
+          const markdown = turndownService.turndown(contentElement.innerHTML);
 
-            res.push(markdown);
+          results.push({ url, markdown });
 
-            break;
-          }
+          //mdx-content relative mt-8 prose prose-gray dark:prose-invert
+
+          // Remove this if you want to scrape all pages
+          break;
+        } catch (err: any) {
+          console.warn(`⚠️ Failed to fetch or parse: ${url}`, err.message);
         }
       }
 
-      return res;
+      return results;
     } catch (err) {
-      console.error("Failed to parse sitemap:", err);
+      console.error("❌ Failed to scrape:", err);
       return [];
     }
   }
