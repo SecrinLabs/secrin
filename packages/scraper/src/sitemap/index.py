@@ -7,15 +7,11 @@ from urllib.parse import urlparse
 from markdownify import markdownify as md
 
 # sqlalchemy code
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models.sitemap import Sitemap
+from models import engine
 
-DATABASE_URL="postgresql://postgres:10514912@localhost:5432/devsecrin"
-
-engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 
 class SitemapScraper:
     def __init__(self, sitemap_url: str, output_base_dir: str = "./data"):

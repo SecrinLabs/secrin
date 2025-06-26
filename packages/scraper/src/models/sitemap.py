@@ -1,10 +1,8 @@
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Text
-
-Base = declarative_base()
+from models import Base
 
 class Sitemap(Base):
-    __tablename__ = "scraped_docs"
+    __tablename__ = "software_docs"
 
     id = Column(Integer, primary_key=True, index=True)
     site = Column(String, nullable=False)
