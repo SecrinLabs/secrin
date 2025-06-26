@@ -1,4 +1,6 @@
 import requests
+from datetime import datetime
+from typing import Optional
 from typing import List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
@@ -25,7 +27,7 @@ class GithubScraper:
         return f"""
         {{
           repository(owner: "{self.owner}", name: "{self.repo}") {{
-            pullRequests(first: 10, states: MERGED, orderBy: {{field: UPDATED_AT, direction: DESC}}) {{
+            pullRequests(first: 100, states: MERGED, orderBy: {{field: UPDATED_AT, direction: DESC}}) {{
               nodes {{
                 number
                 title
@@ -70,12 +72,20 @@ class GithubScraper:
             return []
 
         return response.json()["data"]["repository"]["pullRequests"]["nodes"]
+    
+    def safe_parse_datetime(self, dt_str: Optional[str]) -> Optional[datetime]:
+        if not dt_str or not dt_str.strip():
+            return None
+        try:
+            return datetime.fromisoformat(dt_str.rstrip("Z"))
+        except Exception:
+            return None
 
     def _save_to_db(self, pr_data: Dict[str, Any]):
         pr_number = pr_data["number"]
         pr = self.db.query(PullRequest).filter_by(number=pr_number).first()
 
-        merged_at = datetime.fromisoformat(pr_data["mergedAt"].rstrip("Z"))
+        merged_at = self.safe_parse_datetime(pr_data.get("mergedAt"))
 
         diff = self.fetch_diff(pr_number)
         if not pr:
@@ -101,7 +111,7 @@ class GithubScraper:
         pr.closing_issues.clear()
 
         for issue_data in pr_data["closingIssuesReferences"]["nodes"]:
-            issue_closed_at = datetime.fromisoformat(issue_data["closedAt"].rstrip("Z"))
+            issue_closed_at = self.safe_parse_datetime(pr_data.get("closedAt"))
             issue = Issue(
                 number=issue_data["number"],
                 title=issue_data["title"],
