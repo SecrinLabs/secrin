@@ -29,12 +29,14 @@ class GithubScraper:
               nodes {{
                 number
                 title
+                body
                 url
                 mergedAt
                 closingIssuesReferences(first: 5) {{
                   nodes {{
                     number
                     title
+                    body
                     url
                     closedAt
                   }}
@@ -44,6 +46,20 @@ class GithubScraper:
           }}
         }}
         """
+    
+    def fetch_diff(self, pr_number: int) -> str:
+        diff_url = f"https://patch-diff.githubusercontent.com/raw/{self.owner}/{self.repo}/pull/{pr_number}.diff"
+
+        response = requests.get(diff_url, headers={
+            "Authorization": f"Bearer {self.token}"
+        })
+
+        if response.status_code == 200:
+            return response.text  # ✅ contains raw diff
+        else:
+            print(f"❌ Failed to fetch diff for PR #{pr_number}: {response.status_code}")
+            return ""
+
 
     def fetch_data(self) -> List[Dict[str, Any]]:
         response = requests.post(self.GITHUB_API_URL, headers=self.headers, json={"query": self.build_query()})
@@ -61,12 +77,15 @@ class GithubScraper:
 
         merged_at = datetime.fromisoformat(pr_data["mergedAt"].rstrip("Z"))
 
+        diff = self.fetch_diff(pr_number)
         if not pr:
             pr = PullRequest(
                 number=pr_number,
                 title=pr_data["title"],
                 url=pr_data["url"],
-                merged_at=merged_at
+                merged_at=merged_at,
+                body= pr_data["body"],
+                diff=diff
             )
             self.db.add(pr)
             print(f"✅ Inserted PR #{pr_number}")
@@ -74,6 +93,8 @@ class GithubScraper:
             pr.title = pr_data["title"]
             pr.url = pr_data["url"]
             pr.merged_at = merged_at
+            pr.body = pr_data["body"]
+            pr.diff = diff
             print(f"♻️ Updated PR #{pr_number}")
 
         # Clear and re-add issues (idempotent behavior)
@@ -86,6 +107,7 @@ class GithubScraper:
                 title=issue_data["title"],
                 url=issue_data["url"],
                 closed_at=issue_closed_at,
+                body=issue_data["body"],
                 pull_request=pr
             )
             self.db.add(issue)
