@@ -36,4 +36,4 @@ npm-debug.log*
 *.pem
 
 # chroma store
-chrome_store/
+chrome_store
