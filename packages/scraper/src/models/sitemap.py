@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text
-from models import Base
+from . import Base
 
 class Sitemap(Base):
     __tablename__ = "software_docs"

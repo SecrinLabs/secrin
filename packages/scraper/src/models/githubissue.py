@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from models import Base
+from . import Base
 
 class PullRequest(Base):
     __tablename__ = "pull_request"
