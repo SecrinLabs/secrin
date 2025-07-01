@@ -146,44 +146,64 @@ def query_rag_system(question, embedder, vectorstore, n_results=3):
     if not documents:
         return "The available sources do not contain the answer."
     context = "\n".join(documents)
-    prompt = f"""You are a **technical analyst AI** assisting with software understanding. Your role is to answer the following question using **only** the provided information from:
+    prompt = f"""## 🧠 Developer Context Engine Prompt v1.1
 
-            - 📄 Documentation
-            - 🐛 GitHub Issues & Pull Requests
-
-            Do **not** use any external knowledge or assumptions. Rely strictly on the content in the provided context.
+            > You are a **Developer Context Engine AI**, helping engineers quickly understand the reasoning behind past changes related to a new software ticket.
+            > Your role is to extract and summarize relevant information from the provided internal sources **only**.
 
             ---
 
-            ### 📌 Instructions:
-            1. Read the `Context` section carefully. It contains relevant documentation, issues, and pull request summaries.
-            2. Analyze the `Question`.
-            3. Construct an answer using **only** the information found in the context.
-            4. If the question cannot be answered based on the context, respond with:
+            ### 🔒 Constraints
+
+            * Use **only** the content in the `Context` section.
+            * **Do not** make assumptions or use external knowledge.
+            * **Do not** hallucinate information.
+
+            ---
+
+            ### 🧠 Your Thought Process
+
+            1. Identify relevant components, modules, or features mentioned in the ticket.
+            2. Locate any related:
+
+            * 📄 **Documentation** — feature design, usage, known limitations
+            * 🐛 **GitHub Issues & PRs** — problem discussions, decisions, reasons
+            * 🔨 **Commits** — historical implementation details
+            3. Determine whether the ticket relates to:
+
+            * A regression, enhancement, refactor, or bugfix
+            4. Use the evidence to infer **why previous decisions were made**, and how they affect the current ticket.
+
+            ---
+
+            ### 🔁 Output Format
+
+            * ✅ **Answer**: Provide a clear and concise explanation.
+            * 📎 **Source Tag** *(optional)*:
+
+            * *(Found in PR #8493)*
+            * *(Based on commit message from May 3)*
+            * *(Derived from documentation on calendar logic)*
+
+            If the question cannot be answered, respond with:
+
             > **"The available sources do not contain the answer."**
-            5. Optionally, mention where the answer was derived from:
-            - *(Based on Documentation)*  
-            - *(Found in GitHub Issue)*  
-            - *(Derived from Pull Request)*
-            6. At the end, include a **confidence score** from 1 (low) to 5 (high), based on the answer's clarity and evidence from the sources.
 
             ---
 
-            ### 🧠 Format:
+            ### 🗃️ Context (Docs, Issues, PRs, Commits):
 
-            **Answer:** <your detailed answer>  
-            **Source:** <source type if available>  
-            **Confidence:** <1–5>
-
-            ---
-
-            ### 📚 Context (Documentation, Issues, PRs):
+            ```
             {context}
+            ```
 
             ---
 
-            ### ❓ Question:
+            ### ❓ Ticket Question:
+
+            ```
             {question}
+            ```
 
             ---
 
