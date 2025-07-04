@@ -1,15 +1,13 @@
-import os
 import re
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from markdownify import markdownify as md
-
-# sqlalchemy code
 from sqlalchemy.orm import sessionmaker
-from models.sitemap import Sitemap
-from models import engine
+
+from packages.scraper.src.models.sitemap import Sitemap
+from packages.scraper.src.models import engine
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

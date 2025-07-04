@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text
+
 from . import Base
 
 class Sitemap(Base):

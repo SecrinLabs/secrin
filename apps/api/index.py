@@ -1,13 +1,13 @@
-import os
 import sys
+import os
 
-# Add root directory (monorepo root) to sys.path
+# Append root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
 
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from packages.scraper.src.index import run_all_scrapers
+
+from apps.api.routers import scraper
 
 app = FastAPI()
 
@@ -19,7 +19,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/start-scraper")
-def trigger_scraper(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_all_scrapers)
-    return {"status": "Scraper started"}
+app.include_router(scraper.router, prefix="/scraper")

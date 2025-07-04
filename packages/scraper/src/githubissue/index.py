@@ -4,8 +4,9 @@ from typing import Optional
 from typing import List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
-from models import engine
-from models.githubissue import PullRequest, Issue  # assumes you have this
+
+from packages.scraper.src.models import engine
+from packages.scraper.src.models.githubissue import PullRequest, Issue  # assumes you have this
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

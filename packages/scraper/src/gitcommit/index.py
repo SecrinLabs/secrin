@@ -1,8 +1,8 @@
-from git import Repo
-from models.gitcommit import GitCommit
-from models import engine
+from git import NULL_TREE, Repo
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+
+from packages.scraper.src.models.gitcommit import GitCommit
+from packages.scraper.src.models import engine
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

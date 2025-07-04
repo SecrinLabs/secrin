@@ -7,8 +7,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "scrape": "python apps/api/index.py",
-    "main": "PYTHONPATH=. python main.py"
+    "scrape": "PYTHONPATH=packages/scraper/src uvicorn apps.api.index:app --reload",
+    "main": "python main.py"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
