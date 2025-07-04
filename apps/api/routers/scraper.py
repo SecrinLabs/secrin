@@ -1,24 +1,36 @@
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from packages.scraper.src.index import run_all_scrapers, run_sitemap, run_github, run_localgit
 
 router = APIRouter()
 
 @router.post("/start-scraper")
 def trigger_scraper(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_all_scrapers)
-    return {"status": "Scraper started"}
+    try:
+        background_tasks.add_task(run_all_scrapers)
+        return {"status": "Scraper started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/start-sitemap")
 def trigger_sitemap(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_sitemap)
-    return {"status": "sitemap scrapper started"}
+    try:
+        background_tasks.add_task(run_sitemap)
+        return {"status": "sitemap scrapper started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/start-github")
 def trigger_sitemap(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_github)
-    return {"status": "sitemap github started"}
+    try:
+        background_tasks.add_task(run_github)
+        return {"status": "sitemap github started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/start-localgit")
 def trigger_sitemap(background_tasks: BackgroundTasks):
-    background_tasks.add_task(run_localgit)
-    return {"status": "sitemap localgit started"}
+    try:
+        background_tasks.add_task(run_localgit)
+        return {"status": "sitemap localgit started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

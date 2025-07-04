@@ -4,10 +4,10 @@ import os
 # Append root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from apps.api.routers import scraper
+from apps.api.routers import scraper, embed, chat
 
 app = FastAPI()
 
@@ -20,3 +20,5 @@ app.add_middleware(
 )
 
 app.include_router(scraper.router, prefix="/scraper")
+app.include_router(embed.router, prefix="/embed")
+app.include_router(chat.router, prefix="/chat")
