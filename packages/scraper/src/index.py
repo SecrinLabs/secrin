@@ -5,7 +5,7 @@ from models.sitemap import Base
 from models.githubissue import Base
 from models import engine
 
-if __name__ == "__main__":
+def run_all_scrapers():
     Base.metadata.create_all(bind=engine)
 
     # sitemap
@@ -20,3 +20,6 @@ if __name__ == "__main__":
     # local git history
     scraper = GitScraper("/Users/jenil/Documents/cal.com")
     scraper.scrape(branch="main", max_count=1000)
+
+if __name__ == "__main__":
+    run_all_scrapers()

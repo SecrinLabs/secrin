@@ -7,8 +7,8 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "scrape": "python packages/scraper/src/index.py",
-    "main": "python main.py"
+    "scrape": "python apps/api/index.py",
+    "main": "PYTHONPATH=. python main.py"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
