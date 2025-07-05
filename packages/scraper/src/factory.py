@@ -1,6 +1,6 @@
-from packages.scraper.src.sitemap.index import SitemapScraper
-from packages.scraper.src.githubissue.index import GithubScraper
-from packages.scraper.src.gitcommit.index import GitScraper
+from packages.scraper.src.store.sitemap import SitemapScraper
+from packages.scraper.src.store.githubissue import GithubScraper
+from packages.scraper.src.store.gitcommit import GitScraper
 
 class ScraperFactory:
     @staticmethod

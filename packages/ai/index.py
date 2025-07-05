@@ -3,10 +3,10 @@ from tqdm import tqdm
 from sqlalchemy.orm import Session
 from packages.ai.embeddings.factory import get_embedder
 from packages.ai.retriever.factory import get_vectorstore
-from packages.scraper.src.models import engine
-from packages.scraper.src.models.sitemap import Sitemap
-from packages.scraper.src.models.githubissue import Issue
-from packages.scraper.src.models.gitcommit import GitCommit
+from packages.models import engine
+from packages.models.sitemap import Sitemap
+from packages.models.githubissue import Issue
+from packages.models.gitcommit import GitCommit
 from ollama import generate
 
 def safe_embed(embedder, text):

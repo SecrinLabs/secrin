@@ -1,8 +1,8 @@
 from git import NULL_TREE, Repo
 from sqlalchemy.orm import sessionmaker
 
-from packages.scraper.src.models.gitcommit import GitCommit
-from packages.scraper.src.models import engine
+from packages.models.gitcommit import GitCommit
+from packages.models import engine
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

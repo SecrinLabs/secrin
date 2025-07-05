@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 from markdownify import markdownify as md
 from sqlalchemy.orm import sessionmaker
 
-from packages.scraper.src.models.sitemap import Sitemap
-from packages.scraper.src.models import engine
+from packages.models.sitemap import Sitemap
+from packages.models import engine
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

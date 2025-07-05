@@ -5,8 +5,8 @@ from typing import List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 
-from packages.scraper.src.models import engine
-from packages.scraper.src.models.githubissue import PullRequest, Issue  # assumes you have this
+from packages.models import engine
+from packages.models.githubissue import PullRequest, Issue  # assumes you have this
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
