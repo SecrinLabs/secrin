@@ -4,15 +4,17 @@
   "private": true,
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev || pnpm run api",
+    "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "api": "PYTHONPATH=packages/ uvicorn apps.api.index:app --reload",
-    "main": "python main.py"
+    "main": "python main.py",
+    "jenil": "concurrently -k -n frontend,api -c green,blue \"pnpm dev\" \"pnpm api\""
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "concurrently": "^9.2.0",
     "prettier": "^3.5.1",
     "turbo": "^2.4.2",
     "typescript": "5.7.3"
