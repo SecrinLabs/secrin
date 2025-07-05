@@ -9,7 +9,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "api": "PYTHONPATH=packages/ uvicorn apps.api.index:app --reload",
     "main": "python main.py",
-    "devsecrin": "concurrently -k -n frontend,api -c green,blue \"pnpm dev\" \"pnpm api\""
+    "devsecrin": "concurrently -k -n frontend,api -c green,blue \"pnpm dev\" \"pnpm api\"",
+    "migrate": "python packages/dbup/runner.py"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
