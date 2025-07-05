@@ -9,7 +9,7 @@ class ScraperFactory:
             return SitemapScraper(config["url"])
         elif integration_name == "github":
             return GithubScraper(config["token"], config["owner"], config["repo"])
-        elif integration_name == "localgit":
+        elif integration_name == "gitlocal":
             return GitScraper(config["repo_path"])
         else:
             raise ValueError(f"Unknown integration: {integration_name}")

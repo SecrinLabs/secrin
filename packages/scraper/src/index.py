@@ -1,5 +1,5 @@
 from packages.scraper.src.factory import ScraperFactory
-from packages.scraper.src.db import SessionLocal
+from packages.db.db import SessionLocal
 from packages.models.integrations import Integration
 from packages.models import Base, engine
 
