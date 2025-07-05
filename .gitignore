@@ -37,3 +37,6 @@ npm-debug.log*
 
 # chroma store
 chroma_store
+
+#python environment
+venv
