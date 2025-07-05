@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from packages.ai.index import run_generator
 from apps.api.models.ChatRequest import ChatRequest

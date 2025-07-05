@@ -249,7 +249,7 @@ def run_generator(question):
     answer = query_rag_system(question, embedder, vectorstore)
     return answer
 
-def run_enbedder():
+def run_embedder():
     embedder = get_embedder("ollama")
     vectorstore = get_vectorstore("chroma", collection_name="docs")
     process_database_documents(embedder, vectorstore)
