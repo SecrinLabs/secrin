@@ -21,7 +21,6 @@ def get_applied_migrations(conn):
         return set(row[0] for row in cur.fetchall())
 
 def apply_migration(conn, filepath):
-    print(filepath)
     with open(filepath, 'r') as f:
         sql = f.read()
     filename = os.path.basename(filepath)
