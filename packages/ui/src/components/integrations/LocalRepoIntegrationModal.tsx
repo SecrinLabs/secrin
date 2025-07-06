@@ -1,0 +1,102 @@
+"use client";
+
+import { useState } from "react";
+import { Button } from "@workspace/ui/components/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@workspace/ui/components/dialog";
+import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
+import { Alert, AlertDescription } from "@workspace/ui/components/alert";
+import { FolderOpen, AlertCircle, Scan } from "lucide-react";
+
+export function LocalRepoIntegrationModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [localPath, setLocalPath] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [error, setError] = useState("");
+
+  const isValid = localPath.length > 0 && projectName.length > 0;
+
+  function handleSave() {
+    if (!isValid) {
+      setError("Please fill all fields.");
+      return;
+    }
+    setError("");
+    // TODO: Save local repo config
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900">
+              <FolderOpen className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <DialogTitle>Add Local Code Repository</DialogTitle>
+              <DialogDescription className="mt-1">
+                Point DevSecrin to a local codebase directory. This will enable
+                offline analysis and context extraction.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="local-path">Local Path</Label>
+            <Input
+              id="local-path"
+              type="text"
+              value={localPath}
+              onChange={(e) => setLocalPath(e.target.value)}
+              placeholder="/Users/yourname/project"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="project-name">Project Name</Label>
+            <Input
+              id="project-name"
+              type="text"
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="My Project"
+            />
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!isValid}>
+            <Scan className="mr-2 h-4 w-4" />
+            Scan & Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
