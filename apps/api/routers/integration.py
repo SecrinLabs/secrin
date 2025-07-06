@@ -1,56 +1,28 @@
 from fastapi import APIRouter, HTTPException
 
-from packages.db.db import SessionLocal
-from packages.models.integrations import Integration
+from packages.db.integrations import get_all_integrations, toggle_integration_connection, update_integration as db_update_integration
 from apps.api.models.UpdateIntegrationRequest import UpdateIntegrationRequest
 
 router = APIRouter()
 
 @router.get("/")
 def list_integrations():
-    session = SessionLocal()
-    try:
-        integrations = session.query(Integration).all()
-        return [
-            {
-                "id": i.id,
-                "name": i.name,
-                "is_connected": i.is_connected,
-                "config": i.config
-            } for i in integrations
-        ]
-    finally:
-        session.close()
+    return get_all_integrations()
 
 @router.patch("/toggle")
 def toggle_integration(name: str):
-    session = SessionLocal()
-    try:
-        integration = session.query(Integration).filter_by(name=name).first()
-        if not integration:
-            raise HTTPException(status_code=404, detail="Integration not found")
-        integration.is_connected = not integration.is_connected
-        session.commit()
-        return {"message": "done", "is_connected": integration.is_connected}
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        session.close()
+    result = toggle_integration_connection(name)
+    if "error" in result:
+        if result["error"] == "Integration not found":
+            raise HTTPException(status_code=404, detail=result["error"])
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
 
 @router.patch("/update")
 def update_integration(request: UpdateIntegrationRequest):
-    session = SessionLocal()
-    try:
-        integration = session.query(Integration).filter_by(name=request.name).first()
-        if not integration:
-            raise HTTPException(status_code=404, detail="Integration not found")
-        integration.is_connected = request.is_connected
-        integration.config = request.config
-        session.commit()
-        return {"message": "Updated", "name": request.name, "is_connected": request.is_connected, "config": request.config}
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        session.close()
+    result = db_update_integration(request)
+    if "error" in result:
+        if result["error"] == "Integration not found":
+            raise HTTPException(status_code=404, detail=result["error"])
+        raise HTTPException(status_code=500, detail=result["error"])
+    return result
