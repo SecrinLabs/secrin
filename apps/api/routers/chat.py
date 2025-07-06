@@ -5,7 +5,7 @@ from apps.api.models.ChatRequest import ChatRequest
 
 router = APIRouter()
 
-@router.post("/answer")
+@router.post("/")
 def trigger_chat(request: ChatRequest):
     try:
         ans = run_generator(request.question)

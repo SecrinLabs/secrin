@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(scraper.router, prefix="/scraper")
-app.include_router(embed.router, prefix="/embed")
-app.include_router(chat.router, prefix="/chat")
-app.include_router(integration.router, prefix="/integration")
+app.include_router(scraper.router, prefix="/api/scraper")
+app.include_router(embed.router, prefix="/api/embed")
+app.include_router(chat.router, prefix="/api/chat")
+app.include_router(integration.router, prefix="/api/integration")

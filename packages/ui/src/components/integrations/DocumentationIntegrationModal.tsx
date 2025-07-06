@@ -35,13 +35,37 @@ export function DocumentationIntegrationModal({
 
   const isValid = /^https?:\/\/.+/.test(sitemapUrl);
 
-  function handleSave() {
+  async function handleSave() {
     if (!isValid) {
       setError("Please enter a valid URL.");
       return;
     }
     setError("");
-    // TODO: Save documentation config
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/integration/update",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "sitemap", // or the relevant integration name
+            is_connected: true, // or the actual state
+            config: {
+              sitemapUrl,
+              docType,
+            },
+          }),
+        }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.detail || "Failed to update integration.");
+        return;
+      }
+      onClose();
+    } catch (err) {
+      setError("Network error.");
+    }
     onClose();
   }
 
@@ -93,12 +117,12 @@ export function DocumentationIntegrationModal({
             </Select>
           </div>
 
-          {error && (
+          {/* {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
+          )} */}
         </div>
 
         <DialogFooter>

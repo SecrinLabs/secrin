@@ -28,13 +28,39 @@ export function LocalRepoIntegrationModal({
 
   const isValid = localPath.length > 0 && projectName.length > 0;
 
-  function handleSave() {
+  async function handleSave() {
     if (!isValid) {
       setError("Please fill all fields.");
       return;
     }
     setError("");
-    // TODO: Save local repo config
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/integration/update",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "gitlocal", // or the relevant integration name
+            is_connected: true, // or the actual state
+            config: {
+              localPath,
+              projectName,
+            },
+          }),
+        }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.detail || "Failed to update integration.");
+        return;
+      }
+      onClose();
+    } catch (err) {
+      setError("Network error.");
+    }
+
     onClose();
   }
 
@@ -79,12 +105,12 @@ export function LocalRepoIntegrationModal({
             />
           </div>
 
-          {error && (
+          {/* {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
+          )} */}
         </div>
 
         <DialogFooter>

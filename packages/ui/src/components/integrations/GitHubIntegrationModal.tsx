@@ -33,13 +33,39 @@ export function GitHubIntegrationModal({
     token.length >= 10 &&
     /^https:\/\/github.com\/.+\/.+/.test(repoUrl);
 
-  function handleConnect() {
+  async function handleConnect() {
     if (!isValid) {
       setError("Please fill all fields correctly.");
       return;
     }
     setError("");
-    // TODO: Save credentials
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/integration/update",
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "github", // or the relevant integration name
+            is_connected: true, // or the actual state
+            config: {
+              token,
+              repoUrl,
+            },
+          }),
+        }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.detail || "Failed to update integration.");
+        return;
+      }
+      onClose();
+    } catch (err) {
+      setError("Network error.");
+    }
+
     onClose();
   }
 
@@ -112,12 +138,12 @@ export function GitHubIntegrationModal({
             />
           </div>
 
-          {error && (
+          {/* {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-          )}
+          )} */}
         </div>
 
         <DialogFooter>
