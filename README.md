@@ -75,17 +75,17 @@ DevSecrin is built on the belief that:
 ## 📦 Getting Started
 
 ### Prerequisites
-install ollama and deepseek-r1:1.5b
+Install Ollama and the deepseek-r1:1.5b model locally
 
 ```bash
 # Clone the repo
 $ git clone https://github.com/{yourusername}/devsecrin.git
+$ cd devsecrin
 
-# Initialise the python environment
+# Setup Python environment
+$ python3 -m venv venv
 $ source venv/bin/activate
-
-# install the python requirement
-$ pip install -r requirements.txt
+$ source venv/bin/activate
 
 # install node requirement
 $ pnpm install
