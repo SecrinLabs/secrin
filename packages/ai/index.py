@@ -210,7 +210,7 @@ def query_rag_system(question, embedder, vectorstore, n_results=3):
             ### ✅ Final Answer:
             """
 
-    return generate(model="llama3.2", prompt=prompt)["response"]
+    return generate(model="deepseek-r1:1.5b", prompt=prompt)["response"]
 
 def create_chatbot(embedder, vectorstore):
     print("\n🤖 Welcome to the Documentation Assistant!")

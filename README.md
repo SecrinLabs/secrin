@@ -39,33 +39,6 @@ DevSecrin ingests and unifies data from:
 * Works even without cloud sync
 * Git-backed journaling to record architecture decisions and local history
 
-## 🔍 Use Cases
-
-### ✅ For Individual Developers
-
-* Understand unfamiliar code faster
-* Avoid redundant work or misunderstandings
-* Capture your own decisions with DevJournal (coming soon)
-
-### ✅ For Engineering Teams
-
-* Improve onboarding time
-* Reduce context-switching overhead
-* Enhance code reviews with traceable context
-* Serve as a long-term memory engine during project evolution
-
-### ✅ For AI Agents and Tools
-
-* Plug context-rich knowledge into IDE agents (e.g., VS Code, Cursor)
-* Power copilot tools with deeper situational awareness
-
-## ⚙️ Architecture
-
-* `packages/collectors/`: TypeScript modules to ingest data from Git, Jira, Docs
-* `apps/api/`: Python-based AI and RAG engine
-* `storage/`: SQLite for persistent unified data layer
-* `apps/ui/`: Frontend interface (Next.js planned)
-
 ## 🧱 Tech Stack
 
 * **Backend**: FastAPI, Python, Postgres
@@ -101,17 +74,24 @@ DevSecrin is built on the belief that:
 
 ## 📦 Getting Started
 
+### Prerequisites
+install ollama and deepseek-r1:1.5b
+
 ```bash
 # Clone the repo
-$ git clone https://github.com/yourusername/devsecrin.git
+$ git clone https://github.com/{yourusername}/devsecrin.git
 
-# Navigate to backend
-$ cd devsecrin/apps/api
+# Initialise the python environment
+$ source venv/bin/activate
+
+# install the python requirement
 $ pip install -r requirements.txt
-$ uvicorn index:app --reload
 
-# Run a scraper (example)
-$ python packages/collectors/github/main.py
+# install node requirement
+$ pnpm install
+
+# run server
+$ pnpm run devsecrin
 ```
 
 ## 📄 License
