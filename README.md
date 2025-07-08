@@ -6,6 +6,9 @@ DevSecrin (Developer Secret Engine) is an AI-powered **Developer Context Engine*
 
 ## 🚀 Overview
 
+### System Architecture
+![devsecrin_arch](https://github.com/user-attachments/assets/3bf40c77-2d7a-49de-a016-c22dcc1ede52)
+
 Modern software teams are overwhelmed with disconnected tools—Git, Jira, Confluence, Notion, and more. Developers often struggle to recall the rationale behind code changes, architecture decisions, or feature implementations. DevSecrin solves this by creating a unified context layer that feeds this collective knowledge into AI systems—so developers don't just see *what* changed, but *why* it changed.
 
 ## 🧩 Core Features
