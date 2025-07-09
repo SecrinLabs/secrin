@@ -10,7 +10,10 @@
     "api": "PYTHONPATH=packages/ uvicorn apps.api.index:app --reload",
     "main": "python main.py",
     "devsecrin": "concurrently -k -n frontend,api -c green,blue \"pnpm dev\" \"pnpm api\"",
-    "migrate": "python packages/dbup/runner.py"
+    "migrate": "python packages/dbup/runner.py",
+    "clean:modules": "find . -name \"node_modules\" -type d -prune -exec rm -rf '{}' +",
+    "clean:store": "pnpm store prune",
+    "clean": "pnpm run clean:modules && pnpm run clean:store"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  Github,
+  BookOpen,
+  FolderOpen,
+  Zap,
+  Settings,
+  Play,
+} from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -12,14 +22,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { GitHubIntegrationModal } from "@workspace/ui/components/integrations/GitHubIntegrationModal";
 import { DocumentationIntegrationModal } from "@workspace/ui/components/integrations/DocumentationIntegrationModal";
 import { LocalRepoIntegrationModal } from "@workspace/ui/components/integrations/LocalRepoIntegrationModal";
-import {
-  Github,
-  BookOpen,
-  FolderOpen,
-  Zap,
-  Settings,
-  Play,
-} from "lucide-react";
+import { useStartEmbedding } from "@workspace/ui/hooks/integrations/useEmbedding";
 
 export type IntegrationModalType = null | "github" | "docs" | "local";
 
@@ -52,29 +55,7 @@ export function IntegrationButtons({
 }: {
   setOpen: (type: IntegrationModalType) => void;
 }) {
-  const handleStartEmbedding = async (integrationType: string) => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/scraper/start-scraper/${integrationType}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ type: integrationType }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to start embedding");
-      }
-
-      // Handle success
-      console.log("Embedding started for:", integrationType);
-    } catch (error) {
-      console.error("Error starting embedding:", error);
-    }
-  };
+  const { mutate: startEmbedding } = useStartEmbedding();
 
   const integrations = [
     {
@@ -165,7 +146,7 @@ export function IntegrationButtons({
                 <Button
                   variant="secondary"
                   className="w-full font-medium group/btn hover:bg-primary hover:text-primary-foreground transition-all"
-                  onClick={() => handleStartEmbedding(integration.id)}
+                  onClick={() => startEmbedding(integration.id)}
                 >
                   <Zap className="w-4 h-4 mr-2 group-hover/btn:animate-pulse" />
                   Start Embedding
