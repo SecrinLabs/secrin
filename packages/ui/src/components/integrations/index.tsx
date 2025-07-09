@@ -22,7 +22,7 @@ import { Badge } from "@workspace/ui/components/badge";
 import { GitHubIntegrationModal } from "@workspace/ui/components/integrations/GitHubIntegrationModal";
 import { DocumentationIntegrationModal } from "@workspace/ui/components/integrations/DocumentationIntegrationModal";
 import { LocalRepoIntegrationModal } from "@workspace/ui/components/integrations/LocalRepoIntegrationModal";
-import { useStartEmbedding } from "@workspace/ui/hooks/integrations/useEmbedding";
+import { useStartScraper } from "@workspace/ui/hooks/scraper/useScraper";
 
 export type IntegrationModalType = null | "github" | "docs" | "local";
 
@@ -55,7 +55,7 @@ export function IntegrationButtons({
 }: {
   setOpen: (type: IntegrationModalType) => void;
 }) {
-  const { mutate: startEmbedding } = useStartEmbedding();
+  const { mutate: startScraping } = useStartScraper();
 
   const integrations = [
     {
@@ -146,10 +146,10 @@ export function IntegrationButtons({
                 <Button
                   variant="secondary"
                   className="w-full font-medium group/btn hover:bg-primary hover:text-primary-foreground transition-all"
-                  onClick={() => startEmbedding(integration.id)}
+                  onClick={() => startScraping(integration.id)}
                 >
                   <Zap className="w-4 h-4 mr-2 group-hover/btn:animate-pulse" />
-                  Start Embedding
+                  Collect data
                 </Button>
               </CardContent>
             </Card>
