@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Github,
   BookOpen,
@@ -18,13 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { Badge } from "@workspace/ui/components/badge";
 import { Switch } from "@workspace/ui/components/switch";
 import { GitHubIntegrationModal } from "@workspace/ui/components/integrations/GitHubIntegrationModal";
 import { DocumentationIntegrationModal } from "@workspace/ui/components/integrations/DocumentationIntegrationModal";
 import { LocalRepoIntegrationModal } from "@workspace/ui/components/integrations/LocalRepoIntegrationModal";
 import { useStartScraper } from "@workspace/ui/hooks/scraper/useScraper";
 import { useEnableEmbedder } from "@workspace/ui/hooks/embed/useEnableEmbedder";
+import { useLoadIntegration } from "@workspace/ui/hooks/misc/useLoadIntegration";
+import { Integration, IntegrationUIMap } from "@workspace/ui/types/Integration";
 
 export type IntegrationModalType = null | "github" | "docs" | "local";
 
@@ -52,17 +53,6 @@ export function IntegrationModals({ open, setOpen }: IntegrationModalsProps) {
   );
 }
 
-interface Integration {
-  id: string;
-  title: string;
-  description: string;
-  icon: any;
-  color: string;
-  badge: string;
-  badgeVariant: "default" | "secondary" | "outline";
-  enabled: boolean;
-}
-
 export function IntegrationButtons({
   setOpen,
 }: {
@@ -70,54 +60,34 @@ export function IntegrationButtons({
 }) {
   const { mutate: startScraping, isPending } = useStartScraper();
   const { mutate: changeIntegrationStatus } = useEnableEmbedder();
+  const { mutate: loadIntegration } = useLoadIntegration();
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
 
-  const [integrations, setIntegrations] = useState<Integration[]>([
-    {
-      id: "github",
-      title: "GitHub Repository",
-      description:
-        "Connect your GitHub repositories to sync code and documentation",
-      icon: Github,
-      color: "bg-gradient-to-br from-gray-900 to-gray-700",
-      badge: "Popular",
-      badgeVariant: "default" as const,
-      enabled: true,
-    },
-    {
-      id: "sitemap",
-      title: "Documentation",
-      description: "Configure and manage your project documentation settings",
-      icon: BookOpen,
-      color: "bg-gradient-to-br from-blue-600 to-blue-800",
-      badge: "Essential",
-      badgeVariant: "secondary" as const,
-      enabled: true,
-    },
-    {
-      id: "gitlocal",
-      title: "Local Repository",
-      description: "Add local repositories from your development environment",
-      icon: FolderOpen,
-      color: "bg-gradient-to-br from-emerald-600 to-emerald-800",
-      badge: "Quick Setup",
-      badgeVariant: "outline" as const,
-      enabled: false,
-    },
-  ]);
+  useEffect(() => {
+    loadIntegration(undefined, {
+      onSuccess: (data) => {
+        console.log(data);
+        setIntegrations(data);
+      },
+      onError: (err) => {
+        console.error("Integration fetch failed", err);
+      },
+    });
+  }, []);
 
-  const toggleIntegration = (id: string) => {
+  const toggleIntegration = (name: string) => {
     setIntegrations((prev) =>
       prev.map((integration) =>
-        integration.id === id
-          ? { ...integration, enabled: !integration.enabled }
+        integration.name === name
+          ? { ...integration, is_connected: !integration.is_connected }
           : integration
       )
     );
-    changeIntegrationStatus(id); // Call the mutation when toggling
+    changeIntegrationStatus(name); // Call the mutation when toggling
   };
 
   const handleStartEmbedding = async () => {
-    const enabledIntegrations = integrations.filter((i) => i.enabled);
+    const enabledIntegrations = integrations.filter((i) => i.is_connected);
 
     if (enabledIntegrations.length === 0) {
       toast.error(
@@ -136,12 +106,12 @@ export function IntegrationButtons({
         await new Promise((resolve) => {
           startScraping(integration.id, {
             onSuccess: () => {
-              toast.success(`${integration.title} embedding started!`);
+              toast.success(`${integration.name} embedding started!`);
               resolve(true);
             },
             onError: (error) => {
               toast.error(
-                `${integration.title} embedding failed: ${error.message}`
+                `${integration.name} embedding failed: ${error.message}`
               );
               resolve(false);
             },
@@ -155,7 +125,7 @@ export function IntegrationButtons({
     }
   };
 
-  const enabledCount = integrations.filter((i) => i.enabled).length;
+  const enabledCount = integrations.filter((i) => i.is_connected).length;
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -170,46 +140,46 @@ export function IntegrationButtons({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {integrations.map((integration) => {
-          const IconComponent = integration.icon;
+          const ui = IntegrationUIMap[integration.name];
           return (
             <Card
               key={integration.id}
               className={`group hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 relative overflow-hidden ${
-                !integration.enabled ? "opacity-60" : ""
+                !integration.is_connected ? "opacity-60" : ""
               }`}
             >
-              <div
-                className={`absolute inset-0 opacity-5 ${integration.color}`}
-              />
+              <div className={`absolute inset-0 opacity-5 ${ui.color}`} />
               <CardHeader className="relative">
                 <div className="flex items-start justify-between mb-4">
                   <div
-                    className={`p-3 rounded-xl ${integration.color} text-white shadow-lg`}
+                    className={`p-3 rounded-xl ${ui.color} text-white shadow-lg`}
                   >
-                    <IconComponent className="w-6 h-6" />
+                    <ui.icon className="w-6 h-6" />
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={integration.enabled}
-                      onCheckedChange={() => toggleIntegration(integration.id)}
+                      checked={integration.is_connected}
+                      onCheckedChange={() =>
+                        toggleIntegration(integration.name)
+                      }
                     />
                     <span className="text-xs text-muted-foreground">
-                      {integration.enabled ? "Enabled" : "Disabled"}
+                      {integration.is_connected ? "Enabled" : "Disabled"}
                     </span>
                   </div>
                 </div>
                 <CardTitle className="text-xl font-semibold group-hover:text-primary transition-colors">
-                  {integration.title}
+                  {integration.name}
                 </CardTitle>
                 <CardDescription className="text-sm leading-relaxed">
-                  {integration.description}
+                  {ui.description}
                 </CardDescription>
               </CardHeader>
               <CardContent className="relative space-y-3">
                 <Button
                   variant="default"
                   className="w-full font-medium"
-                  disabled={!integration.enabled}
+                  disabled={!integration.is_connected}
                   onClick={() => {
                     if (integration.id === "github") setOpen("github");
                     else if (integration.id === "sitemap") setOpen("docs");
