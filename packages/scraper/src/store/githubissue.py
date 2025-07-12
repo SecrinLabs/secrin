@@ -4,6 +4,7 @@ from typing import Optional
 from typing import List, Dict, Any
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
+import re
 
 from packages.models import engine
 from packages.models.githubissue import PullRequest, Issue  # assumes you have this
@@ -13,16 +14,49 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class GithubScraper:
     GITHUB_API_URL = "https://api.github.com/graphql"
 
-    def __init__(self, token: str, owner: str, repo: str):
+    def __init__(self, token: str, owner_or_url: str, repo: str = ""):
         self.token = token
-        self.owner = owner
-        self.repo = repo
+        
+        # If the first parameter is a full GitHub URL, parse it
+        if owner_or_url.startswith('http'):
+            parsed = self._parse_github_url(owner_or_url)
+            self.owner = parsed['owner']
+            self.repo = parsed['repo']
+        else:
+            self.owner = owner_or_url
+            # If repo parameter is a full GitHub URL, parse it
+            if repo.startswith('http'):
+                parsed = self._parse_github_url(repo)
+                self.owner = parsed['owner']
+                self.repo = parsed['repo']
+            else:
+                self.repo = repo
+                
+        print(f"🔍 GitHub Scraper initialized - Owner: {self.owner}, Repo: {self.repo}")
+                
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
         self.db = SessionLocal()
         PullRequest.metadata.create_all(bind=engine)  # optional if handled in main
+
+    def _parse_github_url(self, url: str) -> Dict[str, str]:
+        """Parse GitHub URL to extract owner and repo name."""
+        # Remove trailing slash and .git if present
+        url = url.rstrip('/').rstrip('.git')
+        
+        # Match GitHub URL pattern
+        pattern = r'https?://github\.com/([^/]+)/([^/]+)'
+        match = re.match(pattern, url)
+        
+        if match:
+            return {
+                'owner': match.group(1),
+                'repo': match.group(2)
+            }
+        else:
+            raise ValueError(f"Invalid GitHub URL format: {url}")
 
     def build_query(self) -> str:
         return f"""
@@ -72,7 +106,33 @@ class GithubScraper:
             print(response.text)
             return []
 
-        return response.json()["data"]["repository"]["pullRequests"]["nodes"]
+        try:
+            response_data = response.json()
+            
+            # Check if the response has errors
+            if "errors" in response_data:
+                print("❌ GraphQL errors:", response_data["errors"])
+                return []
+            
+            # Check if the expected data structure exists
+            if ("data" not in response_data or 
+                "repository" not in response_data["data"] or 
+                response_data["data"]["repository"] is None):
+                print("❌ Repository not found or access denied")
+                print("Response:", response_data)
+                return []
+            
+            if ("pullRequests" not in response_data["data"]["repository"] or
+                "nodes" not in response_data["data"]["repository"]["pullRequests"]):
+                print("❌ No pull requests found")
+                return []
+            
+            return response_data["data"]["repository"]["pullRequests"]["nodes"]
+            
+        except Exception as e:
+            print("❌ Error parsing response:", str(e))
+            print("Response text:", response.text)
+            return []
     
     def safe_parse_datetime(self, dt_str: Optional[str]) -> Optional[datetime]:
         if not dt_str or not dt_str.strip():
@@ -112,7 +172,7 @@ class GithubScraper:
         pr.closing_issues.clear()
 
         for issue_data in pr_data["closingIssuesReferences"]["nodes"]:
-            issue_closed_at = self.safe_parse_datetime(pr_data.get("closedAt"))
+            issue_closed_at = self.safe_parse_datetime(issue_data.get("closedAt"))
             issue = Issue(
                 number=issue_data["number"],
                 title=issue_data["title"],

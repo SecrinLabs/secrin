@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -21,17 +21,29 @@ import {
 } from "@workspace/ui/components/select";
 import { Alert, AlertDescription } from "@workspace/ui/components/alert";
 import { FileText, AlertCircle } from "lucide-react";
+import { SitemapConfig } from "@workspace/ui/types/Integration.js";
 
 export function DocumentationIntegrationModal({
   open,
   onClose,
+  config,
 }: {
   open: boolean;
   onClose: () => void;
+  config: SitemapConfig;
 }) {
   const [sitemapUrl, setSitemapUrl] = useState("");
   const [docType, setDocType] = useState("Docusaurus");
   const [error, setError] = useState("");
+
+  // Initialize form with config data when modal opens
+  useEffect(() => {
+    if (open && config) {
+      setSitemapUrl(config.sitemapUrl || "");
+      setDocType(config.docType || "Docusaurus");
+      setError("");
+    }
+  }, [open, config]);
 
   const isValid = /^https?:\/\/.+/.test(sitemapUrl);
 

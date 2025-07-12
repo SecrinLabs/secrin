@@ -24,7 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <QueryClientProvider client={queryClient}>
-        <Toaster />
+        <Toaster richColors={true} closeButton={true} />
         {children}
       </QueryClientProvider>
     </NextThemesProvider>

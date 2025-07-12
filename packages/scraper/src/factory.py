@@ -6,9 +6,10 @@ class ScraperFactory:
     @staticmethod
     def create_scraper(integration_name, config):
         if integration_name == "sitemap":
-            return SitemapScraper(config["url"])
+            return SitemapScraper(config["sitemapUrl"])
         elif integration_name == "github":
-            return GithubScraper(config["token"], config["owner"], config["repo"])
+            # Pass token and repoUrl - GithubScraper will parse the URL
+            return GithubScraper(config["token"], config["repoUrl"])
         elif integration_name == "gitlocal":
             return GitScraper(config["repo_path"])
         else:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -14,17 +14,29 @@ import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Alert, AlertDescription } from "@workspace/ui/components/alert";
 import { FolderOpen, AlertCircle, Scan } from "lucide-react";
+import { GitLocalConfig } from "@workspace/ui/types/Integration.js";
 
 export function LocalRepoIntegrationModal({
   open,
   onClose,
+  config,
 }: {
   open: boolean;
   onClose: () => void;
+  config: GitLocalConfig;
 }) {
   const [localPath, setLocalPath] = useState("");
   const [projectName, setProjectName] = useState("");
   const [error, setError] = useState("");
+
+  // Initialize form with config data when modal opens
+  useEffect(() => {
+    if (open && config) {
+      setLocalPath(config.localPath || config.repo_path || "");
+      setProjectName(config.projectName || "");
+      setError("");
+    }
+  }, [open, config]);
 
   const isValid = localPath.length > 0 && projectName.length > 0;
 
@@ -45,6 +57,7 @@ export function LocalRepoIntegrationModal({
             name: "gitlocal", // or the relevant integration name
             is_connected: true, // or the actual state
             config: {
+              repo_path: localPath,
               localPath,
               projectName,
             },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -12,20 +12,33 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import { Github, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Github, Eye, EyeOff } from "lucide-react";
+import { GithubConfig } from "@workspace/ui/types/Integration";
 
 export function GitHubIntegrationModal({
   open,
   onClose,
+  config,
 }: {
   open: boolean;
   onClose: () => void;
+  config: GithubConfig;
 }) {
   const [username, setUsername] = useState("");
   const [token, setToken] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [error, setError] = useState("");
   const [showToken, setShowToken] = useState(false);
+
+  // Initialize form with config data when modal opens
+  useEffect(() => {
+    if (open && config) {
+      setUsername(config.username || "");
+      setToken(config.token || "");
+      setRepoUrl(config.repoUrl || "");
+      setError("");
+    }
+  }, [open, config]);
 
   const isValid =
     username &&
@@ -49,6 +62,7 @@ export function GitHubIntegrationModal({
             name: "github", // or the relevant integration name
             is_connected: true, // or the actual state
             config: {
+              username,
               token,
               repoUrl,
             },

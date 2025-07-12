@@ -1,21 +1,20 @@
-import {
-  Github,
-  BookOpen,
-  FolderOpen,
-  Zap,
-  Settings,
-  Play,
-} from "lucide-react";
+import { Github, BookOpen, FolderOpen } from "lucide-react";
 
 export type IntegrationName = "github" | "sitemap" | "gitlocal";
 
-export type GithubConfig = {}; // empty for now
+export type GithubConfig = {
+  username?: string;
+  token?: string;
+  repoUrl?: string;
+};
 export type SitemapConfig = {
   docType: string;
   sitemapUrl: string;
 };
 export type GitLocalConfig = {
-  repo_path: string;
+  repo_path?: string;
+  localPath?: string;
+  projectName?: string;
 };
 
 export type IntegrationConfig =

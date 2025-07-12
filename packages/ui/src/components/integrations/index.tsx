@@ -27,21 +27,37 @@ export interface IntegrationModalsProps {
   setOpen: (type: IntegrationModalType) => void;
 }
 
-export function IntegrationModals({ open, setOpen }: IntegrationModalsProps) {
+export function IntegrationModals({
+  open,
+  setOpen,
+  integrations,
+}: IntegrationModalsProps & { integrations: Integration[] }) {
+  const githubIntegration = integrations?.find((i) => i.name === "github");
+  const documentIntegration = integrations?.find((i) => i.name === "sitemap");
+  const localRepoIntegration = integrations?.find((i) => i.name === "gitlocal");
   return (
     <>
-      <GitHubIntegrationModal
-        open={open === "github"}
-        onClose={() => setOpen(null)}
-      />
-      <DocumentationIntegrationModal
-        open={open === "docs"}
-        onClose={() => setOpen(null)}
-      />
-      <LocalRepoIntegrationModal
-        open={open === "local"}
-        onClose={() => setOpen(null)}
-      />
+      {githubIntegration && (
+        <GitHubIntegrationModal
+          open={open === "github"}
+          config={githubIntegration.config}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {documentIntegration && (
+        <DocumentationIntegrationModal
+          open={open === "docs"}
+          config={documentIntegration.config}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {localRepoIntegration && (
+        <LocalRepoIntegrationModal
+          open={open === "local"}
+          config={localRepoIntegration.config}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </>
   );
 }
@@ -55,6 +71,7 @@ export function IntegrationButtons({
   const { mutate: changeIntegrationStatus } = useEnableEmbedder();
   const { mutate: loadIntegration } = useLoadIntegration();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [open, setOpenState] = useState<IntegrationModalType>(null);
 
   useEffect(() => {
     loadIntegration(undefined, {
@@ -97,7 +114,7 @@ export function IntegrationButtons({
       // Start scraping for all enabled integrations
       for (const integration of enabledIntegrations) {
         await new Promise((resolve) => {
-          startScraping(integration.id, {
+          startScraping(integration.name, {
             onSuccess: () => {
               toast.success(`${integration.name} embedding started!`);
               resolve(true);
@@ -174,9 +191,11 @@ export function IntegrationButtons({
                   className="w-full font-medium"
                   disabled={!integration.is_connected}
                   onClick={() => {
-                    if (integration.name === "github") setOpen("github");
-                    else if (integration.name === "sitemap") setOpen("docs");
-                    else if (integration.name === "gitlocal") setOpen("local");
+                    if (integration.name === "github") setOpenState("github");
+                    else if (integration.name === "sitemap")
+                      setOpenState("docs");
+                    else if (integration.name === "gitlocal")
+                      setOpenState("local");
                   }}
                 >
                   <Settings className="w-4 h-4 mr-2" />
@@ -221,6 +240,12 @@ export function IntegrationButtons({
           More integrations coming soon
         </div>
       </div>
+
+      <IntegrationModals
+        open={open}
+        setOpen={setOpenState}
+        integrations={integrations}
+      />
     </div>
   );
 }

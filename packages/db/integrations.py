@@ -11,7 +11,9 @@ def get_all_integrations(session: Optional[Session] = None) -> List[Dict[str, An
         session = SessionLocal()
         close_session = True
     try:
-        integrations = session.query(Integration).all()
+        integrations = session.query(Integration).order_by(
+            Integration.id.asc()
+        ).all()
         return [
             {
                 "id": i.id,
