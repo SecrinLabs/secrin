@@ -1,11 +1,12 @@
 "use client";
 
+import React, { useState } from "react";
+
 import {
   IntegrationButtons,
   IntegrationModals,
   IntegrationModalType,
 } from "@workspace/ui/components/integrations";
-import React, { useState } from "react";
 
 function Integration() {
   const [open, setOpen] = useState<IntegrationModalType>(null);

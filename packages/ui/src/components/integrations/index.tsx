@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Github,
-  BookOpen,
-  FolderOpen,
-  Zap,
-  Settings,
-  Play,
-} from "lucide-react";
+import { Zap, Settings, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -181,9 +174,9 @@ export function IntegrationButtons({
                   className="w-full font-medium"
                   disabled={!integration.is_connected}
                   onClick={() => {
-                    if (integration.id === "github") setOpen("github");
-                    else if (integration.id === "sitemap") setOpen("docs");
-                    else if (integration.id === "gitlocal") setOpen("local");
+                    if (integration.name === "github") setOpen("github");
+                    else if (integration.name === "sitemap") setOpen("docs");
+                    else if (integration.name === "gitlocal") setOpen("local");
                   }}
                 >
                   <Settings className="w-4 h-4 mr-2" />
