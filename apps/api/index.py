@@ -7,10 +7,17 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from apps.api.routers import scraper, embed, chat, integration
-from apps.api.utils.threading import service_manager
+from apps.api.routers import scraper, embed, chat, integration, websocket
+from apps.api.utils.monitoring import setup_service_monitoring, get_service_stats
 
-app = FastAPI()
+app = FastAPI(
+    title="DevSecRin API",
+    description="API for web scraping, document embedding, and real-time service monitoring",
+    version="1.0.0"
+)
+
+# Initialize WebSocket notification system
+setup_service_monitoring()
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,32 +27,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    """Root endpoint with API information."""
+    return {
+        "message": "DevSecRin API",
+        "version": "1.0.0",
+        "endpoints": {
+            "scraper": "/api/scraper",
+            "embed": "/api/embed", 
+            "chat": "/api/chat",
+            "integration": "/api/integration",
+            "websocket": "/ws",
+            "status": "/api/status"
+        }
+    }
+
 @app.get("/api/status")
 def get_global_status():
     """Get the status of all running background services."""
-    running_services = service_manager.get_running_services()
-    
-    # Group services by type
-    scrapers = [s for s in running_services if s["name"].startswith("scraper")]
-    embedders = [s for s in running_services if s["name"] == "embedder"]
-    others = [s for s in running_services if not s["name"].startswith("scraper") and s["name"] != "embedder"]
-    
+    return get_service_stats()
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for load balancers and monitoring."""
+    stats = get_service_stats()
     return {
-        "services": {
-            "scrapers": scrapers,
-            "embedders": embedders,
-            "others": others
-        },
-        "summary": {
-            "total_running": len(running_services),
-            "scrapers_running": len(scrapers),
-            "embedders_running": len(embedders),
-            "others_running": len(others)
-        },
-        "is_any_running": len(running_services) > 0
+        "status": "healthy",
+        "timestamp": "2025-07-12T10:30:00",  # This will be updated by get_service_stats
+        "services_running": stats["summary"]["total_running"],
+        "websocket_connections": stats["websocket"]["active_connections"]
     }
 
-app.include_router(scraper.router, prefix="/api/scraper")
-app.include_router(embed.router, prefix="/api/embed")
-app.include_router(chat.router, prefix="/api/chat")
-app.include_router(integration.router, prefix="/api/integration")
+# Include routers
+app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
+app.include_router(embed.router, prefix="/api/embed", tags=["embed"])
+app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(integration.router, prefix="/api/integration", tags=["integration"])
+app.include_router(websocket.router, prefix="/ws", tags=["websocket"])

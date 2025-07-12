@@ -1,7 +1,7 @@
 import threading
 import time
 import uuid
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 
 class ServiceManager:
@@ -10,23 +10,59 @@ class ServiceManager:
     def __init__(self):
         self._running_services: Dict[str, Dict[str, Any]] = {}
         self._lock = threading.Lock()
+        self._notification_callbacks: List[Callable] = []
+    
+    def add_notification_callback(self, callback: Callable):
+        """Add a callback function to be called when services start/stop."""
+        self._notification_callbacks.append(callback)
+    
+    def remove_notification_callback(self, callback: Callable):
+        """Remove a notification callback."""
+        if callback in self._notification_callbacks:
+            self._notification_callbacks.remove(callback)
+    
+    def _notify_service_change(self, event_type: str, service_data: Dict[str, Any]):
+        """Notify all callbacks about service changes."""
+        notification = {
+            "type": event_type,
+            "service": service_data,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        for callback in self._notification_callbacks:
+            try:
+                callback(notification)
+            except Exception as e:
+                print(f"Notification callback error: {e}")
     
     def register_service(self, service_id: str, service_name: str, description: str = "") -> None:
         """Register a new running service."""
         with self._lock:
-            self._running_services[service_id] = {
+            service_data = {
                 "id": service_id,
                 "name": service_name,
                 "description": description,
                 "started_at": datetime.now().isoformat(),
                 "status": "running"
             }
+            self._running_services[service_id] = service_data
+            
+        # Notify about service start
+        self._notify_service_change("service_started", service_data)
     
     def unregister_service(self, service_id: str) -> None:
         """Unregister a completed service."""
+        service_data = None
         with self._lock:
             if service_id in self._running_services:
+                service_data = self._running_services[service_id].copy()
+                service_data["status"] = "completed"
+                service_data["completed_at"] = datetime.now().isoformat()
                 del self._running_services[service_id]
+        
+        # Notify about service completion
+        if service_data:
+            self._notify_service_change("service_completed", service_data)
     
     def get_running_services(self) -> List[Dict[str, Any]]:
         """Get list of all running services."""
