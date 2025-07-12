@@ -7,6 +7,7 @@ import {
   IntegrationModals,
   IntegrationModalType,
 } from "@workspace/ui/components/integrations";
+import { SimpleServiceStatusWidget } from "@workspace/ui/components/services/SimpleServiceStatusWidget";
 
 function Integration() {
   const [open, setOpen] = useState<IntegrationModalType>(null);
@@ -16,6 +17,7 @@ function Integration() {
       <h1 className="text-3xl font-bold mb-6">App Integrations</h1>
       <IntegrationButtons setOpen={setOpen} />
       <IntegrationModals open={open} setOpen={setOpen} integrations={[]} />
+      <SimpleServiceStatusWidget />
     </div>
   );
 }
