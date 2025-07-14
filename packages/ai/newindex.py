@@ -71,8 +71,8 @@ class KnowledgeGraph:
         if edge.target in self.nodes:
             self.nodes[edge.target].connections.add(edge.source)
     
-    def get_connected_nodes(self, node_id: str, max_depth: int = 2) -> List[GraphNode]:
-        """Get all nodes connected to a given node within max_depth"""
+    def get_connected_nodes(self, node_id: str, max_depth: int = 2, max_nodes: int = 10) -> List[GraphNode]:
+        """Get connected nodes with limits to prevent context explosion"""
         if node_id not in self.graph:
             return []
         
@@ -83,11 +83,35 @@ class KnowledgeGraph:
             next_level = set()
             for current_id in current_level:
                 neighbors = set(self.graph.neighbors(current_id)) | set(self.graph.predecessors(current_id))
-                next_level.update(neighbors - connected_ids)
-                connected_ids.update(neighbors)
-            current_level = next_level
+                # Sort neighbors by edge weight (if available) to prioritize stronger connections
+                neighbor_weights = []
+                for neighbor in neighbors:
+                    if neighbor not in connected_ids:
+                        weight = self.graph.get_edge_data(current_id, neighbor, {}).get('weight', 0.5)
+                        neighbor_weights.append((neighbor, weight))
+                
+                # Sort by weight descending and take top connections
+                neighbor_weights.sort(key=lambda x: x[1], reverse=True)
+                top_neighbors = [n[0] for n in neighbor_weights[:max_nodes//max_depth]]
+                
+                next_level.update(top_neighbors)
+                connected_ids.update(top_neighbors)
+                
+                # Stop if we have enough nodes
+                if len(connected_ids) >= max_nodes:
+                    break
             
-        return [self.nodes[nid] for nid in connected_ids if nid in self.nodes]
+            current_level = next_level
+            if len(connected_ids) >= max_nodes:
+                break
+        
+        # Return top nodes sorted by relationship strength
+        result_nodes = []
+        for node_id in list(connected_ids)[:max_nodes]:
+            if node_id in self.nodes:
+                result_nodes.append(self.nodes[node_id])
+        
+        return result_nodes
     
     def get_path_context(self, node_id: str, target_id: str) -> List[GraphNode]:
         """Get context by finding paths between nodes"""
@@ -358,55 +382,219 @@ Diff:
         session.close()
         print(f"✅ Knowledge graph built with {len(self.knowledge_graph.nodes)} nodes and {len(self.knowledge_graph.edges)} edges")
     
-    def build_relationships(self):
-        """Build relationships between nodes based on content and references"""
-        nodes = list(self.knowledge_graph.nodes.values())
+    def build_reference_index(self) -> Dict[str, Set[str]]:
+        """Build reference index for efficient relationship discovery"""
+        reference_index = {
+            'issues': {},
+            'prs': {},
+            'commits': {},
+            'files': {},
+            'authors': {},
+            'keywords': {}
+        }
         
-        for i, node1 in enumerate(tqdm(nodes, desc="Building relationships")):
-            for j, node2 in enumerate(nodes[i+1:], i+1):
-                relationships = self.find_relationships(node1, node2)
-                
-                for rel_type, weight in relationships:
+        for node in self.knowledge_graph.nodes.values():
+            refs = node.metadata.get('references', {})
+            
+            # Index by issue references
+            for issue_id in refs.get('issues', []):
+                if issue_id not in reference_index['issues']:
+                    reference_index['issues'][issue_id] = set()
+                reference_index['issues'][issue_id].add(node.id)
+            
+            # Index by PR references
+            for pr_id in refs.get('prs', []):
+                if pr_id not in reference_index['prs']:
+                    reference_index['prs'][pr_id] = set()
+                reference_index['prs'][pr_id].add(node.id)
+            
+            # Index by commit references
+            for commit_hash in refs.get('commits', []):
+                if commit_hash not in reference_index['commits']:
+                    reference_index['commits'][commit_hash] = set()
+                reference_index['commits'][commit_hash].add(node.id)
+            
+            # Index by file references
+            for file_path in refs.get('files', []):
+                if file_path not in reference_index['files']:
+                    reference_index['files'][file_path] = set()
+                reference_index['files'][file_path].add(node.id)
+            
+            # Index by author
+            author = node.metadata.get('author')
+            if author:
+                if author not in reference_index['authors']:
+                    reference_index['authors'][author] = set()
+                reference_index['authors'][author].add(node.id)
+            
+            # Index by keywords (extract from content)
+            keywords = self.extract_keywords(node.content)
+            for keyword in keywords:
+                if keyword not in reference_index['keywords']:
+                    reference_index['keywords'][keyword] = set()
+                reference_index['keywords'][keyword].add(node.id)
+        
+        return reference_index
+    
+    def extract_keywords(self, text: str) -> Set[str]:
+        """Extract meaningful keywords from text"""
+        # Simple keyword extraction - can be enhanced with NLP
+        import re
+        
+        # Remove common words and extract meaningful terms
+        common_words = {'the', 'is', 'at', 'which', 'on', 'and', 'or', 'but', 'in', 'with', 'to', 'for', 'of', 'as', 'by', 'from', 'up', 'into', 'over', 'after'}
+        
+        # Extract words, function names, class names, etc.
+        words = re.findall(r'\b[a-zA-Z_][a-zA-Z0-9_]{2,}\b', text.lower())
+        
+        # Filter out common words and short words
+        keywords = {word for word in words if word not in common_words and len(word) > 2}
+        
+        # Limit to top keywords to avoid noise
+        return set(list(keywords)[:50])  # Top 50 keywords per document
+    
+    def get_relationship_candidates(self, reference_index: Dict[str, Dict[str, Set[str]]]) -> Set[Tuple[str, str]]:
+        """Get candidate node pairs that likely have relationships"""
+        candidates = set()
+        
+        # Find nodes sharing references
+        for ref_type, ref_dict in reference_index.items():
+            for ref_value, node_ids in ref_dict.items():
+                if len(node_ids) > 1:  # Only if multiple nodes reference the same thing
+                    node_list = list(node_ids)
+                    for i in range(len(node_list)):
+                        for j in range(i + 1, len(node_list)):
+                            # Create ordered pair to avoid duplicates
+                            pair = tuple(sorted([node_list[i], node_list[j]]))
+                            candidates.add(pair)
+        
+        return candidates
+    
+    def should_create_relationship(self, node1_type: str, node2_type: str) -> bool:
+        """Determine if relationship should be created between node types"""
+        # Define allowed relationship patterns
+        allowed_patterns = {
+            ('commit', 'issue'),
+            ('commit', 'pr'),
+            ('issue', 'pr'),
+            ('doc', 'issue'),
+            ('doc', 'pr'),
+            ('doc', 'commit'),
+            ('commit', 'commit'),  # Same author relationships
+            ('issue', 'issue'),    # Related issues
+        }
+        
+        pattern = tuple(sorted([node1_type, node2_type]))
+        return pattern in allowed_patterns
+    
+    def build_relationships(self):
+        """Optimized relationship building using reference indexing"""
+        print("🔗 Building reference index...")
+        reference_index = self.build_reference_index()
+        
+        print("🔍 Finding relationship candidates...")
+        candidates = self.get_relationship_candidates(reference_index)
+        
+        print(f"📊 Found {len(candidates)} potential relationships (reduced from {len(self.knowledge_graph.nodes)**2//2})")
+        
+        relationship_cache = {}
+        
+        for node1_id, node2_id in tqdm(candidates, desc="Building relationships"):
+            # Check if we've already processed this pair
+            cache_key = tuple(sorted([node1_id, node2_id]))
+            if cache_key in relationship_cache:
+                continue
+            
+            node1 = self.knowledge_graph.nodes.get(node1_id)
+            node2 = self.knowledge_graph.nodes.get(node2_id)
+            
+            if not node1 or not node2:
+                continue
+            
+            # Skip if relationship type not allowed
+            if not self.should_create_relationship(node1.type, node2.type):
+                continue
+            
+            # Skip if content is too small
+            if len(node1.content) < 50 or len(node2.content) < 50:
+                continue
+            
+            # Check if edge already exists
+            if self.knowledge_graph.graph.has_edge(node1_id, node2_id):
+                continue
+            
+            relationships = self.find_relationships(node1, node2)
+            relationship_cache[cache_key] = relationships
+            
+            for rel_type, weight in relationships:
+                # Only create edge if weight is significant
+                if weight > 0.1:  # Threshold to avoid weak relationships
                     edge = GraphEdge(
-                        source=node1.id,
-                        target=node2.id,
+                        source=node1_id,
+                        target=node2_id,
                         relationship_type=rel_type,
                         weight=weight
                     )
                     self.knowledge_graph.add_edge(edge)
     
     def find_relationships(self, node1: GraphNode, node2: GraphNode) -> List[Tuple[str, float]]:
-        """Find relationships between two nodes"""
+        """Optimized relationship finding between two nodes"""
         relationships = []
         
-        # Reference-based relationships
+        # Get references for both nodes
         refs1 = node1.metadata.get('references', {})
         refs2 = node2.metadata.get('references', {})
         
-        # Check for direct references
+        # 1. Direct reference relationships (highest weight)
         if node1.type == 'commit' and node2.type == 'issue':
-            # Check if commit message references issue
             issue_num = node2.id.split('_')[1]
             if issue_num in refs1.get('issues', []):
-                relationships.append(('fixes', 0.9))
+                relationships.append(('fixes', 0.95))
+                return relationships  # Strong relationship found, no need to check others
         
-        # File-based relationships
+        if node1.type == 'commit' and node2.type == 'pr':
+            pr_num = node2.id.split('_')[1]
+            if pr_num in refs1.get('prs', []):
+                relationships.append(('implements', 0.95))
+                return relationships
+        
+        if node1.type == 'issue' and node2.type == 'pr':
+            # Check if they reference each other
+            issue_num = node1.id.split('_')[1]
+            pr_num = node2.id.split('_')[1]
+            if issue_num in refs2.get('issues', []) or pr_num in refs1.get('prs', []):
+                relationships.append(('addresses', 0.9))
+                return relationships
+        
+        # 2. File-based relationships (medium-high weight)
         files1 = set(refs1.get('files', []))
         files2 = set(refs2.get('files', []))
         if files1 and files2:
-            file_overlap = len(files1.intersection(files2)) / len(files1.union(files2))
-            if file_overlap > 0.3:
-                relationships.append(('affects_same_files', file_overlap))
+            file_overlap = len(files1.intersection(files2))
+            total_files = len(files1.union(files2))
+            if file_overlap > 0:
+                overlap_ratio = file_overlap / total_files
+                if overlap_ratio > 0.3:  # Significant overlap
+                    relationships.append(('affects_same_files', min(overlap_ratio, 0.8)))
         
-        # Content similarity
-        similarity = self.find_content_similarity(node1.content, node2.content)
-        if similarity > 0.2:
-            relationships.append(('similar_content', similarity))
-        
-        # Author-based relationships (for commits)
+        # 3. Author-based relationships (medium weight)
         if (node1.type == 'commit' and node2.type == 'commit' and 
             node1.metadata.get('author') == node2.metadata.get('author')):
             relationships.append(('same_author', 0.5))
+        
+        # 4. Commit hash relationships (high weight)
+        commits1 = set(refs1.get('commits', []))
+        commits2 = set(refs2.get('commits', []))
+        if commits1 and commits2:
+            commit_overlap = len(commits1.intersection(commits2))
+            if commit_overlap > 0:
+                relationships.append(('references_same_commits', 0.8))
+        
+        # 5. Content similarity (lower weight, only if no other relationships found)
+        if not relationships:
+            similarity = self.find_content_similarity(node1.content, node2.content)
+            if similarity > 0.4:  # Higher threshold for content similarity
+                relationships.append(('similar_content', min(similarity, 0.6)))
         
         return relationships
     
@@ -447,13 +635,15 @@ Diff:
             doc_id = doc_ids[i] if i < len(doc_ids) else None
             
             if doc_id and doc_id in self.knowledge_graph.nodes:
-                # Get connected nodes
-                connected_nodes = self.knowledge_graph.get_connected_nodes(doc_id, max_depth=1)
+                # Get connected nodes with limits
+                connected_nodes = self.knowledge_graph.get_connected_nodes(doc_id, max_depth=1, max_nodes=5)
                 
-                # Add context from connected nodes
-                for connected_node in connected_nodes[:2]:  # Limit to avoid too much context
+                # Add context from connected nodes, prioritizing by relationship strength
+                for connected_node in connected_nodes:
                     if connected_node.content not in enhanced_context:
-                        enhanced_context.append(f"[Connected {connected_node.type}]: {connected_node.content[:500]}...")
+                        # Truncate content to prevent context explosion
+                        truncated_content = connected_node.content[:300] + "..." if len(connected_node.content) > 300 else connected_node.content
+                        enhanced_context.append(f"[Connected {connected_node.type}]: {truncated_content}")
                         graph_metadata.append({
                             'type': connected_node.type,
                             'relationship': 'connected',
