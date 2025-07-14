@@ -7,7 +7,10 @@ from packages.models import engine
 from packages.models.sitemap import Sitemap
 from packages.models.githubissue import Issue
 from packages.models.gitcommit import GitCommit
+from packages.config import get_config
 from ollama import generate
+
+config = get_config()
 
 def safe_embed(embedder, text):
     try:
@@ -210,7 +213,7 @@ def query_rag_system(question, embedder, vectorstore, n_results=3):
             ### ✅ Final Answer:
             """
 
-    return generate(model="deepseek-r1:1.5b", prompt=prompt)["response"]
+    return generate(model=config.ollama_model, prompt=prompt)["response"]
 
 def create_chatbot(embedder, vectorstore):
     print("\n🤖 Welcome to the Documentation Assistant!")
@@ -245,11 +248,11 @@ def create_chatbot(embedder, vectorstore):
 
 def run_generator(question):
     embedder = get_embedder("ollama")
-    vectorstore = get_vectorstore("chroma", collection_name="docs")
+    vectorstore = get_vectorstore("chroma", collection_name=config.chroma_collection_name)
     answer = query_rag_system(question, embedder, vectorstore)
     return answer
 
 def run_embedder():
     embedder = get_embedder("ollama")
-    vectorstore = get_vectorstore("chroma", collection_name="docs")
+    vectorstore = get_vectorstore("chroma", collection_name=config.chroma_collection_name)
     process_database_documents(embedder, vectorstore)

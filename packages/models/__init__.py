@@ -1,8 +1,9 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import create_engine
+from packages.config import get_config
 
-DATABASE_URL="postgresql://postgres:10514912@localhost:5432/devsecrin"
+config = get_config()
 
 Base = declarative_base()
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(config.database_url)

@@ -10,9 +10,12 @@ from packages.models import engine
 from packages.models.sitemap import Sitemap
 from packages.models.githubissue import Issue
 from packages.models.gitcommit import GitCommit
+from packages.config import get_config
 from ollama import generate
 import networkx as nx
 import json
+
+config = get_config()
 
 @dataclass
 class GraphNode:
@@ -704,7 +707,7 @@ The following context includes both directly relevant documents and related item
 """
         
         try:
-            response = generate(model="deepseek-r1:1.5b", prompt=prompt)
+            response = generate(model=config.ollama_model, prompt=prompt)
             return response["response"]
         except Exception as e:
             print(f"❌ Error generating response: {str(e)}")
@@ -751,7 +754,7 @@ def create_graph_chatbot(embedder, vectorstore):
 def run_graph_generator(question):
     """Run the graph-enhanced generator"""
     embedder = get_embedder("ollama")
-    vectorstore = get_vectorstore("chroma", collection_name="docs")
+    vectorstore = get_vectorstore("chroma", collection_name=config.chroma_collection_name)
     graph_rag = GraphBasedRAG(embedder, vectorstore)
     graph_rag.build_knowledge_graph()
     return graph_rag.query_with_graph_context(question)
@@ -759,7 +762,7 @@ def run_graph_generator(question):
 def run_graph_embedder():
     """Run the graph-enhanced embedder"""
     embedder = get_embedder("ollama")
-    vectorstore = get_vectorstore("chroma", collection_name="docs")
+    vectorstore = get_vectorstore("chroma", collection_name=config.chroma_collection_name)
     graph_rag = GraphBasedRAG(embedder, vectorstore)
     graph_rag.build_knowledge_graph()
 

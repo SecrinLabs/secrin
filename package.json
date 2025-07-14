@@ -7,7 +7,7 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "api": "PYTHONPATH=packages/ uvicorn apps.api.index:app --reload",
+    "api": "python start_api.py",
     "main": "python main.py",
     "devsecrin": "concurrently -k -n frontend,api -c green,blue \"pnpm dev\" \"pnpm api\"",
     "migrate": "python packages/dbup/runner.py",

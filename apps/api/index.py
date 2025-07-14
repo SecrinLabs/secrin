@@ -9,6 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.routers import scraper, embed, chat, integration, websocket
 from apps.api.utils.monitoring import setup_service_monitoring, get_service_stats
+from packages.config import get_config
+
+config = get_config()
 
 app = FastAPI(
     title="DevSecRin API",
@@ -39,9 +42,48 @@ def read_root():
             "chat": "/api/chat",
             "integration": "/api/integration",
             "websocket": "/ws",
-            "status": "/api/status"
+            "status": "/api/status",
+            "health": "/health"
         }
     }
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker and monitoring."""
+    try:
+        # Check if we can import critical modules
+        from packages.ai.newindex import run_graph_generator
+        from packages.db.db import engine
+        
+        # Try to connect to database
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        
+        # Check if Ollama is available
+        import requests
+        response = requests.get(f"{config.ollama_host}/api/tags", timeout=5)
+        ollama_status = response.status_code == 200
+        
+        return {
+            "status": "healthy",
+            "version": "1.0.0",
+            "services": {
+                "database": "up",
+                "ollama": "up" if ollama_status else "down",
+                "api": "up"
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "services": {
+                "database": "unknown",
+                "ollama": "unknown",
+                "api": "up"
+            }
+        }
 
 @app.get("/api/status")
 def get_global_status():
