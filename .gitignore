@@ -43,3 +43,6 @@ venv
 
 # environment variables
 .env
+
+# python cache files
+__pycache__/
