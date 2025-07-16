@@ -46,3 +46,6 @@ venv
 
 # python cache files
 __pycache__/
+
+# logs folder
+logs/
