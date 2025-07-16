@@ -27,14 +27,14 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY requirements.txt ./
 COPY turbo.json ./
 
-# Copy package configurations
-COPY packages/*/package.json ./packages/*/
+# Copy workspace packages
+COPY packages/ ./packages/
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Node.js dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy the rest of the application
 COPY . .

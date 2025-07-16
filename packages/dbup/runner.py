@@ -1,7 +1,7 @@
 import os
 import psycopg2
 
-DATABASE_URL="postgresql://postgres:10514912@localhost:5432/devsecrin"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin")
 base_path = "./packages/dbup/sql/"
 
 def ensure_migrations_table(conn):

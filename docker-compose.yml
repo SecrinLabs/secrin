@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./packages/dbup/sql:/docker-entrypoint-initdb.d
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U devsecrin"]
       interval: 30s
@@ -28,11 +28,6 @@ services:
       - ollama_data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # DevSecrin Application
   devsecrin:
@@ -44,7 +39,7 @@ services:
       postgres:
         condition: service_healthy
       ollama:
-        condition: service_healthy
+        condition: service_started
     environment:
       - DATABASE_URL=postgresql://devsecrin:devsecrin@postgres:5432/devsecrin
       - OLLAMA_HOST=http://ollama:11434
