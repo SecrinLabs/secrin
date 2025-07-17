@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -10,7 +8,7 @@ services:
       POSTGRES_PASSWORD: devsecrin
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./packages/dbup/sql:/docker-entrypoint-initdb.d
+      - ../packages/dbup/sql:/docker-entrypoint-initdb.d
     ports:
       - "5433:5432"
     healthcheck:
@@ -29,18 +27,15 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
 
-  # DevSecrin Application
-  devsecrin:
-    build: .
+  # API Service
+  api:
+    build:
+      context: ../
+      dockerfile: apps/api/Dockerfile
     ports:
       - "8000:8000"
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      ollama:
-        condition: service_started
     environment:
+      - PYTHONPATH=/app
       - DATABASE_URL=postgresql://devsecrin:devsecrin@postgres:5432/devsecrin
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=deepseek-r1:1.5b
@@ -48,10 +43,31 @@ services:
       - API_HOST=0.0.0.0
       - API_PORT=8000
     volumes:
-      - ./chroma_store:/app/chroma_store
-      - ./logs:/app/logs
-      - ./.env:/app/.env
-    restart: unless-stopped
+      - ../chroma_store:/app/chroma_store
+      - ../logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Web Service
+  web:
+    build:
+      context: ../
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
 
 volumes:
   postgres_data:
