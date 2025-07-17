@@ -28,7 +28,8 @@ services:
       - OLLAMA_HOST=0.0.0.0
 
   # API Service
-  api:
+  devsecrin-api:
+    image: devsecrin-api:latest
     build:
       context: ../
       dockerfile: apps/api/Dockerfile
@@ -58,14 +59,15 @@ services:
       start_period: 40s
 
   # Web Service
-  web:
+  devsecrin-web:
+    image: devsecrin-web:latest
     build:
       context: ../
       dockerfile: apps/web/Dockerfile
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      - devsecrin-api
     environment:
       - NEXT_PUBLIC_API_URL=http://api:8000
 
