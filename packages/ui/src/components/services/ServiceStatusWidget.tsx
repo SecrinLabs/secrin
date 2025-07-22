@@ -87,7 +87,7 @@ const ServiceStatusButton: React.FC<ServiceStatusButtonProps> = ({
           isConnected &&
           "bg-green-500 hover:bg-green-600 text-white",
         !isConnected && "border-orange-500 text-orange-600",
-        className
+        className,
       )}
     >
       {getStatusIcon()}
@@ -208,7 +208,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         service.status === "running" && "border-green-200 bg-green-50/50",
         service.status === "completed" && "border-blue-200 bg-blue-50/50",
         service.status === "error" && "border-red-200 bg-red-50/50",
-        className
+        className,
       )}
     >
       <div className="flex items-start justify-between">

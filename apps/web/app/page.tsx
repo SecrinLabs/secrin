@@ -42,7 +42,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showThinking, setShowThinking] = useState<{ [key: string]: boolean }>(
-    {}
+    {},
   );
 
   async function handleSend() {

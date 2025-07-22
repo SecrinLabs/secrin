@@ -8,7 +8,7 @@ const toggleIntegration = async (integrationName: string) => {
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   if (!response.ok) {

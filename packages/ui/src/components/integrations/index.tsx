@@ -90,8 +90,8 @@ export function IntegrationButtons({
       prev.map((integration) =>
         integration.name === name
           ? { ...integration, is_connected: !integration.is_connected }
-          : integration
-      )
+          : integration,
+      ),
     );
     changeIntegrationStatus(name); // Call the mutation when toggling
   };
@@ -101,14 +101,14 @@ export function IntegrationButtons({
 
     if (enabledIntegrations.length === 0) {
       toast.error(
-        "Please enable at least one integration before starting embedding."
+        "Please enable at least one integration before starting embedding.",
       );
       return;
     }
 
     try {
       toast.info(
-        `Starting embedding for ${enabledIntegrations.length} integration(s)...`
+        `Starting embedding for ${enabledIntegrations.length} integration(s)...`,
       );
 
       // Start scraping for all enabled integrations
@@ -121,7 +121,7 @@ export function IntegrationButtons({
             },
             onError: (error) => {
               toast.error(
-                `${integration.name} embedding failed: ${error.message}`
+                `${integration.name} embedding failed: ${error.message}`,
               );
               resolve(false);
             },

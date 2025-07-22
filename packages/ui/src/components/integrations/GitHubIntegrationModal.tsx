@@ -67,7 +67,7 @@ export function GitHubIntegrationModal({
               repoUrl,
             },
           }),
-        }
+        },
       );
       if (!response.ok) {
         const data = await response.json();

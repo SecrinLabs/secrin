@@ -11,16 +11,18 @@ DevSecrin operates as an intelligent layer between your development tools and AI
 DevSecrin uses specialized collectors to gather information from various sources:
 
 #### Git Repository Collector
+
 ```python
 # Extracts from Git repositories
 - Commit messages and metadata
-- Code changes and diffs  
+- Code changes and diffs
 - Branch information
 - Author and timestamp data
 - File relationships and dependencies
 ```
 
 **Data Collected**:
+
 - Commit history with full context
 - Code evolution patterns
 - Author contribution patterns
@@ -28,6 +30,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 - Branching and merging patterns
 
 #### Issue Tracker Collector (Jira, GitHub Issues)
+
 ```python
 # Gathers issue and project data
 - Issue descriptions and comments
@@ -38,6 +41,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 ```
 
 **Data Collected**:
+
 - Issue lifecycle and resolution patterns
 - Feature request to implementation mapping
 - Bug report and fix correlations
@@ -45,6 +49,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 - Project milestone progress
 
 #### Documentation Collector (Confluence, Notion, Web)
+
 ```python
 # Scrapes documentation sources
 - Wiki pages and articles
@@ -55,6 +60,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 ```
 
 **Data Collected**:
+
 - Architectural decisions and rationale
 - Process and workflow documentation
 - API specifications and examples
@@ -62,6 +68,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 - Historical decision records
 
 #### Local Repository Analyzer
+
 ```python
 # Analyzes local codebases
 - Code structure and patterns
@@ -72,6 +79,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 ```
 
 **Data Collected**:
+
 - Code organization patterns
 - Dependency relationships
 - Configuration management
@@ -81,6 +89,7 @@ DevSecrin uses specialized collectors to gather information from various sources
 ### 2. Data Processing Pipeline
 
 #### Content Parsing and Normalization
+
 ```python
 class ContentProcessor:
     def parse_commit(self, commit):
@@ -93,7 +102,7 @@ class ContentProcessor:
             'diff': commit.diff,
             'semantic_type': self.classify_commit(commit.message)
         }
-    
+
     def parse_issue(self, issue):
         return {
             'id': issue.number,
@@ -114,18 +123,19 @@ class KnowledgeGraph:
     def build_relationships(self):
         # Code-to-Issue relationships
         self.link_commits_to_issues()
-        
-        # Code-to-Documentation relationships  
+
+        # Code-to-Documentation relationships
         self.link_code_to_docs()
-        
+
         # Author-to-Component relationships
         self.build_expertise_graph()
-        
+
         # Temporal relationships
         self.build_timeline_connections()
 ```
 
 **Graph Entities**:
+
 - **Code Entities**: Files, functions, classes, modules
 - **Issue Entities**: Bugs, features, tasks, epics
 - **People Entities**: Authors, reviewers, assignees
@@ -133,6 +143,7 @@ class KnowledgeGraph:
 - **Time Entities**: Releases, milestones, sprints
 
 **Relationship Types**:
+
 - `FIXES`: Issue → Commit
 - `IMPLEMENTS`: Feature → Code
 - `DOCUMENTS`: Documentation → Code
@@ -148,11 +159,11 @@ All textual content is converted to high-dimensional vectors for semantic search
 class EmbeddingGenerator:
     def __init__(self, model="all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model)
-    
+
     def generate_embeddings(self, texts):
         # Generate semantic embeddings
         embeddings = self.model.encode(texts)
-        
+
         # Store in ChromaDB
         self.vector_store.add(
             documents=texts,
@@ -162,6 +173,7 @@ class EmbeddingGenerator:
 ```
 
 **Embedding Sources**:
+
 - Commit messages and code comments
 - Issue descriptions and comments
 - Documentation content
@@ -173,6 +185,7 @@ class EmbeddingGenerator:
 DevSecrin uses a multi-modal storage approach:
 
 #### PostgreSQL (Structured Data)
+
 ```sql
 -- Core entities and relationships
 CREATE TABLE commits (
@@ -202,6 +215,7 @@ CREATE TABLE relationships (
 ```
 
 #### ChromaDB (Vector Storage)
+
 ```python
 # Vector storage for semantic search
 collection_schema = {
@@ -217,6 +231,7 @@ collection_schema = {
 ```
 
 #### NetworkX Graph (Relationship Storage)
+
 ```python
 # In-memory graph for fast traversal
 knowledge_graph = nx.MultiDiGraph()
@@ -242,18 +257,19 @@ knowledge_graph.add_edge(
 ### 4. AI Pipeline
 
 #### Query Processing
+
 ```python
 class QueryProcessor:
     def process_query(self, query):
         # 1. Intent classification
         intent = self.classify_intent(query)
-        
+
         # 2. Entity extraction
         entities = self.extract_entities(query)
-        
+
         # 3. Generate search strategy
         strategy = self.generate_strategy(intent, entities)
-        
+
         return strategy
 ```
 
@@ -266,20 +282,20 @@ class HybridRetriever:
     def retrieve_context(self, query, strategy):
         # Vector-based semantic search
         semantic_results = self.vector_search(query)
-        
+
         # Graph-based relationship traversal
         graph_results = self.graph_traverse(strategy.entities)
-        
+
         # Structured database queries
         structured_results = self.db_query(strategy.filters)
-        
+
         # Combine and rank results
         context = self.merge_and_rank([
             semantic_results,
-            graph_results, 
+            graph_results,
             structured_results
         ])
-        
+
         return context
 ```
 
@@ -292,6 +308,7 @@ class HybridRetriever:
 5. **Component Search**: Find information about specific code components
 
 #### Context Assembly
+
 ```python
 class ContextAssembler:
     def assemble_context(self, retrieved_items, query):
@@ -302,11 +319,11 @@ class ContextAssembler:
             'author_insights': [],
             'documentation': []
         }
-        
+
         for item in retrieved_items:
             category = self.categorize_item(item)
             context[category].append(item)
-        
+
         # Format for LLM consumption
         return self.format_for_llm(context, query)
 ```
@@ -319,7 +336,7 @@ The assembled context is fed to the local Ollama model:
 class LLMGenerator:
     def generate_response(self, query, context):
         prompt = self.build_prompt(query, context)
-        
+
         response = self.ollama_client.generate(
             model="deepseek-r1:1.5b",
             prompt=prompt,
@@ -329,15 +346,16 @@ class LLMGenerator:
                 'top_p': 0.9
             }
         )
-        
+
         return self.post_process(response)
 ```
 
 **Prompt Structure**:
+
 ```
 System: You are DevSecrin, an AI assistant with deep knowledge of this codebase.
 
-Context: 
+Context:
 {assembled_context}
 
 Query: {user_query}
@@ -354,24 +372,26 @@ Instructions:
 DevSecrin maintains freshness through incremental updates:
 
 #### Change Detection
+
 ```python
 class ChangeDetector:
     def detect_changes(self):
         # Git repository changes
         new_commits = self.git_collector.get_new_commits()
-        
-        # Issue tracker updates  
+
+        # Issue tracker updates
         updated_issues = self.issue_collector.get_updates()
-        
+
         # Documentation changes
         doc_changes = self.doc_collector.get_changes()
-        
+
         return self.prioritize_updates([
             new_commits, updated_issues, doc_changes
         ])
 ```
 
 #### Incremental Processing
+
 ```python
 class IncrementalProcessor:
     def process_updates(self, changes):
@@ -379,14 +399,14 @@ class IncrementalProcessor:
             # Update embeddings
             if change.affects_content:
                 self.update_embeddings(change)
-            
-            # Update graph relationships  
+
+            # Update graph relationships
             if change.affects_relationships:
                 self.update_graph(change)
-            
+
             # Update structured data
             self.update_database(change)
-            
+
             # Notify connected clients
             self.notify_subscribers(change)
 ```
@@ -396,6 +416,7 @@ class IncrementalProcessor:
 DevSecrin exposes its functionality through multiple interfaces:
 
 #### REST API
+
 ```python
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
@@ -405,7 +426,7 @@ async def chat(request: ChatRequest):
         context_limit=request.context_limit,
         sources=request.source_filters
     )
-    
+
     return ChatResponse(
         message=response.text,
         sources=response.sources,
@@ -414,20 +435,22 @@ async def chat(request: ChatRequest):
 ```
 
 #### WebSocket API
+
 ```python
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     await websocket.accept()
-    
+
     async for data in websocket.iter_text():
         query = json.loads(data)
-        
+
         # Stream response in real-time
         async for chunk in pipeline.stream_response(query):
             await websocket.send_text(json.dumps(chunk))
 ```
 
 #### Python SDK
+
 ```python
 from devsecrin import DevSecrinClient
 
@@ -448,18 +471,21 @@ response = client.ask(
 ## Performance Optimizations
 
 ### Caching Strategy
+
 - **Query Result Caching**: Cache frequent queries
 - **Embedding Caching**: Reuse embeddings for duplicate content
 - **Graph Path Caching**: Cache common relationship paths
 - **LLM Response Caching**: Cache responses for identical contexts
 
 ### Batch Processing
+
 - **Embedding Generation**: Process multiple texts simultaneously
 - **Database Operations**: Batch inserts and updates
 - **Graph Updates**: Bulk relationship modifications
 - **Index Maintenance**: Periodic optimization
 
 ### Memory Management
+
 - **Lazy Loading**: Load data on demand
 - **Connection Pooling**: Reuse database connections
 - **Graph Pruning**: Remove stale relationships
@@ -468,19 +494,21 @@ response = client.ask(
 ## Monitoring and Observability
 
 ### Metrics Collection
+
 ```python
 class MetricsCollector:
     def track_query(self, query, response_time, sources_used):
         self.metrics.increment('queries_total')
         self.metrics.histogram('query_duration', response_time)
         self.metrics.counter('sources_accessed', sources_used)
-    
+
     def track_ingestion(self, source_type, items_processed):
         self.metrics.gauge(f'{source_type}_items_processed', items_processed)
         self.metrics.timestamp(f'{source_type}_last_update')
 ```
 
 ### Health Monitoring
+
 - **Database Connectivity**: Monitor database health
 - **Vector Store Status**: Check ChromaDB availability
 - **LLM Responsiveness**: Monitor Ollama response times

@@ -67,7 +67,7 @@ export function DocumentationIntegrationModal({
               docType,
             },
           }),
-        }
+        },
       );
       if (!response.ok) {
         const data = await response.json();

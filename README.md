@@ -7,7 +7,7 @@ DevSecrin connects your Git repositories, issue trackers, and documentation to c
 ## Who it's for 👥
 
 - **Developers** joining new teams or working with unfamiliar codebases
-- **Senior Engineers** looking to share institutional knowledge efficiently  
+- **Senior Engineers** looking to share institutional knowledge efficiently
 - **Team Leads** wanting to improve code review quality and onboarding
 - **Product Managers** seeking to understand technical context behind features
 
@@ -19,7 +19,7 @@ DevSecrin operates as a three-layer system:
 2. **Knowledge Graph**: Builds relationships between code changes, issues, and documentation using AI embeddings and graph analysis
 3. **Intelligent Retrieval**: Combines vector similarity search with graph traversal to provide contextual answers
 
-*For detailed technical architecture, see [docs/architecture.md](docs/architecture.md)*
+_For detailed technical architecture, see [docs/architecture.md](docs/architecture.md)_
 
 ## How to run it 🐳
 
@@ -56,7 +56,7 @@ pnpm run devsecrin
 
 > 🎬 **Demo coming soon** - We're preparing a comprehensive video walkthrough showing DevSecrin in action with a real codebase.
 
-*Want to try it now? Follow the setup instructions above and explore with your own repositories.*
+_Want to try it now? Follow the setup instructions above and explore with your own repositories._
 
 ## Core Features ✨
 
@@ -70,7 +70,7 @@ pnpm run devsecrin
 ## Documentation 📚
 
 - **[Architecture Overview](docs/architecture.md)** - Detailed system design and component interaction
-- **[Use Cases](docs/use-cases.md)** - How DevSecrin helps with onboarding, code review, and debugging  
+- **[Use Cases](docs/use-cases.md)** - How DevSecrin helps with onboarding, code review, and debugging
 - **[How it Works](docs/how-it-works.md)** - AI pipeline, data collectors, and storage schema
 - **[Configuration Guide](.env.example)** - Environment setup and integration configuration
 
@@ -80,7 +80,7 @@ pnpm run devsecrin
 devsecrin/
 ├── apps/
 │   ├── api/          # FastAPI backend
-│   └── web/          # Next.js frontend  
+│   └── web/          # Next.js frontend
 ├── packages/
 │   ├── ai/           # AI and RAG components
 │   ├── db/           # Database models
@@ -94,7 +94,7 @@ devsecrin/
 ## Tech Stack 🛠️
 
 - **Backend**: FastAPI, Python, PostgreSQL, SQLAlchemy
-- **AI/ML**: Ollama, ChromaDB, NetworkX (Knowledge Graph)  
+- **AI/ML**: Ollama, ChromaDB, NetworkX (Knowledge Graph)
 - **Frontend**: Next.js, React, TailwindCSS, TypeScript
 - **Integrations**: GitHub API, Confluence API, Web Scraping
 - **Deployment**: Docker, Docker Compose
@@ -123,4 +123,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ by [SecrinLabs](https://github.com/SecrinLabs) for the developer community**
 
-> *"Every line of code has a story. DevSecrin helps you remember why it was written."*
+> _"Every line of code has a story. DevSecrin helps you remember why it was written."_

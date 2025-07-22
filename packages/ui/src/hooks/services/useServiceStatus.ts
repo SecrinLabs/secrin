@@ -80,7 +80,7 @@ export const useServiceStatus = (enabled: boolean = true) => {
 
 // Hook for real-time WebSocket connection
 export const useServiceWebSocket = (
-  endpoint: "status" | "notifications" | "live"
+  endpoint: "status" | "notifications" | "live",
 ) => {
   const [data, setData] = useState<ServicesData | null>(null);
   const [isConnected, setIsConnected] = useState(false);

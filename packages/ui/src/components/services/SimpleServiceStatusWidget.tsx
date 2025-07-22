@@ -43,7 +43,7 @@ export const SimpleServiceStatusWidget: React.FC<SimpleServiceStatusButtonProps>
         className={cn(
           "fixed bottom-6 right-6 z-50 shadow-lg",
           hasRunningServices && "bg-green-500 hover:bg-green-600 text-white",
-          className
+          className,
         )}
         onClick={() => {
           console.log("Service status:", data);

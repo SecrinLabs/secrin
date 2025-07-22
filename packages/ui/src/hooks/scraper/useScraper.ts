@@ -10,7 +10,7 @@ const startScraping = async (integrationType: string) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type: integrationType }),
-    }
+    },
   );
 
   if (!response.ok) {

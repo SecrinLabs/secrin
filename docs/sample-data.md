@@ -23,16 +23,19 @@ GITHUB_REPO=vscode
 Once DevSecrin is running, try these example queries:
 
 #### Code Understanding
+
 - "What is the main architecture of this project?"
 - "How does the authentication system work?"
 - "What are the recent changes to the API?"
 
 #### Development History
+
 - "Why was feature X implemented this way?"
 - "What issues are related to performance?"
 - "Who are the main contributors to module Y?"
 
 #### Documentation Discovery
+
 - "What documentation exists for getting started?"
 - "How do I contribute to this project?"
 - "What are the coding standards?"
@@ -42,11 +45,13 @@ Once DevSecrin is running, try these example queries:
 For testing DevSecrin, we recommend these public repositories:
 
 1. **Small Projects** (Quick setup):
+
    - `microsoft/calculator`
    - `github/docs`
    - `facebook/create-react-app`
 
 2. **Medium Projects** (Rich context):
+
    - `microsoft/vscode`
    - `facebook/react`
    - `golang/go`
@@ -92,23 +97,26 @@ open http://localhost:3000
 ## Testing Scenarios
 
 ### Scenario 1: New Team Onboarding
+
 1. Set up with a repository you're unfamiliar with
 2. Ask questions about the codebase structure
 3. Explore recent changes and their context
 
 ### Scenario 2: Code Review Context
+
 1. Pick a recent pull request
 2. Ask about the motivation behind changes
 3. Explore related issues and documentation
 
 ### Scenario 3: Bug Investigation
+
 1. Find a closed bug issue
 2. Trace its resolution through commits
 3. Understand the fix and related changes
 
 ## Sample Data Files
 
-*Note: In a full implementation, this directory would contain:*
+_Note: In a full implementation, this directory would contain:_
 
 - `sample_repos.json` - List of recommended test repositories
 - `sample_queries.json` - Curated list of example questions

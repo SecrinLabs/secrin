@@ -63,7 +63,7 @@ export const ServiceStatusButton: React.FC<ServiceStatusButtonProps> = ({
           isConnected &&
           "bg-green-500 hover:bg-green-600 text-white",
         !isConnected && "border-orange-500 text-orange-600",
-        className
+        className,
       )}
     >
       {getStatusIcon()}

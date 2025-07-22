@@ -62,7 +62,7 @@ export function LocalRepoIntegrationModal({
               projectName,
             },
           }),
-        }
+        },
       );
       if (!response.ok) {
         const data = await response.json();

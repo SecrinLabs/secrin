@@ -9,7 +9,7 @@ const startEmbedding = async () => {
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   if (!response.ok) {
