@@ -81,12 +81,6 @@ devsecrin/
 ├── .env.example
 ```
 
-## �️ Dev Tips
-
-- Run `pnpm run devsecrin` to start everything at once
-- Logs and errors are stored in `logs/`
-- Use `.env` to enable/disable integrations (GitHub, Confluence, etc.)
-
 ## 🤝 Contribute
 
 We love feedback and PRs!
