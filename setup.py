@@ -10,8 +10,7 @@ import subprocess
 import shutil
 import platform
 from pathlib import Path
-import json
-import time
+
 from packages.config import get_config
 
 # Load configuration
