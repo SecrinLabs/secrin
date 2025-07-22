@@ -1,17 +1,16 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { endpoints } from "@workspace/ui/lib/config";
+
 const startScraping = async (integrationType: string) => {
-  const response = await fetch(
-    `http://localhost:8000/api/scraper/start-scraper/${integrationType}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ type: integrationType }),
-    }
-  );
+  const response = await fetch(endpoints.scraper(integrationType), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ type: integrationType }),
+  });
 
   if (!response.ok) {
     throw new Error("Failed to start Scraper");

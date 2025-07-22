@@ -31,7 +31,6 @@ class Config:
     def load_environment(self):
         """Load environment variables"""
         # Database Configuration
-        print(os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin"))
         self.database_url = os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin")
         self.database_host = os.getenv("DATABASE_HOST", "localhost")
         self.database_port = int(os.getenv("DATABASE_PORT", "5432"))
@@ -60,6 +59,7 @@ class Config:
         # API Configuration
         self.api_host = os.getenv("API_HOST", "0.0.0.0")
         self.api_port = int(os.getenv("API_PORT", "8000"))
+        self.api_base_url = os.getenv("API_BASE_URL", f"http://{self.api_host}:{self.api_port}")
         self.debug = os.getenv("DEBUG", "false").lower() == "true"
         
         # Performance Configuration

@@ -1,15 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
 
-const toggleIntegration = async (integrationName: string) => {
-  const response = await fetch(
-    `http://localhost:8000/api/integration/toggle?name=${integrationName}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+import { endpoints } from "@workspace/ui/lib/config";
+
+const enableEmbedder = async (integrationName: string) => {
+  const response = await fetch(endpoints.integrationToggle(integrationName), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to Enable Integration");
@@ -20,7 +19,7 @@ const toggleIntegration = async (integrationName: string) => {
 
 export const useEnableEmbedder = () => {
   return useMutation({
-    mutationFn: (integrationType: string) => toggleIntegration(integrationType),
+    mutationFn: (integrationType: string) => enableEmbedder(integrationType),
     onSuccess: (_, integrationType) => {
       console.log("Integration enabled for:", integrationType);
     },

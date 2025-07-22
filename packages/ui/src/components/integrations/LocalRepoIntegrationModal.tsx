@@ -12,6 +12,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { endpoints } from "@workspace/ui/lib/config";
 import { Alert, AlertDescription } from "@workspace/ui/components/alert";
 import { FolderOpen, AlertCircle, Scan } from "lucide-react";
 import { GitLocalConfig } from "@workspace/ui/types/Integration.js";
@@ -48,22 +49,19 @@ export function LocalRepoIntegrationModal({
     setError("");
 
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/integration/update",
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "gitlocal", // or the relevant integration name
-            is_connected: true, // or the actual state
-            config: {
-              repo_path: localPath,
-              localPath,
-              projectName,
-            },
-          }),
-        }
-      );
+      const response = await fetch(endpoints.integrationUpdate, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "gitlocal", // or the relevant integration name
+          is_connected: true, // or the actual state
+          config: {
+            repo_path: localPath,
+            localPath,
+            projectName,
+          },
+        }),
+      });
       if (!response.ok) {
         const data = await response.json();
         setError(data.detail || "Failed to update integration.");

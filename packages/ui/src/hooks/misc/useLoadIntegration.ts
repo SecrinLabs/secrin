@@ -1,8 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { Integration } from "@workspace/ui/types/Integration";
+import { endpoints } from "@workspace/ui/lib/config";
 
 const fetchIntegrations = async (): Promise<Integration[]> => {
-  const response = await fetch(`http://localhost:8000/api/integration`, {
+  const response = await fetch(endpoints.integration, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

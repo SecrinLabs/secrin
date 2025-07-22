@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { endpoints } from "@workspace/ui/lib/config";
+
 // Types for service status
 export interface Service {
   id: string;
@@ -47,7 +49,7 @@ export interface WebSocketMessage {
 
 // Fetch service status via REST API
 const fetchServiceStatus = async (): Promise<ServicesData> => {
-  const response = await fetch("http://localhost:8000/api/status");
+  const response = await fetch(endpoints.status);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch service status: ${response.statusText}`);
@@ -94,7 +96,7 @@ export const useServiceWebSocket = (
     }
 
     try {
-      const wsUrl = `ws://localhost:8000/ws/${endpoint}`;
+      const wsUrl = endpoints.websocket(endpoint);
       const websocket = new WebSocket(wsUrl);
 
       websocket.onopen = () => {

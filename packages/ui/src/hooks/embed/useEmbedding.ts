@@ -1,16 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { endpoints } from "@workspace/ui/lib/config";
+
 const startEmbedding = async () => {
-  const response = await fetch(
-    `http://localhost:8000/api/embed/start-embeding`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const response = await fetch(endpoints.embed, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 
   if (!response.ok) {
     throw new Error("Failed to start Embedding");

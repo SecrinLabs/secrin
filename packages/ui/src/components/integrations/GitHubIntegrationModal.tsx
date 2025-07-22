@@ -12,6 +12,7 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import { endpoints } from "@workspace/ui/lib/config";
 import { Github, Eye, EyeOff } from "lucide-react";
 import { GithubConfig } from "@workspace/ui/types/Integration";
 
@@ -53,22 +54,19 @@ export function GitHubIntegrationModal({
     setError("");
 
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/integration/update",
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "github", // or the relevant integration name
-            is_connected: true, // or the actual state
-            config: {
-              username,
-              token,
-              repoUrl,
-            },
-          }),
-        }
-      );
+      const response = await fetch(endpoints.integrationUpdate, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "github", // or the relevant integration name
+          is_connected: true, // or the actual state
+          config: {
+            username,
+            token,
+            repoUrl,
+          },
+        }),
+      });
       if (!response.ok) {
         const data = await response.json();
         setError(data.detail || "Failed to update integration.");

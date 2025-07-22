@@ -21,8 +21,8 @@ config = get_config()
 
 class TestRunner:
     def __init__(self):
-        self.api_base = "http://localhost:8000"
-        self.frontend_url = "http://localhost:3000"
+        self.api_base = config.api_base_url
+        self.frontend_url = "http://localhost:3000"  # You can add this to config too if needed
         self.passed = 0
         self.failed = 0
         
@@ -260,7 +260,7 @@ def main():
     
     if success:
         print("\n🚀 Next Steps:")
-        print("1. Open http://localhost:3000 in your browser")
+        print(f"1. Open {test_runner.frontend_url} in your browser")
         print("2. Configure your GitHub/Confluence integrations")
         print("3. Start asking questions about your codebase!")
         sys.exit(0)
