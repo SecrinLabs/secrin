@@ -1,6 +1,7 @@
 import threading
 import time
 import uuid
+import asyncio
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 
@@ -99,8 +100,31 @@ def run_in_thread(target, service_name: str, description: str = "", *args, **kwa
             # Register the service
             service_manager.register_service(service_id, service_name, description)
             
-            # Run the actual target function
-            target(*args, **kwargs)
+            # Set up event loop for the thread to handle async operations
+            # This is needed for libraries like ollama that use async HTTP clients
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_closed():
+                    raise RuntimeError("Event loop is closed")
+            except RuntimeError:
+                # No event loop exists in this thread, create a new one
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            
+            try:
+                # Run the actual target function
+                target(*args, **kwargs)
+            finally:
+                # Clean up the event loop if we created it
+                try:
+                    pending = asyncio.all_tasks(loop)
+                    if pending:
+                        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                    if loop.is_running():
+                        loop.stop()
+                except Exception as e:
+                    print(f"⚠️  Warning: Error cleaning up event loop: {e}")
+                
         except Exception as e:
             print(f"❌ Error in service '{service_name}': {str(e)}")
         finally:

@@ -31,12 +31,13 @@ class Config:
     def load_environment(self):
         """Load environment variables"""
         # Database Configuration
-        self.database_url = os.getenv("DATABASE_URL", "postgresql://devsecrin:devsecrin@localhost:5432/devsecrin")
+        print(os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin"))
+        self.database_url = os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin")
         self.database_host = os.getenv("DATABASE_HOST", "localhost")
         self.database_port = int(os.getenv("DATABASE_PORT", "5432"))
         self.database_name = os.getenv("DATABASE_NAME", "devsecrin")
-        self.database_user = os.getenv("DATABASE_USER", "devsecrin")
-        self.database_password = os.getenv("DATABASE_PASSWORD", "devsecrin")
+        self.database_user = os.getenv("DATABASE_USER", "postgres")
+        self.database_password = os.getenv("DATABASE_PASSWORD", "10514912")
         
         # Ollama Configuration
         self.ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
