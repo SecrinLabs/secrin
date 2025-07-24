@@ -7,6 +7,7 @@ from packages.models import engine
 from packages.models.sitemap import Sitemap
 from packages.models.githubissue import Issue
 from packages.models.gitcommit import GitCommit
+from packages.models.integrations import Integration
 from packages.config import get_config
 from ollama import generate
 
@@ -40,103 +41,122 @@ def process_database_documents(embedder, vectorstore):
     # Create a database session
     session = Session(engine)
     
-    # Get documents from sitemap
-    sitemap_docs = session.query(Sitemap).all()
+    # Get connected integrations
+    connected_integrations = session.query(Integration).filter(Integration.is_connected == True).all()
+    connected_integration_names = [integration.name for integration in connected_integrations]
+    
+    print(f"🔗 Connected integrations: {connected_integration_names}")
+    
+    if not connected_integration_names:
+        print("❌ No connected integrations found. Skipping embedding process.")
+        session.close()
+        return
+    
+    # Process sitemap documents only if 'sitemap' integration is connected
+    if 'sitemap' in connected_integration_names:
+        sitemap_docs = session.query(Sitemap).all()
+        for doc in tqdm(sitemap_docs, desc="Processing documentation"):
+            try:
+                doc_id = f"doc_{doc.id}"
+                if vectorstore.document_exists(doc_id):
+                    # Document already exists, skipping...
+                    continue
 
-    for doc in tqdm(sitemap_docs, desc="Processing documentation"):
-        try:
-            doc_id = f"doc_{doc.id}"
-            if vectorstore.document_exists(doc_id):
-                # Document already exists, skipping...
-                continue
+                content = doc.markdown
+                if not content:
+                    continue
 
-            content = doc.markdown
-            if not content:
-                continue
+                embedding = safe_embed(embedder, content)
+                if embedding is None:
+                    continue
+                vectorstore.add_document(
+                    doc_id=doc_id,
+                    embedding=embedding,
+                    document=content,
+                    metadata={"type": "documentation", "url": doc.url, "site": doc.site}
+                )
+            except Exception as e:
+                print(f"❌ Error processing doc {doc.id}: {str(e)}")
+    else:
+        print("⏭️ Skipping sitemap documents - integration not connected")
 
-            embedding = safe_embed(embedder, content)
-            if embedding is None:
-                continue
-            vectorstore.add_document(
-                doc_id=doc_id,
-                embedding=embedding,
-                document=content,
-                metadata={"type": "documentation", "url": doc.url, "site": doc.site}
-            )
-        except Exception as e:
-            print(f"❌ Error processing doc {doc.id}: {str(e)}")
+    # Process GitHub issues only if 'github' integration is connected
+    if 'github' in connected_integration_names:
+        issues = session.query(Issue).all()
+        for issue in tqdm(issues, desc="Processing issues"):
+            try:
+                doc_id = f"issue_{issue.id}"
+                if vectorstore.document_exists(doc_id):
+                    # Issue already exists, skipping...
+                    continue
 
-    # Get issues and their related pull requests
-    issues = session.query(Issue).all()
-    for issue in tqdm(issues, desc="Processing issues"):
-        try:
-            doc_id = f"issue_{issue.id}"
-            if vectorstore.document_exists(doc_id):
-                # Issue already exists, skipping...
-                continue
+                # Combine issue and PR content
+                content = f"Issue: {issue.title}\n\n{issue.body or ''}"
+                if issue.pull_request:
+                    content += f"\n\nPull Request: {issue.pull_request.title}\n\n{issue.pull_request.body or ''}"
+                
+                if not content.strip():
+                    continue
 
-            # Combine issue and PR content
-            content = f"Issue: {issue.title}\n\n{issue.body or ''}"
-            if issue.pull_request:
-                content += f"\n\nPull Request: {issue.pull_request.title}\n\n{issue.pull_request.body or ''}"
-            
-            if not content.strip():
-                continue
+                print(content)
 
-            print(content)
+                embedding = safe_embed(embedder, content)
+                if embedding is None:
+                    continue
+                vectorstore.add_document(
+                    doc_id=doc_id,
+                    embedding=embedding,
+                    document=content,
+                    metadata={
+                        "type": "issue",
+                        "url": issue.url,
+                        "pr_url": issue.pull_request.url if issue.pull_request else None
+                    }
+                )
+            except Exception as e:
+                print(f"❌ Error processing issue {issue.id}: {str(e)}")
+    else:
+        print("⏭️ Skipping GitHub issues - integration not connected")
 
-            embedding = safe_embed(embedder, content)
-            if embedding is None:
-                continue
-            vectorstore.add_document(
-                doc_id=doc_id,
-                embedding=embedding,
-                document=content,
-                metadata={
-                    "type": "issue",
-                    "url": issue.url,
-                    "pr_url": issue.pull_request.url if issue.pull_request else None
-                }
-            )
-        except Exception as e:
-            print(f"❌ Error processing issue {issue.id}: {str(e)}")
+    # Process git commits only if 'gitlocal' or 'github' integration is connected
+    if 'gitlocal' in connected_integration_names or 'github' in connected_integration_names:
+        commits = session.query(GitCommit).all()
+        for commit in tqdm(commits, desc="Processing git commits"):
+            try:
+                doc_id = f"git_{commit.id}"
+                if vectorstore.document_exists(doc_id):
+                    continue
 
-        # Get commits from git_commits table
-    commits = session.query(GitCommit).all()
-    for commit in tqdm(commits, desc="Processing git commits"):
-        try:
-            doc_id = f"git_{commit.id}"
-            if vectorstore.document_exists(doc_id):
-                continue
-
-            content = f"""Commit Message: {commit.message}
+                content = f"""Commit Message: {commit.message}
                 Author: {commit.author}
                 Date: {commit.date}
                 Files Changed: {', '.join(commit.files)}
                 Diff:
                 {commit.diff}"""
 
-            if not content.strip():
-                continue
+                if not content.strip():
+                    continue
 
-            embedding = safe_embed(embedder, content)
-            if embedding is None:
-                continue
+                embedding = safe_embed(embedder, content)
+                if embedding is None:
+                    continue
 
-            vectorstore.add_document(
-                doc_id=doc_id,
-                embedding=embedding,
-                document=content,
-                metadata={
-                    "type": "commit",
-                    "repo": commit.repo_name,
-                    "hash": commit.commit_hash,
-                    "author": commit.author,
-                    "date": str(commit.date)
-                }
-            )
-        except Exception as e:
-            print(f"❌ Error processing commit {commit.id}: {str(e)}")
+                vectorstore.add_document(
+                    doc_id=doc_id,
+                    embedding=embedding,
+                    document=content,
+                    metadata={
+                        "type": "commit",
+                        "repo": commit.repo_name,
+                        "hash": commit.commit_hash,
+                        "author": commit.author,
+                        "date": str(commit.date)
+                    }
+                )
+            except Exception as e:
+                print(f"❌ Error processing commit {commit.id}: {str(e)}")
+    else:
+        print("⏭️ Skipping git commits - neither gitlocal nor github integration connected")
 
             
     session.close()
