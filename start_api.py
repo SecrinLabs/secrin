@@ -12,11 +12,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "packages"))
 
 import uvicorn
-from packages.config import get_config
+from config import settings
 
 def main():
     """Start the API server"""
-    config = get_config()
+    config = settings
     
     print(f"🚀 Starting DevSecrin API server...")
     print(f"📊 Host: {config.api_host}")
