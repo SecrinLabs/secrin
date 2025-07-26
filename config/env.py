@@ -112,7 +112,7 @@ class Settings:
         self.SSL_KEY_FILE = os.getenv("SSL_KEY_FILE")
         
         # Create required directories
-        self._create_directories()
+        # self._create_directories()
     
     def _create_directories(self):
         """Create required directories if they don't exist"""
