@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.routers import scraper, embed, chat, integration, websocket
 from apps.api.utils.monitoring import setup_service_monitoring, get_service_stats
-from packages.config import get_config
+from config import settings
 
-config = get_config()
+config = settings
 
 app = FastAPI(
     title="DevSecRin API",

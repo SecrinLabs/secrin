@@ -6,16 +6,17 @@ from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 import re
 
-from packages.models import engine
-from packages.models.githubissue import PullRequest, Issue  # assumes you have this
+from src.models import engine
+from src.models.Issue import PullRequest, Issue  # assumes you have this
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class GithubScraper:
     GITHUB_API_URL = "https://api.github.com/graphql"
 
-    def __init__(self, token: str, owner_or_url: str, repo: str = ""):
+    def __init__(self, token: str, owner_or_url: str, repo: str = "", limit: int = 100):
         self.token = token
+        self.limit = limit
         
         # If the first parameter is a full GitHub URL, parse it
         if owner_or_url.startswith('http'):
@@ -39,7 +40,6 @@ class GithubScraper:
             "Content-Type": "application/json"
         }
         self.db = SessionLocal()
-        PullRequest.metadata.create_all(bind=engine)  # optional if handled in main
 
     def _parse_github_url(self, url: str) -> Dict[str, str]:
         """Parse GitHub URL to extract owner and repo name."""
@@ -58,11 +58,19 @@ class GithubScraper:
         else:
             raise ValueError(f"Invalid GitHub URL format: {url}")
 
-    def build_query(self) -> str:
+    def build_query(self, after_cursor: str = None) -> str:
+        # GitHub API limits pullRequests to max 100 per request
+        page_size = min(self.limit, 100)
+        after_clause = f', after: "{after_cursor}"' if after_cursor else ''
+        
         return f"""
         {{
           repository(owner: "{self.owner}", name: "{self.repo}") {{
-            pullRequests(first: 100, states: MERGED, orderBy: {{field: UPDATED_AT, direction: DESC}}) {{
+            pullRequests(first: {page_size}{after_clause}, states: MERGED, orderBy: {{field: UPDATED_AT, direction: DESC}}) {{
+              pageInfo {{
+                hasNextPage
+                endCursor
+              }}
               nodes {{
                 number
                 title
@@ -99,40 +107,66 @@ class GithubScraper:
 
 
     def fetch_data(self) -> List[Dict[str, Any]]:
-        response = requests.post(self.GITHUB_API_URL, headers=self.headers, json={"query": self.build_query()})
+        all_pull_requests = []
+        after_cursor = None
+        fetched_count = 0
         
-        if response.status_code != 200:
-            print("❌ Query failed:", response.status_code)
-            print(response.text)
-            return []
+        while fetched_count < self.limit:
+            # Calculate how many more records we need
+            remaining = self.limit - fetched_count
+            page_size = min(remaining, 100)  # GitHub's max limit per request
+            
+            response = requests.post(self.GITHUB_API_URL, headers=self.headers, json={"query": self.build_query(after_cursor)})
+            
+            if response.status_code != 200:
+                print("❌ Query failed:", response.status_code)
+                print(response.text)
+                break
 
-        try:
-            response_data = response.json()
-            
-            # Check if the response has errors
-            if "errors" in response_data:
-                print("❌ GraphQL errors:", response_data["errors"])
-                return []
-            
-            # Check if the expected data structure exists
-            if ("data" not in response_data or 
-                "repository" not in response_data["data"] or 
-                response_data["data"]["repository"] is None):
-                print("❌ Repository not found or access denied")
-                print("Response:", response_data)
-                return []
-            
-            if ("pullRequests" not in response_data["data"]["repository"] or
-                "nodes" not in response_data["data"]["repository"]["pullRequests"]):
-                print("❌ No pull requests found")
-                return []
-            
-            return response_data["data"]["repository"]["pullRequests"]["nodes"]
-            
-        except Exception as e:
-            print("❌ Error parsing response:", str(e))
-            print("Response text:", response.text)
-            return []
+            try:
+                response_data = response.json()
+                
+                # Check if the response has errors
+                if "errors" in response_data:
+                    print("❌ GraphQL errors:", response_data["errors"])
+                    break
+                
+                # Check if the expected data structure exists
+                if ("data" not in response_data or 
+                    "repository" not in response_data["data"] or 
+                    response_data["data"]["repository"] is None):
+                    print("❌ Repository not found or access denied")
+                    print("Response:", response_data)
+                    break
+                
+                if ("pullRequests" not in response_data["data"]["repository"] or
+                    "nodes" not in response_data["data"]["repository"]["pullRequests"]):
+                    print("❌ No pull requests found")
+                    break
+                
+                pull_requests_data = response_data["data"]["repository"]["pullRequests"]
+                nodes = pull_requests_data["nodes"]
+                page_info = pull_requests_data["pageInfo"]
+                
+                # Add the nodes to our collection
+                all_pull_requests.extend(nodes)
+                fetched_count += len(nodes)
+                
+                print(f"📦 Fetched {len(nodes)} PRs (Total: {fetched_count}/{self.limit})")
+                
+                # Check if we have more pages and haven't reached our limit
+                if not page_info["hasNextPage"] or fetched_count >= self.limit:
+                    break
+                    
+                after_cursor = page_info["endCursor"]
+                
+            except Exception as e:
+                print("❌ Error parsing response:", str(e))
+                print("Response text:", response.text)
+                break
+        
+        # Return only the number of items requested
+        return all_pull_requests[:self.limit]
     
     def safe_parse_datetime(self, dt_str: Optional[str]) -> Optional[datetime]:
         if not dt_str or not dt_str.strip():
@@ -144,42 +178,42 @@ class GithubScraper:
 
     def _save_to_db(self, pr_data: Dict[str, Any]):
         pr_number = pr_data["number"]
-        pr = self.db.query(PullRequest).filter_by(number=pr_number).first()
+        pr = self.db.query(PullRequest).filter_by(Number=pr_number).first()
 
         merged_at = self.safe_parse_datetime(pr_data.get("mergedAt"))
 
         diff = self.fetch_diff(pr_number)
         if not pr:
             pr = PullRequest(
-                number=pr_number,
-                title=pr_data["title"],
-                url=pr_data["url"],
-                merged_at=merged_at,
-                body= pr_data["body"],
-                diff=diff
+                Number=pr_number,
+                Title=pr_data["title"],
+                Url=pr_data["url"],
+                MergedAt=merged_at,
+                Body= pr_data["body"],
+                Diff=diff
             )
             self.db.add(pr)
             print(f"✅ Inserted PR #{pr_number}")
         else:
-            pr.title = pr_data["title"]
-            pr.url = pr_data["url"]
-            pr.merged_at = merged_at
-            pr.body = pr_data["body"]
-            pr.diff = diff
+            pr.Title = pr_data["title"]
+            pr.Url = pr_data["url"]
+            pr.MergedAt = merged_at
+            pr.Body = pr_data["body"]
+            pr.Diff = diff
             print(f"♻️ Updated PR #{pr_number}")
 
         # Clear and re-add issues (idempotent behavior)
-        pr.closing_issues.clear()
+        pr.ClosedIssue.clear()
 
         for issue_data in pr_data["closingIssuesReferences"]["nodes"]:
             issue_closed_at = self.safe_parse_datetime(issue_data.get("closedAt"))
             issue = Issue(
-                number=issue_data["number"],
-                title=issue_data["title"],
-                url=issue_data["url"],
-                closed_at=issue_closed_at,
-                body=issue_data["body"],
-                pull_request=pr
+                Number=issue_data["number"],
+                Title=issue_data["title"],
+                Url=issue_data["url"],
+                ClosedAt=issue_closed_at,
+                Body=issue_data["body"],
+                PR=pr
             )
             self.db.add(issue)
 

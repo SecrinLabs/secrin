@@ -49,3 +49,5 @@ __pycache__/
 
 # logs folder
 logs/
+
+.vscode

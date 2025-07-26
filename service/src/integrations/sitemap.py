@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 from markdownify import markdownify as md
 from sqlalchemy.orm import sessionmaker
 
-from packages.models.sitemap import Sitemap
-from packages.models import engine
+from src.models.Sitemap import Sitemap
+from src.models import engine
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -53,17 +53,17 @@ class SitemapScraper:
         
     def _save_to_db(self, url: str, markdown: str):
         slug = self._slugify(url)
-        existing = self.db.query(Sitemap).filter_by(url=url).first()
+        existing = self.db.query(Sitemap).filter_by(URL=url).first()
 
         if existing:
-            existing.markdown = markdown
+            existing.Markdown = markdown
             print(f"♻️ Updated: {slug}")
         else:
             new_doc = Sitemap(
-                site=self.site_name,
-                url=url,
-                slug=slug,
-                markdown=markdown
+                Site=self.site_name,
+                URL=url,
+                Slug=slug,
+                Markdown=markdown
             )
             self.db.add(new_doc)
             print(f"✅ Inserted: {slug}")

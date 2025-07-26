@@ -2,7 +2,7 @@ import os
 import psycopg2
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin")
-base_path = "./packages/dbup/sql/"
+base_path = os.path.join(os.path.dirname(__file__), "sql")
 
 def ensure_migrations_table(conn):
     with conn.cursor() as cur:
@@ -43,7 +43,7 @@ def main():
 
     for file in all_files:
         if file not in applied:
-            apply_migration(conn, base_path + file)
+            apply_migration(conn, os.path.join(base_path, file))
         else:
             print(f"⏭️  Skipping {file} (already applied)")
 

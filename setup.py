@@ -11,10 +11,10 @@ import shutil
 import platform
 from pathlib import Path
 
-from packages.config import get_config
+from config import settings
 
 # Load configuration
-config = get_config()
+config = settings
 
 class Colors:
     BLUE = '\033[94m'

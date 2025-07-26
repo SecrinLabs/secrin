@@ -14,10 +14,10 @@ from pathlib import Path
 # Add the packages directory to the path
 sys.path.insert(0, str(Path(__file__).parent / "packages"))
 
-from packages.config import get_config
+from config import settings
 
 # Load configuration
-config = get_config()
+config = settings
 
 class TestRunner:
     def __init__(self):
