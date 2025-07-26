@@ -1,5 +1,5 @@
-from service.src.integrations.sitemap import SitemapScraper
-from service.src.integrations.github import GithubScraper
+from src.integrations.sitemap import SitemapScraper
+from src.integrations.github import GithubScraper
 
 class ScraperFactory:
     @staticmethod

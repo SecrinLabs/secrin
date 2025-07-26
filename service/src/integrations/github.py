@@ -6,8 +6,8 @@ from datetime import datetime
 from sqlalchemy.orm import sessionmaker
 import re
 
-from service.src.models import engine
-from service.src.models.Issue import PullRequest, Issue  # assumes you have this
+from src.models import engine
+from src.models.Issue import PullRequest, Issue  # assumes you have this
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

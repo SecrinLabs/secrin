@@ -1,7 +1,7 @@
-from service.src.factory import ScraperFactory
-from service.src.db import SessionLocal
-from service.src.models.Integration import Integration
-from service.src.models import Base, engine
+from src.factory import ScraperFactory
+from src.db import SessionLocal
+from src.models.Integration import Integration
+from src.models import Base, engine
 
 def run_all_scrapers():
     # Create tables if not exist
