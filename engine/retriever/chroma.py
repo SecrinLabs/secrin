@@ -2,10 +2,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 from typing import List, Dict, Optional
 from .base import VectorStore
-from config.env import get_config
-
-config = get_config()
-
+from config import settings as config
 class ChromaVectorStore(VectorStore):
     def __init__(self, collection_name=None, db_path=None):
         # Use config defaults if not provided

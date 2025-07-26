@@ -13,9 +13,9 @@ from retriever.factory import get_vectorstore
 from service.src.models import engine
 from service.src.models.Sitemap import Sitemap
 from service.src.models.Issue import Issue
-from config.env import get_config
+from config import settings
 
-config = get_config()
+config = settings
 
 @dataclass
 class GraphNode:
@@ -251,7 +251,7 @@ class GraphBasedRAG:
                     )
                     
             except Exception as e:
-                print(f"❌ Error processing doc {doc.id}: {str(e)}")
+                print(f"❌ Error processing doc {doc.Id}: {str(e)}")
         
         # Process issues and PRs
         print("🐛 Processing issues and PRs...")
@@ -289,9 +289,9 @@ class GraphBasedRAG:
                     )
                 
                 # Process related PR if exists
-                if issue.pull_request:
-                    pr_id = f"pr_{issue.PRID}"
-                    pr_content = f"Pull Request: {issue.PR.Title}\n\n{issue.PR.body or ''}"
+                if issue.PR:
+                    pr_id = f"pr_{issue.PR.Id}"
+                    pr_content = f"Pull Request: {issue.PR.Title}\n\n{issue.PR.Body or ''}"
                     
                     pr_embedding = self.safe_embed(pr_content)
                     
@@ -301,8 +301,8 @@ class GraphBasedRAG:
                         content=pr_content,
                         embedding=pr_embedding,
                         metadata={
-                            "url": issue.PR.url,
-                            "title": issue.PR.title,
+                            "url": issue.PR.Url,
+                            "title": issue.PR.Title,
                             "state": getattr(issue.PR, 'state', 'unknown'),
                             "references": self.extract_references(pr_content)
                         }
@@ -331,7 +331,7 @@ class GraphBasedRAG:
                     self.knowledge_graph.add_edge(edge)
                     
             except Exception as e:
-                print(f"❌ Error processing issue {issue.id}: {str(e)}")
+                print(f"❌ Error processing issue {issue.Id}: {str(e)}")
         
         # Process commits
 #         print("🔨 Processing commits...")
@@ -477,13 +477,13 @@ class GraphBasedRAG:
         """Determine if relationship should be created between node types"""
         # Define allowed relationship patterns
         allowed_patterns = {
-            ('commit', 'issue'),
-            ('commit', 'pr'),
+            #('commit', 'issue'),
+            #('commit', 'pr'),
             ('issue', 'pr'),
             ('doc', 'issue'),
             ('doc', 'pr'),
-            ('doc', 'commit'),
-            ('commit', 'commit'),  # Same author relationships
+            #('doc', 'commit'),
+            #('commit', 'commit'),  # Same author relationships
             ('issue', 'issue'),    # Related issues
         }
         
