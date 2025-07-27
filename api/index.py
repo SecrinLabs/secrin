@@ -2,13 +2,13 @@ import sys
 import os
 
 # Append root directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from apps.api.routers import scraper, embed, chat, integration, websocket
-from apps.api.utils.monitoring import setup_service_monitoring, get_service_stats
+from api.routers import scraper, embed, chat, integration, websocket
+from api.utils.monitoring import setup_service_monitoring, get_service_stats
 from config import settings
 
 config = settings
@@ -37,11 +37,11 @@ def read_root():
         "message": "DevSecRin API",
         "version": "1.0.0",
         "endpoints": {
-            "scraper": "/api/scraper",
-            "embed": "/api/embed", 
+            # "scraper": "/api/scraper",
+            # "embed": "/api/embed", 
             "chat": "/api/chat",
-            "integration": "/api/integration",
-            "websocket": "/ws",
+            # "integration": "/api/integration",
+            # "websocket": "/ws",
             "status": "/api/status",
             "health": "/health"
         }
@@ -64,8 +64,8 @@ def health_check():
     }
 
 # Include routers
-app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
-app.include_router(embed.router, prefix="/api/embed", tags=["embed"])
+# app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
+# app.include_router(embed.router, prefix="/api/embed", tags=["embed"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-app.include_router(integration.router, prefix="/api/integration", tags=["integration"])
-app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
+# app.include_router(integration.router, prefix="/api/integration", tags=["integration"])
+# app.include_router(websocket.router, prefix="/ws", tags=["websocket"])

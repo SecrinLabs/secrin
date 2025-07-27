@@ -1,5 +1,7 @@
 import time
 import re
+import os
+import pickle
 from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from tqdm import tqdm
@@ -8,8 +10,8 @@ from ollama import generate
 import networkx as nx
 import json
 
-from embeddings.factory import get_embedder
-from retriever.factory import get_vectorstore
+from .embeddings.factory import get_embedder
+from .retriever.factory import get_vectorstore
 from service.src.models import engine
 from service.src.models.Sitemap import Sitemap
 from service.src.models.Issue import Issue
@@ -123,14 +125,49 @@ class KnowledgeGraph:
             return [self.nodes[nid] for nid in path if nid in self.nodes]
         except nx.NetworkXNoPath:
             return []
+    
+    def save_to_disk(self, filepath: str):
+        """Save knowledge graph to disk"""
+        try:
+            graph_data = {
+                'nodes': self.nodes,
+                'edges': self.edges,
+                'graph': self.graph
+            }
+            with open(filepath, 'wb') as f:
+                pickle.dump(graph_data, f)
+            print(f"✅ Knowledge graph saved to {filepath}")
+        except Exception as e:
+            print(f"❌ Error saving knowledge graph: {str(e)}")
+    
+    def load_from_disk(self, filepath: str) -> bool:
+        """Load knowledge graph from disk"""
+        try:
+            if not os.path.exists(filepath):
+                return False
+                
+            with open(filepath, 'rb') as f:
+                graph_data = pickle.load(f)
+            
+            self.nodes = graph_data['nodes']
+            self.edges = graph_data['edges'] 
+            self.graph = graph_data['graph']
+            
+            print(f"✅ Knowledge graph loaded from {filepath}")
+            print(f"📊 Loaded {len(self.nodes)} nodes and {len(self.edges)} edges")
+            return True
+        except Exception as e:
+            print(f"❌ Error loading knowledge graph: {str(e)}")
+            return False
 
 class GraphBasedRAG:
     """Enhanced RAG system with graph-based context retrieval"""
     
-    def __init__(self, embedder, vectorstore):
+    def __init__(self, embedder, vectorstore, graph_cache_path="./chroma_store/knowledge_graph.pkl"):
         self.embedder = embedder
         self.vectorstore = vectorstore
         self.knowledge_graph = KnowledgeGraph()
+        self.graph_cache_path = graph_cache_path
         
     def safe_embed(self, text: str) -> Optional[List[float]]:
         """Safely embed text with error handling"""
@@ -206,11 +243,26 @@ class GraphBasedRAG:
         
         return len(intersection) / len(union) if union else 0.0
     
-    def build_knowledge_graph(self):
+    def build_knowledge_graph(self, force_rebuild=False):
         """Build the knowledge graph from database"""
+        # If not forcing rebuild, try to load from cache first
+        if not force_rebuild:
+            # Try to load from cache
+            if self.knowledge_graph.load_from_disk(self.graph_cache_path):
+                # Successfully loaded from cache, check if we need to rebuild anyway
+                if not self.should_rebuild_graph():
+                    print("✅ Using cached knowledge graph")
+                    return
+                else:
+                    print("🔄 Rebuilding knowledge graph due to data changes...")
+            # If loading failed or rebuild needed, continue to build
+        
         session = Session(engine)
         
         print("🔗 Building knowledge graph...")
+        
+        # Clear existing graph
+        self.knowledge_graph = KnowledgeGraph()
         
         # Process documentation
         print("📄 Processing documentation...")
@@ -384,6 +436,51 @@ class GraphBasedRAG:
         
         session.close()
         print(f"✅ Knowledge graph built with {len(self.knowledge_graph.nodes)} nodes and {len(self.knowledge_graph.edges)} edges")
+        
+        # Save to cache
+        os.makedirs(os.path.dirname(self.graph_cache_path), exist_ok=True)
+        self.knowledge_graph.save_to_disk(self.graph_cache_path)
+    
+    def should_rebuild_graph(self) -> bool:
+        """Check if knowledge graph should be rebuilt based on data freshness"""
+        try:
+            if not os.path.exists(self.graph_cache_path):
+                return True  # No cache exists, need to build
+                
+            # Check cache age (rebuild if older than 24 hours)
+            cache_age = time.time() - os.path.getmtime(self.graph_cache_path)
+            if cache_age > 24 * 3600:  # 24 hours
+                print("🕐 Cache is older than 24 hours, rebuilding...")
+                return True
+                
+            # Check if database has new content
+            session = Session(engine)
+            try:
+                # Quick count of documents and issues
+                doc_count = session.query(Sitemap).count()
+                issue_count = session.query(Issue).count()
+                
+                # Count PRs (they are linked to issues, so approximately equal to issues)
+                # Estimate total expected nodes: docs + issues + PRs (roughly same as issues)
+                expected_nodes = doc_count + (issue_count * 2)  # issues + approx same number of PRs
+                
+                # Check if counts have changed significantly
+                current_nodes = len(self.knowledge_graph.nodes)
+                
+                # Allow 20% variance for PR variations
+                threshold = max(20, int(expected_nodes * 0.2))
+                
+                if abs(current_nodes - expected_nodes) > threshold:
+                    print(f"📊 Data size changed significantly ({current_nodes} vs ~{expected_nodes} expected, threshold: {threshold}), rebuilding...")
+                    return True
+                    
+            finally:
+                session.close()
+                
+            return False
+        except Exception as e:
+            print(f"⚠️ Error checking rebuild status: {str(e)}")
+            return True  # Err on the side of rebuilding
     
     def build_reference_index(self) -> Dict[str, Set[str]]:
         """Build reference index for efficient relationship discovery"""
@@ -603,12 +700,15 @@ class GraphBasedRAG:
     
     def query_with_graph_context(self, question: str, n_results: int = 3) -> str:
         """Enhanced query with graph-based context"""
+        start_time = time.time()
         # Get initial results from vectorstore
+        start_embed = time.time()
         query_embedding = self.safe_embed(question)
         if query_embedding is None:
             return "❌ Could not generate embedding for your question."
-        
+        print(f"Embedding took {time.time() - start_embed:.2f} seconds")
         # Get similar documents
+        start_doc_search = time.time()
         try:
             results = self.vectorstore.query(query_embedding, n_results=n_results)
             if isinstance(results, dict) and 'documents' in results:
@@ -623,14 +723,14 @@ class GraphBasedRAG:
         except Exception as e:
             print(f"❌ Vectorstore query error: {str(e)}")
             return "❌ Error querying the knowledge base."
-        
+        print(f"Doc Search took {time.time() - start_doc_search:.2f} seconds")
         if not documents:
             return "The available sources do not contain the answer."
         
         # Enhance with graph context
         enhanced_context = []
         graph_metadata = []
-        
+        get_nodes = time.time()
         for i, doc in enumerate(documents):
             enhanced_context.append(doc)
             
@@ -652,7 +752,7 @@ class GraphBasedRAG:
                             'relationship': 'connected',
                             'metadata': connected_node.metadata
                         })
-        
+        print(f"nodes took {time.time() - get_nodes:.2f} seconds")
         context = "\n\n---\n\n".join(enhanced_context)
         
         # Enhanced prompt with graph context
@@ -707,7 +807,9 @@ The following context includes both directly relevant documents and related item
 """
         
         try:
-            response = generate(model=config.OLLAMA_MODEL, prompt=prompt)
+            chat_res = time.time()
+            response = generate(model=config.OLLAMA_MODEL, prompt=prompt, think=False)
+            print(f"chat took {time.time() - chat_res:.2f} seconds")
             return response["response"]
         except Exception as e:
             print(f"❌ Error generating response: {str(e)}")
@@ -766,6 +868,23 @@ def run_graph_embedder():
     graph_rag = GraphBasedRAG(embedder, vectorstore)
     graph_rag.build_knowledge_graph()
 
+def rebuild_knowledge_graph():
+    """Force rebuild the knowledge graph (useful when data changes)"""
+    embedder = get_embedder("ollama")
+    vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
+    graph_rag = GraphBasedRAG(embedder, vectorstore)
+    graph_rag.build_knowledge_graph(force_rebuild=True)
+    print("🎉 Knowledge graph rebuilt successfully!")
+
+def clear_knowledge_graph_cache():
+    """Clear the knowledge graph cache"""
+    cache_path = "./chroma_store/knowledge_graph.pkl"
+    if os.path.exists(cache_path):
+        os.remove(cache_path)
+        print("🗑️ Knowledge graph cache cleared!")
+    else:
+        print("ℹ️ No cache file found to clear.")
+
 # Legacy functions for backward compatibility
 def run_generator(question):
     return run_graph_generator(question)
@@ -775,5 +894,3 @@ def run_embedder():
 
 def create_chatbot(embedder, vectorstore):
     return create_graph_chatbot(embedder, vectorstore)
-
-run_embedder()

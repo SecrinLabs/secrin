@@ -4,9 +4,10 @@ WebSocket Service Status Integration
 This module provides easy integration between the service manager and WebSocket notifications.
 It handles the setup and configuration of real-time service monitoring.
 """
-
-from apps.api.utils.threading import service_manager
-from apps.api.utils.websocket import (
+import uuid
+        
+from api.utils.threading import service_manager
+from api.utils.websocket import (
     connection_manager, 
     service_notification_manager,
     create_service_notification_callback
@@ -93,8 +94,6 @@ class ServiceMonitor:
     
     async def __aenter__(self):
         """Start monitoring the service."""
-        import uuid
-        from apps.api.utils.threading import service_manager
         
         self.service_id = str(uuid.uuid4())
         service_manager.register_service(self.service_id, self.service_name, self.description)

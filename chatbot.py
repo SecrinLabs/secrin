@@ -1,11 +1,11 @@
-from packages.ai.newindex import get_embedder, get_vectorstore, GraphBasedRAG, create_chatbot
+from engine.embeddings.factory import get_embedder
+from engine.retriever.factory import get_vectorstore
+from engine.main import GraphBasedRAG, create_chatbot
 from config import settings
 
 config = settings
 
 embedder = get_embedder("ollama")
-vectorstore = get_vectorstore("chroma", collection_name=config.chroma_collection_name)
-graph_rag = GraphBasedRAG(embedder, vectorstore)
-graph_rag.build_knowledge_graph()
+vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
 
 create_chatbot(embedder, vectorstore)
