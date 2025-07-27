@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from tqdm import tqdm
 from sqlalchemy.orm import Session
-from ollama import generate
+from ollama import generate, chat
 import networkx as nx
 import json
 
@@ -700,12 +700,15 @@ class GraphBasedRAG:
     
     def query_with_graph_context(self, question: str, n_results: int = 3) -> str:
         """Enhanced query with graph-based context"""
+        start_time = time.time()
         # Get initial results from vectorstore
+        start_embed = time.time()
         query_embedding = self.safe_embed(question)
         if query_embedding is None:
             return "❌ Could not generate embedding for your question."
-        
+        print(f"Embedding took {time.time() - start_embed:.2f} seconds")
         # Get similar documents
+        start_doc_search = time.time()
         try:
             results = self.vectorstore.query(query_embedding, n_results=n_results)
             if isinstance(results, dict) and 'documents' in results:
@@ -720,14 +723,14 @@ class GraphBasedRAG:
         except Exception as e:
             print(f"❌ Vectorstore query error: {str(e)}")
             return "❌ Error querying the knowledge base."
-        
+        print(f"Doc Search took {time.time() - start_doc_search:.2f} seconds")
         if not documents:
             return "The available sources do not contain the answer."
         
         # Enhance with graph context
         enhanced_context = []
         graph_metadata = []
-        
+        get_nodes = time.time()
         for i, doc in enumerate(documents):
             enhanced_context.append(doc)
             
@@ -749,7 +752,7 @@ class GraphBasedRAG:
                             'relationship': 'connected',
                             'metadata': connected_node.metadata
                         })
-        
+        print(f"nodes took {time.time() - get_nodes:.2f} seconds")
         context = "\n\n---\n\n".join(enhanced_context)
         
         # Enhanced prompt with graph context
@@ -803,8 +806,17 @@ The following context includes both directly relevant documents and related item
 ### ✅ Answer:
 """
         
+        message = [
+            {
+            "role": "user",
+            "content": "what is the weather in tokyo?"
+            }
+        ]
+        
         try:
-            response = generate(model=config.OLLAMA_MODEL, prompt=prompt)
+            chat_res = time.time()
+            response = chat(model=config.OLLAMA_MODEL, messages=message)
+            print(f"chat took {time.time() - chat_res:.2f} seconds")
             return response["response"]
         except Exception as e:
             print(f"❌ Error generating response: {str(e)}")
