@@ -7,7 +7,5 @@ config = settings
 
 embedder = get_embedder("ollama")
 vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
-graph_rag = GraphBasedRAG(embedder, vectorstore)
-graph_rag.build_knowledge_graph()
 
 create_chatbot(embedder, vectorstore)

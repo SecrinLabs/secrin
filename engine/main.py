@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass
 from tqdm import tqdm
 from sqlalchemy.orm import Session
-from ollama import generate, chat
+from ollama import generate
 import networkx as nx
 import json
 
@@ -806,16 +806,9 @@ The following context includes both directly relevant documents and related item
 ### ✅ Answer:
 """
         
-        message = [
-            {
-            "role": "user",
-            "content": "what is the weather in tokyo?"
-            }
-        ]
-        
         try:
             chat_res = time.time()
-            response = chat(model=config.OLLAMA_MODEL, messages=message)
+            response = generate(model=config.OLLAMA_MODEL, prompt=prompt, think=False)
             print(f"chat took {time.time() - chat_res:.2f} seconds")
             return response["response"]
         except Exception as e:
