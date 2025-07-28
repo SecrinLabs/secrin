@@ -49,6 +49,9 @@ class Settings:
         self.OLLAMA_GPU_LAYERS = int(os.getenv("OLLAMA_GPU_LAYERS", "35"))
         self.MAX_TOKENS = int(os.getenv("MAX_TOKENS", "2048"))
         self.TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+
+        # Gemini AI Configurations
+        self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
         
         # ChromaDB Configuration
         self.CHROMA_PERSIST_DIRECTORY = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_store")
