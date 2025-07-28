@@ -163,7 +163,7 @@ class KnowledgeGraph:
 class GraphBasedRAG:
     """Enhanced RAG system with graph-based context retrieval"""
     
-    def __init__(self, embedder, vectorstore, graph_cache_path="./chroma_store/knowledge_graph.pkl"):
+    def __init__(self, embedder, vectorstore, graph_cache_path=f"./{config.CHROMA_PERSIST_DIRECTORY}/knowledge_graph.pkl"):
         self.embedder = embedder
         self.vectorstore = vectorstore
         self.knowledge_graph = KnowledgeGraph()
@@ -855,7 +855,7 @@ def create_graph_chatbot(embedder, vectorstore):
 
 def run_graph_generator(question):
     """Run the graph-enhanced generator"""
-    embedder = get_embedder("ollama")
+    embedder = get_embedder("gemini")
     vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
     graph_rag = GraphBasedRAG(embedder, vectorstore)
     graph_rag.build_knowledge_graph()
@@ -863,7 +863,7 @@ def run_graph_generator(question):
 
 def run_graph_embedder():
     """Run the graph-enhanced embedder"""
-    embedder = get_embedder("ollama")
+    embedder = get_embedder("gemini")
     vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
     graph_rag = GraphBasedRAG(embedder, vectorstore)
     graph_rag.build_knowledge_graph()

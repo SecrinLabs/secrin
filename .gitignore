@@ -35,8 +35,9 @@ npm-debug.log*
 .DS_Store
 *.pem
 
-# chroma store
+# stores knowledge
 chroma_store
+gemini_store
 
 # python environment
 venv
