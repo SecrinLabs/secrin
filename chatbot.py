@@ -5,7 +5,7 @@ from config import settings
 
 config = settings
 
-embedder = get_embedder("ollama")
+embedder = get_embedder(config.EMBEDDER_NAME)
 vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
 
 create_chatbot(embedder, vectorstore)

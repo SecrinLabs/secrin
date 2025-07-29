@@ -32,7 +32,9 @@ services:
     image: devsecrin-api:latest
     build:
       context: ../
-      dockerfile: apps/api/Dockerfile
+      dockerfile: infra/Dockerfile
+    env_file:
+      - ../.env
     ports:
       - "8000:8000"
     environment:
@@ -40,11 +42,13 @@ services:
       - DATABASE_URL=postgresql://devsecrin:devsecrin@postgres:5432/devsecrin
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=deepseek-r1:1.5b
-      - CHROMA_PERSIST_DIRECTORY=/app/chroma_store
+      - CHROMA_PERSIST_DIRECTORY=/app/gemini_store
       - API_HOST=0.0.0.0
       - API_PORT=8000
+      - EMBEDDER_NAME=${EMBEDDER_NAME}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
-      - ../chroma_store:/app/chroma_store
+      - ../gemini_store:/app/gemini_store
       - ../logs:/app/logs
     depends_on:
       postgres:
@@ -57,19 +61,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-  # Web Service
-  devsecrin-web:
-    image: devsecrin-web:latest
-    build:
-      context: ../
-      dockerfile: apps/web/Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - devsecrin-api
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api:8000
 
 volumes:
   postgres_data:
