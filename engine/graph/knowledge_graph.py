@@ -8,6 +8,10 @@ from typing import Dict, List
 
 from .models import GraphNode, GraphEdge
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
 
 class KnowledgeGraph:
     """Graph-based knowledge system for RAG"""
@@ -99,9 +103,9 @@ class KnowledgeGraph:
             }
             with open(filepath, 'wb') as f:
                 pickle.dump(graph_data, f)
-            print(f"✅ Knowledge graph saved to {filepath}")
+            logger.info(f"✅ Knowledge graph saved to {filepath}")
         except Exception as e:
-            print(f"❌ Error saving knowledge graph: {str(e)}")
+            logger.error(f"❌ Error saving knowledge graph: {str(e)}")
     
     def load_from_disk(self, filepath: str) -> bool:
         """Load knowledge graph from disk"""
@@ -116,9 +120,9 @@ class KnowledgeGraph:
             self.edges = graph_data['edges'] 
             self.graph = graph_data['graph']
             
-            print(f"✅ Knowledge graph loaded from {filepath}")
-            print(f"📊 Loaded {len(self.nodes)} nodes and {len(self.edges)} edges")
+            logger.info(f"✅ Knowledge graph loaded from {filepath}")
+            logger.debug(f"📊 Loaded {len(self.nodes)} nodes and {len(self.edges)} edges")
             return True
         except Exception as e:
-            print(f"❌ Error loading knowledge graph: {str(e)}")
+            logger.error(f"❌ Error loading knowledge graph: {str(e)}")
             return False

@@ -5,6 +5,11 @@ from typing import List, Union
 
 from ..base import Embedder
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
+
 class GeminiEmbedder(Embedder):
     def __init__(self, model: str = "gemini-embedding-001"):
         self.model = model
@@ -57,7 +62,7 @@ class GeminiEmbedder(Embedder):
                 if is_rate_limit_error and attempt < max_retries:
                     # Calculate delay with exponential backoff
                     delay = base_delay * (2 ** attempt)
-                    print(f"Rate limit exceeded. Waiting {delay} seconds before retry {attempt + 1}/{max_retries}...")
+                    logger.warning(f"Rate limit exceeded. Waiting {delay} seconds before retry {attempt + 1}/{max_retries}...")
                     time.sleep(delay)
                     continue
                 else:

@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import scraper, embed, chat, integration, websocket
+from api.routers import chat
 from api.utils.monitoring import setup_service_monitoring, get_service_stats
 from config import settings
 
