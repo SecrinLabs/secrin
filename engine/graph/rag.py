@@ -7,8 +7,10 @@ from typing import List, Optional
 from ollama import generate
 
 from .builder import GraphBuilder
-from .utils import sanitize_metadata
-from config import settings
+from config import settings, get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
 
 config = settings
 
@@ -40,7 +42,7 @@ class GraphBasedRAG:
         query_embedding = self.safe_embed(question)
         if query_embedding is None:
             return "❌ Could not generate embedding for your question."
-        print(f"Embedding took {time.time() - start_embed:.2f} seconds")
+        logger.debug(f"Embedding took {time.time() - start_embed:.2f} seconds")
         
         # Get similar documents
         start_doc_search = time.time()
@@ -56,9 +58,9 @@ class GraphBasedRAG:
                 documents = []
                 doc_ids = []
         except Exception as e:
-            print(f"❌ Vectorstore query error: {str(e)}")
+            logger.error(f"❌ Vectorstore query error: {str(e)}")
             return "❌ Error querying the knowledge base."
-        print(f"Doc Search took {time.time() - start_doc_search:.2f} seconds")
+        logger.debug(f"Doc Search took {time.time() - start_doc_search:.2f} seconds")
         
         if not documents:
             return "The available sources do not contain the answer."
@@ -90,7 +92,7 @@ class GraphBasedRAG:
                             'metadata': connected_node.metadata
                         })
         
-        print(f"nodes took {time.time() - get_nodes:.2f} seconds")
+        logger.debug(f"nodes took {time.time() - get_nodes:.2f} seconds")
         context = "\n\n---\n\n".join(enhanced_context)
         
         # Enhanced prompt with graph context
@@ -147,8 +149,8 @@ The following context includes both directly relevant documents and related item
         try:
             chat_res = time.time()
             response = generate(model=config.OLLAMA_MODEL, prompt=prompt, think=False)
-            print(f"chat took {time.time() - chat_res:.2f} seconds")
+            logger.debug(f"chat took {time.time() - chat_res:.2f} seconds")
             return response["response"]
         except Exception as e:
-            print(f"❌ Error generating response: {str(e)}")
+            logger.error(f"❌ Error generating response: {str(e)}")
             return "❌ Error generating response from the AI model."

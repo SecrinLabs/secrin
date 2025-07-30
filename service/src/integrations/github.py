@@ -9,6 +9,11 @@ import re
 from src.models import engine
 from src.models.Issue import PullRequest, Issue  # assumes you have this
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class GithubScraper:
@@ -33,7 +38,7 @@ class GithubScraper:
             else:
                 self.repo = repo
                 
-        print(f"🔍 GitHub Scraper initialized - Owner: {self.owner}, Repo: {self.repo}")
+        logger.debug(f"🔍 GitHub Scraper initialized - Owner: {self.owner}, Repo: {self.repo}")
                 
         self.headers = {
             "Authorization": f"Bearer {self.token}",
@@ -102,7 +107,7 @@ class GithubScraper:
         if response.status_code == 200:
             return response.text  # ✅ contains raw diff
         else:
-            print(f"❌ Failed to fetch diff for PR #{pr_number}: {response.status_code}")
+            logger.debug(f"❌ Failed to fetch diff for PR #{pr_number}: {response.status_code}")
             return ""
 
 
@@ -119,8 +124,8 @@ class GithubScraper:
             response = requests.post(self.GITHUB_API_URL, headers=self.headers, json={"query": self.build_query(after_cursor)})
             
             if response.status_code != 200:
-                print("❌ Query failed:", response.status_code)
-                print(response.text)
+                logger.debug("❌ Query failed:", response.status_code)
+                logger.debug(response.text)
                 break
 
             try:
@@ -128,20 +133,20 @@ class GithubScraper:
                 
                 # Check if the response has errors
                 if "errors" in response_data:
-                    print("❌ GraphQL errors:", response_data["errors"])
+                    logger.debug("❌ GraphQL errors:", response_data["errors"])
                     break
                 
                 # Check if the expected data structure exists
                 if ("data" not in response_data or 
                     "repository" not in response_data["data"] or 
                     response_data["data"]["repository"] is None):
-                    print("❌ Repository not found or access denied")
-                    print("Response:", response_data)
+                    logger.debug("❌ Repository not found or access denied")
+                    logger.debug("Response:", response_data)
                     break
                 
                 if ("pullRequests" not in response_data["data"]["repository"] or
                     "nodes" not in response_data["data"]["repository"]["pullRequests"]):
-                    print("❌ No pull requests found")
+                    logger.debug("❌ No pull requests found")
                     break
                 
                 pull_requests_data = response_data["data"]["repository"]["pullRequests"]
@@ -152,7 +157,7 @@ class GithubScraper:
                 all_pull_requests.extend(nodes)
                 fetched_count += len(nodes)
                 
-                print(f"📦 Fetched {len(nodes)} PRs (Total: {fetched_count}/{self.limit})")
+                logger.debug(f"📦 Fetched {len(nodes)} PRs (Total: {fetched_count}/{self.limit})")
                 
                 # Check if we have more pages and haven't reached our limit
                 if not page_info["hasNextPage"] or fetched_count >= self.limit:
@@ -161,8 +166,8 @@ class GithubScraper:
                 after_cursor = page_info["endCursor"]
                 
             except Exception as e:
-                print("❌ Error parsing response:", str(e))
-                print("Response text:", response.text)
+                logger.debug("❌ Error parsing response:", str(e))
+                logger.debug("Response text:", response.text)
                 break
         
         # Return only the number of items requested
@@ -193,14 +198,14 @@ class GithubScraper:
                 Diff=diff
             )
             self.db.add(pr)
-            print(f"✅ Inserted PR #{pr_number}")
+            logger.debug(f"✅ Inserted PR #{pr_number}")
         else:
             pr.Title = pr_data["title"]
             pr.Url = pr_data["url"]
             pr.MergedAt = merged_at
             pr.Body = pr_data["body"]
             pr.Diff = diff
-            print(f"♻️ Updated PR #{pr_number}")
+            logger.debug(f"♻️ Updated PR #{pr_number}")
 
         # Clear and re-add issues (idempotent behavior)
         pr.ClosedIssue.clear()

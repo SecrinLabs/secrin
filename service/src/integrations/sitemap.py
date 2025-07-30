@@ -9,6 +9,11 @@ from sqlalchemy.orm import sessionmaker
 from src.models.Sitemap import Sitemap
 from src.models import engine
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class SitemapScraper:
@@ -33,7 +38,7 @@ class SitemapScraper:
             tree = ET.fromstring(res.content)
             return [loc.text for loc in tree.findall(".//{*}loc")]
         except Exception as e:
-            print(f"❌ Failed to parse sitemap: {e}")
+            logger.error(f"❌ Failed to parse sitemap: {e}")
             return []
 
     def _fetch_page_markdown(self, url: str) -> str:
@@ -48,7 +53,7 @@ class SitemapScraper:
                 return md(str(content))
             return ""
         except Exception as e:
-            print(f"❌ Failed to fetch {url}: {e}")
+            logger.error(f"❌ Failed to fetch {url}: {e}")
             return ""
         
     def _save_to_db(self, url: str, markdown: str):
@@ -57,7 +62,7 @@ class SitemapScraper:
 
         if existing:
             existing.Markdown = markdown
-            print(f"♻️ Updated: {slug}")
+            logger.debug(f"♻️ Updated: {slug}")
         else:
             new_doc = Sitemap(
                 Site=self.site_name,
@@ -66,20 +71,20 @@ class SitemapScraper:
                 Markdown=markdown
             )
             self.db.add(new_doc)
-            print(f"✅ Inserted: {slug}")
+            logger.debug(f"✅ Inserted: {slug}")
 
         self.db.commit()
 
     def scrape(self):
         urls = self._get_all_urls()
-        print(f"Found {len(urls)} URLs in sitemap")
+        logger.debug(f"Found {len(urls)} URLs in sitemap")
 
         for url in urls:
-            print(f"🔗 Fetching: {url}")
+            logger.debug(f"🔗 Fetching: {url}")
             markdown = self._fetch_page_markdown(url)
 
             if not markdown.strip():
-                print(f"⚠️ Skipped (empty or no .mdx-content): {url}")
+                logger.debug(f"⚠️ Skipped (empty or no .mdx-content): {url}")
                 continue
 
             self._save_to_db(url, markdown)

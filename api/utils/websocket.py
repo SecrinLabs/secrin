@@ -4,6 +4,10 @@ from typing import List, Dict, Any
 from fastapi import WebSocket
 from datetime import datetime
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
 
 class ConnectionManager:
     """Manages WebSocket connections for real-time communication."""
@@ -38,7 +42,7 @@ class ConnectionManager:
         try:
             await websocket.send_text(message)
         except Exception as e:
-            print(f"Failed to send message to client: {e}")
+            logger.error(f"Failed to send message to client: {e}")
             self.disconnect(websocket)
     
     async def send_json_to_client(self, data: Dict[str, Any], websocket: WebSocket):
@@ -47,7 +51,7 @@ class ConnectionManager:
             message = json.dumps(data, default=str)  # default=str handles datetime objects
             await websocket.send_text(message)
         except Exception as e:
-            print(f"Failed to send JSON to client: {e}")
+            logger.error(f"Failed to send JSON to client: {e}")
             self.disconnect(websocket)
     
     async def broadcast(self, message: str):
@@ -60,7 +64,7 @@ class ConnectionManager:
             try:
                 await connection.send_text(message)
             except Exception as e:
-                print(f"Failed to broadcast to client: {e}")
+                logger.error(f"Failed to broadcast to client: {e}")
                 disconnected.append(connection)
         
         # Clean up disconnected connections
@@ -73,7 +77,7 @@ class ConnectionManager:
             message = json.dumps(data, default=str)
             await self.broadcast(message)
         except Exception as e:
-            print(f"Failed to broadcast JSON: {e}")
+            logger.error(f"Failed to broadcast JSON: {e}")
     
     def get_connection_count(self) -> int:
         """Get the number of active connections."""
@@ -142,7 +146,7 @@ def run_async_in_sync_context(coro):
             # If no loop is running, run it
             asyncio.run(coro)
     except Exception as e:
-        print(f"Error running async function in sync context: {e}")
+        logger.error(f"Error running async function in sync context: {e}")
 
 
 def create_service_notification_callback():

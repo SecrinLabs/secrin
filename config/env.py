@@ -34,12 +34,15 @@ class Settings:
         """Load all environment variables with defaults"""
         
         # Database Configuration
-        self.DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:10514912@localhost:5432/devsecrin")
+        self.DATABASE_URL = os.getenv("DATABASE_URL")
+        if not self.DATABASE_URL:
+            raise ValueError("DATABASE_URL environment variable is required")
+            
         self.DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
         self.DATABASE_PORT = int(os.getenv("DATABASE_PORT", "5432"))
         self.DATABASE_NAME = os.getenv("DATABASE_NAME", "devsecrin")
         self.DATABASE_USER = os.getenv("DATABASE_USER", "postgres")
-        self.DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "10514912")
+        self.DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "")
         self.DATABASE_POOL_SIZE = int(os.getenv("DATABASE_POOL_SIZE", "10"))
         self.DATABASE_MAX_OVERFLOW = int(os.getenv("DATABASE_MAX_OVERFLOW", "20"))
         

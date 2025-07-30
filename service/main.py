@@ -3,6 +3,11 @@ from src.db import SessionLocal
 from src.models.Integration import Integration
 from src.models import Base, engine
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
+
 def run_all_scrapers():
     # Create tables if not exist
     Base.metadata.create_all(bind=engine)
@@ -15,7 +20,7 @@ def run_all_scrapers():
                 scraper = ScraperFactory.create_scraper(integration.Name, integration.Config)
                 scraper.scrape()  # Always call with no arguments; defaults handled in class
             except Exception as e:
-                print(f"Failed to run scraper for {integration.Name}: {e}")
+                logger.error(f"Failed to run scraper for {integration.Name}: {e}")
     finally:
         session.close()
 

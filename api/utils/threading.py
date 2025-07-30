@@ -5,6 +5,11 @@ import asyncio
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
 
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
+
 class ServiceManager:
     """Manages background services and their status."""
     
@@ -34,7 +39,7 @@ class ServiceManager:
             try:
                 callback(notification)
             except Exception as e:
-                print(f"Notification callback error: {e}")
+                logger.error(f"Notification callback error: {e}")
     
     def register_service(self, service_id: str, service_name: str, description: str = "") -> None:
         """Register a new running service."""
@@ -123,10 +128,10 @@ def run_in_thread(target, service_name: str, description: str = "", *args, **kwa
                     if loop.is_running():
                         loop.stop()
                 except Exception as e:
-                    print(f"⚠️  Warning: Error cleaning up event loop: {e}")
+                    logger.error(f"⚠️  Warning: Error cleaning up event loop: {e}")
                 
         except Exception as e:
-            print(f"❌ Error in service '{service_name}': {str(e)}")
+            logger.error(f"❌ Error in service '{service_name}': {str(e)}")
         finally:
             # Always unregister the service when done
             service_manager.unregister_service(service_id)

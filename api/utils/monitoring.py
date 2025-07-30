@@ -12,7 +12,10 @@ from api.utils.websocket import (
     service_notification_manager,
     create_service_notification_callback
 )
+from config import get_logger
 
+# Setup logger for this module
+logger = get_logger(__name__)
 
 def setup_service_monitoring():
     """
@@ -25,7 +28,7 @@ def setup_service_monitoring():
     notification_callback = create_service_notification_callback()
     service_manager.add_notification_callback(notification_callback)
     
-    print("✅ Service monitoring with WebSocket notifications initialized")
+    logger.info("✅ Service monitoring with WebSocket notifications initialized")
 
 
 def get_service_stats():

@@ -13,6 +13,10 @@ from .utils import extract_references, find_content_similarity, sanitize_metadat
 from service.src.models import engine
 from service.src.models.Sitemap import Sitemap
 from service.src.models.Issue import Issue
+from config import get_logger
+
+# Setup logger for this module
+logger = get_logger(__name__)
 
 
 class GraphBuilder:
@@ -32,8 +36,12 @@ class GraphBuilder:
                 return embedding[0]
             return embedding
         except Exception as e:
-            print(f"❌ Embedding error: {str(e)}")
+            logger.error(f"❌ Embedding error: {str(e)}")
             return None
+        
+    def get_cache_knowledge_graph(self):
+        if self.knowledge_graph.load_from_disk(self.graph_cache_path):
+            return
     
     def build_knowledge_graph(self, force_rebuild=False):
         """Build the knowledge graph from database"""
@@ -41,14 +49,14 @@ class GraphBuilder:
         if not force_rebuild:
             if self.knowledge_graph.load_from_disk(self.graph_cache_path):
                 if not self.should_rebuild_graph():
-                    print("✅ Using cached knowledge graph")
+                    logger.info("✅ Using cached knowledge graph")
                     return
                 else:
-                    print("🔄 Rebuilding knowledge graph due to data changes...")
+                    logger.info("🔄 Rebuilding knowledge graph due to data changes...")
         
         session = Session(engine)
         
-        print("🔗 Building knowledge graph...")
+        logger.info("🔗 Building knowledge graph...")
         
         # Clear existing graph
         self.knowledge_graph = KnowledgeGraph()
@@ -60,11 +68,11 @@ class GraphBuilder:
         self._process_issues(session)
         
         # Build relationships between nodes
-        print("🔗 Building relationships...")
+        logger.info("🔗 Building relationships...")
         self._build_relationships()
         
         session.close()
-        print(f"✅ Knowledge graph built with {len(self.knowledge_graph.nodes)} nodes and {len(self.knowledge_graph.edges)} edges")
+        logger.info(f"✅ Knowledge graph built with {len(self.knowledge_graph.nodes)} nodes and {len(self.knowledge_graph.edges)} edges")
         
         # Save to cache
         os.makedirs(os.path.dirname(self.graph_cache_path), exist_ok=True)
@@ -72,14 +80,17 @@ class GraphBuilder:
     
     def _process_documentation(self, session):
         """Process documentation from database"""
-        print("📄 Processing documentation...")
+        logger.info("📄 Processing documentation...")
         sitemap_docs = session.query(Sitemap).all()
+        logger.info(f"Found {len(sitemap_docs)} documentation items to process")
+        
         for doc in tqdm(sitemap_docs, desc="Processing docs"):
             try:
                 doc_id = f"doc_{doc.Id}"
                 content = doc.Markdown or ""
                 
                 if not content.strip():
+                    logger.debug(f"Skipping empty document: {doc_id}")
                     continue
                 
                 embedding = self.safe_embed(content)
@@ -110,11 +121,13 @@ class GraphBuilder:
                     )
                     
             except Exception as e:
-                print(f"❌ Error processing doc {doc.Id}: {str(e)}")
+                logger.error(f"❌ Error processing doc {doc.Id}: {str(e)}")
+        
+        logger.info(f"✅ Processed {len(sitemap_docs)} documentation items")
     
     def _process_issues(self, session):
         """Process issues and PRs from database"""
-        print("🐛 Processing issues and PRs...")
+        logger.debug("🐛 Processing issues and PRs...")
         issues = session.query(Issue).all()
         for issue in tqdm(issues, desc="Processing issues"):
             try:
@@ -153,7 +166,7 @@ class GraphBuilder:
                     self._process_pr(issue)
                     
             except Exception as e:
-                print(f"❌ Error processing issue {issue.Id}: {str(e)}")
+                logger.error(f"❌ Error processing issue {issue.Id}: {str(e)}")
     
     def _process_pr(self, issue):
         """Process a single PR related to an issue"""
@@ -206,7 +219,7 @@ class GraphBuilder:
             # Check cache age (rebuild if older than 24 hours)
             cache_age = time.time() - os.path.getmtime(self.graph_cache_path)
             if cache_age > 24 * 3600:  # 24 hours
-                print("🕐 Cache is older than 24 hours, rebuilding...")
+                logger.debug("🕐 Cache is older than 24 hours, rebuilding...")
                 return True
                 
             # Check if database has new content
@@ -227,7 +240,7 @@ class GraphBuilder:
                 threshold = max(20, int(expected_nodes * 0.2))
                 
                 if abs(current_nodes - expected_nodes) > threshold:
-                    print(f"📊 Data size changed significantly ({current_nodes} vs ~{expected_nodes} expected, threshold: {threshold}), rebuilding...")
+                    logger.debug(f"📊 Data size changed significantly ({current_nodes} vs ~{expected_nodes} expected, threshold: {threshold}), rebuilding...")
                     return True
                     
             finally:
@@ -235,18 +248,18 @@ class GraphBuilder:
                 
             return False
         except Exception as e:
-            print(f"⚠️ Error checking rebuild status: {str(e)}")
+            logger.error(f"⚠️ Error checking rebuild status: {str(e)}")
             return True  # Err on the side of rebuilding
     
     def _build_relationships(self):
         """Optimized relationship building using reference indexing"""
-        print("🔗 Building reference index...")
+        logger.debug("🔗 Building reference index...")
         reference_index = self._build_reference_index()
         
-        print("🔍 Finding relationship candidates...")
+        logger.debug("🔍 Finding relationship candidates...")
         candidates = self._get_relationship_candidates(reference_index)
         
-        print(f"📊 Found {len(candidates)} potential relationships")
+        logger.debug(f"📊 Found {len(candidates)} potential relationships")
         
         relationship_cache = {}
         
