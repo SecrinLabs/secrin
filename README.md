@@ -4,7 +4,7 @@
 
 DevSecrin transforms disconnected development tools (Git, Jira, Confluence) into a unified AI-powered context layer. Ask natural language questions about your codebase and get insights about *why* code was written, not just *what* changed.
 
-![devsecrin_arch](https://github.com/user-attachments/assets/3bf40c77-2d7a-49de-a016-c22dcc1ede52)
+![devsecrin_arch](https://github.com/SecrinLabs/devsecrin/blob/main/static/img/image.png)
 
 ## 🚀 Key Features
 
