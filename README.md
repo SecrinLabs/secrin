@@ -1,73 +1,58 @@
-# 🧠 DevSecrin
+# 🧠 DevSecrin - AI-Powered Developer Context Engine
 
-*"Every line of code has a story. DevSecrin helps you remember why it was written."*
+> **Intelligent codebase understanding through AI reasoning and knowledge graphs**
 
-DevSecrin is a lightweight Developer Context Engine that helps you ask **why** behind your codebase—by connecting Git commits, issues, and documentation through AI reasoning and graph-based retrieval.
-
-## 🌟 System Architecture
+DevSecrin transforms disconnected development tools (Git, Jira, Confluence) into a unified AI-powered context layer. Ask natural language questions about your codebase and get insights about *why* code was written, not just *what* changed.
 
 ![devsecrin_arch](https://github.com/user-attachments/assets/3bf40c77-2d7a-49de-a016-c22dcc1ede52)
 
-Modern software teams are overwhelmed with disconnected tools—Git, Jira, Confluence, Notion, and more. Developers often struggle to recall the rationale behind code changes, architecture decisions, or feature implementations. DevSecrin solves this by creating a unified context layer that feeds this collective knowledge into AI systems—so developers don't just see *what* changed, but *why* it changed.
+## 🚀 Key Features
 
-## ⚙️ Requirements
+- **AI-Powered Q&A**: "Why did we switch to microservices?" → Get context from commits, issues, and docs
+- **Multi-Source Integration**: Connects Git, GitHub Issues, PRs etc
+- **Knowledge Graphs**: Links related code changes, decisions, and documentation
+- **Semantic Search**: Vector embeddings for intelligent code understanding
 
-Make sure the following are installed on your machine:
+## 🛠️ Tech Stack
 
-- **PostgreSQL** – running locally or remotely
-- **Ollama** – with models:
-  - `deepseek-r1:1.5b` – for AI reasoning
-  - `mxbai-embed-large:latest` – for embeddings
-- **Python 3.8+** – for backend AI modules
-- **Node.js (v20+) & pnpm** – for TypeScript services
+**Backend**: Python, FastAPI, PostgreSQL, ChromaDB  
+**AI/ML**: Ollama (DeepSeek-R1, MxBai embeddings), Gemini support  
+**Infrastructure**: Docker
 
-## � Quick Start (Local)
+## 📦 Quick Start
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/yourusername/devsecrin.git
+git clone https://github.com/SecrinLabs/devsecrin.git
 cd devsecrin
 
-# 2. Install dependencies
-pnpm install
-python3 -m venv venv
-source venv/bin/activate
+# Install dependencies
 pip install -r requirements.txt
 
-# 3. Copy environment config
-cp .env.example .env  # Then edit `.env` with your details
+# Setup environment
+cp .env.example .env
 
-# 4. Initialize the database
-python packages/dbup/runner.py
+# Run migrations
+python migration/runner.py
 
-# 5. Start the app
-pnpm run devsecrin
+# Start services
+python start_api.py  # API: http://localhost:8000
 ```
 
-Once running:
-- **Web UI**: http://localhost:3000
-- **API**: http://localhost:8000
+## 💡 Use Cases
 
-## ✨ What Can It Do?
+- **Code Reviews**: Understand the context behind complex changes
+- **Onboarding**: New developers quickly grasp project decisions
+- **Technical Debt**: Track evolution of architectural decisions
+- **Documentation**: Auto-generate context-aware explanations
 
-🔍 **Ask questions like:**
-- "Why did we move to Kafka?"
-- "What's the history of this function?"
+## 🎯 Project Impact
 
-🧠 **Pull insights from:**
-- Git commits & PRs
-- Jira / GitHub Issues
-- Confluence, Notion docs
+- Reduces developer onboarding time
+- Improves code review quality through historical context
+- Enables data-driven technical decisions
+- Bridges the gap between code and business requirements
 
-🔗 **Graph-enhanced retrieval** using AI + embeddings
-
-## 🧩 Core Features
-
-- Multi-source integration (Git, Issues, Docs)
-- Semantic understanding via embeddings
-- Knowledge graphs to link related changes
-- Natural language QA with history-aware AI
-- Web UI + REST API for interaction
+--- 
 
 ## 🔧 Project Structure
 
