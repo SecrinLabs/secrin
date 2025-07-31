@@ -74,7 +74,6 @@ See CONTRIBUTING.md for how to get involved.
 ## � Contact
 
 Built with ❤️ by [@jenilsavani9](https://github.com/jenilsavani9)  
-Connect on [LinkedIn](https://www.linkedin.com/in/jenil-savani/)
 
 ---
 
