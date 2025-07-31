@@ -17,15 +17,15 @@ services:
       timeout: 10s
       retries: 5
 
-  # Ollama Service (for local AI model)
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
+  # # Ollama Service (for local AI model)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0
 
   # API Service
   devsecrin-api:
@@ -34,7 +34,7 @@ services:
       context: ../
       dockerfile: infra/Dockerfile
     env_file:
-      - ../.env
+      - .env
     ports:
       - "8000:8000"
     environment:
@@ -53,8 +53,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      ollama:
-        condition: service_started
+      # ollama:
+      #   condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -64,4 +64,4 @@ services:
 
 volumes:
   postgres_data:
-  ollama_data:
+  # ollama_data:
