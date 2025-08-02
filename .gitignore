@@ -1,54 +1,55 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# Dependencies
-node_modules
-.pnp
+# Node.js dependencies
+node_modules/
+.pnp/
 .pnp.js
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Package manager files
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Testing
-coverage
-
-# Turbo
-.turbo
-
-# Vercel
-.vercel
-
-# Build Outputs
+# Build outputs
 .next/
 out/
-build
-dist
+build/
+dist/
 
+# Testing
+coverage/
 
-# Debug
+# Logs & debug
+logs/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# Misc
+# Env vars (don't commit secrets)
+.env
+.env.*
+!*.example  # Keep templates like .env.example
+
+# System files
 .DS_Store
 *.pem
 
-# stores knowledge
-chroma_store
-gemini_store
-
-# python environment
-venv
-
-# environment variables
-.env
-
-# python cache files
+# Python virtual environment
+venv/
 __pycache__/
 
-# logs folder
-logs/
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
 
-.vscode
+# Editor settings
+.vscode/
+
+# Hosting/deploy
+.vercel/
+.turbo/
+
+# App-specific persistent storage
+chroma_store/
+gemini_store/
