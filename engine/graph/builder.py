@@ -217,10 +217,10 @@ class GraphBuilder:
                 return True  # No cache exists, need to build
                 
             # Check cache age (rebuild if older than 24 hours)
-            cache_age = time.time() - os.path.getmtime(self.graph_cache_path)
-            if cache_age > 24 * 3600:  # 24 hours
-                logger.debug("🕐 Cache is older than 24 hours, rebuilding...")
-                return True
+            # cache_age = time.time() - os.path.getmtime(self.graph_cache_path)
+            # if cache_age > 24 * 3600:  # 24 hours
+            #     logger.debug("🕐 Cache is older than 24 hours, rebuilding...")
+            #     return True
                 
             # Check if database has new content
             session = Session(engine)

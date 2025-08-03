@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Bot, Loader2 } from "lucide-react";
+import { User, Bot, Loader2, AlertCircle } from "lucide-react";
+import { useChat } from "@/hooks/useChat";
 
 interface Message {
   id: string;
@@ -15,6 +16,7 @@ interface Message {
   sender: "user" | "bot";
   timestamp: Date;
   isTyping?: boolean;
+  isError?: boolean;
 }
 
 interface DevSecrinChatProps {
@@ -24,10 +26,46 @@ interface DevSecrinChatProps {
 export function DevSecrinChat({ className }: DevSecrinChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
+  const [conversationId, setConversationId] = useState<string>("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Initialize chat hook
+  const chat = useChat({
+    onSuccess: (data) => {
+      // Update conversation ID if provided
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+      }
+
+      // Add bot response to messages
+      const botResponse: Message = {
+        id: `bot_${Date.now()}`,
+        content: data.answer,
+        sender: "bot",
+        timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
+      };
+
+      setMessages((prev) =>
+        prev.filter((msg) => !msg.isTyping).concat(botResponse)
+      );
+    },
+    onError: (error) => {
+      // Remove typing indicator and add error message
+      setMessages((prev) => prev.filter((msg) => !msg.isTyping));
+
+      const errorMessage: Message = {
+        id: `error_${Date.now()}`,
+        content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        sender: "bot",
+        timestamp: new Date(),
+        isError: true,
+      };
+
+      setMessages((prev) => [...prev, errorMessage]);
+    },
+  });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -49,7 +87,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
   }, [hasStartedChat]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || chat.isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -73,53 +111,24 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
       setMessages((prev) => [...prev, userMessage]);
     }
 
+    const messageToSend = inputValue;
     setInputValue("");
-    setIsLoading(true);
 
-    // Simulate API call with typing indicator
-    setTimeout(() => {
-      const typingMessage: Message = {
-        id: "typing",
-        content: "DevSecrin is thinking...",
-        sender: "bot",
-        timestamp: new Date(),
-        isTyping: true,
-      };
-      setMessages((prev) => [...prev, typingMessage]);
-    }, 500);
+    // Add typing indicator
+    const typingMessage: Message = {
+      id: "typing",
+      content: "DevSecrin is thinking...",
+      sender: "bot",
+      timestamp: new Date(),
+      isTyping: true,
+    };
+    setMessages((prev) => [...prev, typingMessage]);
 
-    // Simulate bot response
-    setTimeout(() => {
-      setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
-
-      const botResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        content: generateBotResponse(userMessage.content),
-        sender: "bot",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, botResponse]);
-      setIsLoading(false);
-    }, 2000);
-  };
-
-  const generateBotResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-
-    if (input.includes("security") || input.includes("vulnerability")) {
-      return "Security is paramount in software development. I recommend implementing defense-in-depth strategies, regular security audits, and following the OWASP guidelines. Would you like me to elaborate on any specific security domain?";
-    }
-
-    if (input.includes("password") || input.includes("authentication")) {
-      return "For strong authentication: use multi-factor authentication, implement proper password policies (minimum 12 characters, complexity requirements), consider passwordless solutions, and ensure secure password storage with proper hashing algorithms like bcrypt or Argon2.";
-    }
-
-    if (input.includes("api") || input.includes("endpoint")) {
-      return "API security best practices include: implementing proper authentication and authorization, input validation, rate limiting, HTTPS enforcement, API versioning, and comprehensive logging. Consider using API gateways for centralized security controls.";
-    }
-
-    return "I understand your concern. Based on current security best practices, I recommend following a structured approach to address this. Would you like me to provide specific guidance on implementation or point you to relevant security frameworks?";
+    // Send message to API
+    chat.sendMessage({
+      question: messageToSend,
+      conversation_id: conversationId || undefined,
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -174,7 +183,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                   onKeyPress={handleKeyPress}
                   placeholder="Ask anything"
                   className="min-h-[20px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base leading-relaxed placeholder:text-muted-foreground"
-                  disabled={isLoading}
+                  disabled={chat.isLoading}
                 />
               </div>
             </Card>
@@ -256,6 +265,8 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                   className={`rounded-2xl px-4 py-3 ${
                     message.sender === "user"
                       ? "bg-primary text-primary-foreground"
+                      : message.isError
+                      ? "bg-destructive/10 text-destructive border border-destructive/20"
                       : "bg-card text-card-foreground"
                   }`}
                 >
@@ -263,6 +274,11 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                     {message.isTyping ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-3 h-3 animate-spin" />
+                        {message.content}
+                      </span>
+                    ) : message.isError ? (
+                      <span className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
                         {message.content}
                       </span>
                     ) : (
@@ -299,7 +315,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything"
                 className="border-0 bg-transparent focus-visible:ring-0 text-base h-auto py-2"
-                disabled={isLoading}
+                disabled={chat.isLoading}
               />
             </div>
           </Card>
