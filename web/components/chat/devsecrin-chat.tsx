@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { User, Bot, Loader2, AlertCircle } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 
 interface Message {
   id: string;
@@ -270,21 +271,25 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                       : "bg-card text-card-foreground"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">
-                    {message.isTyping ? (
+                  {message.isTyping ? (
+                    <p className="text-sm leading-relaxed">
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-3 h-3 animate-spin" />
                         {message.content}
                       </span>
-                    ) : message.isError ? (
+                    </p>
+                  ) : message.isError ? (
+                    <p className="text-sm leading-relaxed">
                       <span className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         {message.content}
                       </span>
-                    ) : (
-                      message.content
-                    )}
-                  </p>
+                    </p>
+                  ) : message.sender === "bot" ? (
+                    <MarkdownRenderer content={message.content} />
+                  ) : (
+                    <p className="text-sm leading-relaxed">{message.content}</p>
+                  )}
                 </div>
 
                 <span className="text-xs text-muted-foreground px-2">
