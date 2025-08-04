@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Send, User, Bot, Loader2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, User, Bot, Loader2 } from "lucide-react";
+import { AppPerameter } from "@/constants/AppPerameters";
 
 interface Message {
   id: string;
@@ -24,8 +26,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
-      content:
-        "Hello! I'm DevSecrin, your security assistant. I can help you with security best practices, vulnerability assessments, and secure development guidelines. How can I assist you today?",
+      content: AppPerameter.welcomeBotMessage,
       sender: "bot",
       timestamp: new Date(),
     },
@@ -64,7 +65,7 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
     setTimeout(() => {
       const typingMessage: Message = {
         id: "typing",
-        content: "DevSecrin is thinking...",
+        content: AppPerameter.thinkingMessage,
         sender: "bot",
         timestamp: new Date(),
         isTyping: true,
@@ -122,9 +123,9 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
   };
 
   return (
-    <div className={`flex flex-col h-full bg-background ${className}`}>
-      {/* Header */}
-      <header className="shrink-0 border-b border-border/10 px-6 py-4 bg-background/95 backdrop-blur-sm">
+    <div className={`flex flex-col h-screen bg-background ${className}`}>
+      {/* Header - Fixed */}
+      <header className="fixed top-0 left-0 right-0 z-10 shrink-0 border-b border-border/10 px-6 py-4 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-primary-foreground text-sm font-medium">
@@ -139,7 +140,11 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
       </header>
 
       {/* Chat Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 px-6">
+      <ScrollArea
+        ref={scrollAreaRef}
+        className="flex-1 px-6 overflow-y-auto"
+        style={{ marginTop: "88px", marginBottom: "120px" }}
+      >
         <div className="py-6 space-y-6">
           {messages.map((message) => (
             <div
@@ -203,8 +208,8 @@ export function ChatInterface({ className }: ChatInterfaceProps) {
         </div>
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="shrink-0 border-t border-border/10 px-6 py-4 bg-background/95 backdrop-blur-sm">
+      {/* Input Area - Fixed */}
+      <div className="fixed bottom-0 left-0 right-0 z-10 shrink-0 border-t border-border/10 px-6 py-4 bg-background/95 backdrop-blur-sm">
         <div className="flex gap-2">
           <Input
             value={inputValue}

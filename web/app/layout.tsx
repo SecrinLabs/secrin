@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { AppPerameter } from "@/constants/AppPerameters";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DevSecrin - Security Assistant",
-  description:
-    "Your intelligent security assistant for secure development practices",
+  title: `${AppPerameter.appName} - ${AppPerameter.appProfessionName}`,
+  description: `${AppPerameter.appSEODescription}`,
 };
 
 export default function RootLayout({
