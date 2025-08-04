@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { User, Bot, Loader2, AlertCircle } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { AppPerameter } from "@/constants/AppPerameters";
 
 interface Message {
   id: string;
@@ -101,8 +102,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
     if (!hasStartedChat) {
       const welcomeMessage: Message = {
         id: "welcome",
-        content:
-          "Hello! I'm DevSecrin, your security assistant. I can help you with security best practices, vulnerability assessments, and secure development guidelines.",
+        content: AppPerameter.welcomeBotMessage,
         sender: "bot",
         timestamp: new Date(),
       };
@@ -118,7 +118,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
     // Add typing indicator
     const typingMessage: Message = {
       id: "typing",
-      content: "DevSecrin is thinking...",
+      content: AppPerameter.thinkingMessage,
       sender: "bot",
       timestamp: new Date(),
       isTyping: true,
@@ -137,7 +137,6 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
       e.preventDefault();
       handleSendMessage();
     }
-    // Shift+Enter will naturally create a new line
   };
 
   const formatTime = (date: Date) => {
@@ -166,11 +165,11 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                   </span>
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight text-foreground">
-                  DevSecrin
+                  {AppPerameter.appName}
                 </h1>
               </div>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                What can I help with?
+                {AppPerameter.whatCanIHelpWith}
               </p>
             </div>
 
@@ -192,15 +191,15 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
             {/* Quick suggestions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
-                "What are the OWASP Top 10 vulnerabilities?",
-                "How to implement secure authentication?",
-                "Best practices for API security",
-                "Guide for secure code review process",
+                AppPerameter.landingPageQuestion1,
+                AppPerameter.landingPageQuestion2,
+                AppPerameter.landingPageQuestion3,
+                AppPerameter.landingPageQuestion4,
               ].map((suggestion, index) => (
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto p-4 text-left justify-start text-sm text-muted-foreground hover:text-foreground hover:bg-card border-border"
+                  className="h-auto p-4 text-left justify-start text-sm text-muted-foreground hover:text-foreground hover:bg-card border-border rounded-3xl"
                   onClick={() => setInputValue(suggestion)}
                 >
                   {suggestion}
@@ -228,9 +227,11 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
           </div>
           <div className="min-w-0">
             <h1 className="text-lg font-medium tracking-tight text-foreground">
-              DevSecrin
+              {AppPerameter.appName}
             </h1>
-            <p className="text-sm text-muted-foreground">Security Assistant</p>
+            <p className="text-sm text-muted-foreground">
+              {AppPerameter.appProfessionName}
+            </p>
           </div>
         </div>
       </header>
@@ -326,8 +327,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
           </Card>
 
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            DevSecrin can make mistakes. Check important info. • Press Enter to
-            send • Shift+Enter for new line
+            {AppPerameter.footerImportantInfo}
           </p>
         </div>
       </div>
