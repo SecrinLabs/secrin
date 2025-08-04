@@ -11,6 +11,7 @@ import { User, Bot, Loader2, AlertCircle } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { AppPerameter } from "@/constants/AppPerameters";
+import { Icons } from "../Icons";
 
 interface Message {
   id: string;
@@ -161,7 +162,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
               <div className="flex items-center justify-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
                   <span className="text-primary-foreground text-lg font-bold">
-                    D
+                    <Icons.logo />
                   </span>
                 </div>
                 <h1 className="text-4xl font-bold tracking-tight text-foreground">
@@ -220,9 +221,9 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
       {/* Header */}
       <header className="shrink-0 border-b border-border px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
             <span className="text-primary-foreground text-sm font-medium">
-              D
+              <Icons.logo />
             </span>
           </div>
           <div className="min-w-0">
