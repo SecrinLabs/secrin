@@ -4,10 +4,10 @@ RAG system with graph-based context retrieval.
 import time
 import json
 from typing import List, Optional
-from ollama import generate
 
 from .builder import GraphBuilder
 from config import settings, get_logger
+from ..llm.factory import get_llm
 
 # Setup logger for this module
 logger = get_logger(__name__)
@@ -18,11 +18,20 @@ config = settings
 class GraphBasedRAG:
     """Enhanced RAG system with graph-based context retrieval"""
     
-    def __init__(self, embedder, vectorstore, graph_cache_path=f"./{config.CHROMA_PERSIST_DIRECTORY}/knowledge_graph.pkl"):
+    def __init__(self, embedder, vectorstore, llm=None, graph_cache_path=f"./{config.CHROMA_PERSIST_DIRECTORY}/knowledge_graph.pkl"):
         self.embedder = embedder
         self.vectorstore = vectorstore
         self.graph_builder = GraphBuilder(embedder, vectorstore, graph_cache_path)
         self.knowledge_graph = self.graph_builder.knowledge_graph
+        
+        # Initialize LLM - use factory if not provided
+        if llm is None:
+            llm_provider = config.LLM_PROVIDER
+            self.llm = get_llm(llm_provider)
+            logger.info(f"Initialized LLM with provider: {llm_provider}")
+        else:
+            self.llm = llm
+            logger.info(f"Using provided LLM: {self.llm.get_model_info()}")
     
     def safe_embed(self, text: str) -> Optional[List[float]]:
         """Safely embed text with error handling"""
@@ -148,9 +157,9 @@ The following context includes both directly relevant documents and related item
         
         try:
             chat_res = time.time()
-            response = generate(model=config.OLLAMA_MODEL, prompt=prompt, think=False)
+            response = self.llm.generate(prompt)
             logger.debug(f"chat took {time.time() - chat_res:.2f} seconds")
-            return response["response"]
+            return response
         except Exception as e:
             logger.error(f"❌ Error generating response: {str(e)}")
             return "❌ Error generating response from the AI model."

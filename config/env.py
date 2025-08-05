@@ -55,9 +55,13 @@ class Settings:
 
         # Gemini AI Configurations
         self.GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+        self.GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-pro")
         
         # Embedder Configuration
         self.EMBEDDER_NAME = os.getenv("EMBEDDER_NAME", "ollama")  # Options: ollama, gemini
+        
+        # LLM Configuration
+        self.LLM_PROVIDER = os.getenv("LLM_PROVIDER", self.EMBEDDER_NAME)  # Use same as embedder by default
         
         # ChromaDB Configuration
         self.CHROMA_PERSIST_DIRECTORY = os.getenv("CHROMA_PERSIST_DIRECTORY", "./chroma_store")

@@ -4,11 +4,18 @@ Chatbot interface for the graph-enhanced RAG system.
 import time
 import os
 from .rag import GraphBasedRAG
+from ..llm.factory import get_llm
+from config import settings
+
+config = settings
 
 
-def create_graph_chatbot(embedder, vectorstore):
+def create_graph_chatbot(embedder, vectorstore, llm=None):
     """Create enhanced chatbot with graph-based RAG"""
-    graph_rag = GraphBasedRAG(embedder, vectorstore)
+    if llm is None:
+        llm = get_llm(config.LLM_PROVIDER)
+    
+    graph_rag = GraphBasedRAG(embedder, vectorstore, llm)
     
     # Build knowledge graph
     graph_rag.build_knowledge_graph()
@@ -49,11 +56,13 @@ def rebuild_knowledge_graph():
     """Force rebuild the knowledge graph (useful when data changes)"""
     from ..embeddings.factory import get_embedder
     from ..retriever.factory import get_vectorstore
+    from ..llm.factory import get_llm
     from config import settings
     
     embedder = get_embedder(settings.EMBEDDER_NAME)
     vectorstore = get_vectorstore("chroma", collection_name=settings.CHROMA_COLLECTION_NAME)
-    graph_rag = GraphBasedRAG(embedder, vectorstore)
+    llm = get_llm(settings.LLM_PROVIDER)
+    graph_rag = GraphBasedRAG(embedder, vectorstore, llm)
     graph_rag.build_knowledge_graph(force_rebuild=True)
     print("🎉 Knowledge graph rebuilt successfully!")
 

@@ -16,8 +16,18 @@ DevSecrin transforms disconnected development tools (Git, Jira, Confluence) into
 ## 🛠️ Tech Stack
 
 **Backend**: Python, FastAPI, PostgreSQL, ChromaDB  
-**AI/ML**: Ollama (DeepSeek-R1, MxBai embeddings), Gemini support  
+**AI/ML**: Multi-provider LLM support (Ollama, Gemini), MxBai embeddings, Knowledge Graphs
 **Infrastructure**: Docker
+
+### 🧠 AI Models & Providers
+
+DevSecrin supports multiple AI providers through a factory pattern:
+
+- **Ollama** (Local): DeepSeek-R1, Llama, CodeLlama, and other local models
+- **Gemini** (Cloud): Google's Gemini 1.5 Pro and other Gemini models
+- **Mixed Setup**: Use different providers for embeddings and text generation
+
+Switch providers easily through configuration - no code changes required!
 
 ## 📦 Quick Start
 
