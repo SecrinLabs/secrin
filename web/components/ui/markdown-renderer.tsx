@@ -2,7 +2,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
-import { ReactNode } from "react";
+import { PropsWithChildren } from "react";
 
 interface MarkdownRendererProps {
   content: string;
@@ -20,42 +20,42 @@ export function MarkdownRenderer({
         rehypePlugins={[rehypeHighlight, rehypeRaw]}
         components={{
           // Custom heading styles
-          h1: ({ children }: any) => (
+          h1: ({ children }: PropsWithChildren) => (
             <h1 className="text-xl font-bold text-foreground mb-3 mt-4 first:mt-0">
               {children}
             </h1>
           ),
-          h2: ({ children }: any) => (
+          h2: ({ children }: PropsWithChildren) => (
             <h2 className="text-lg font-semibold text-foreground mb-2 mt-3 first:mt-0">
               {children}
             </h2>
           ),
-          h3: ({ children }: any) => (
+          h3: ({ children }: PropsWithChildren) => (
             <h3 className="text-base font-semibold text-foreground mb-2 mt-3 first:mt-0">
               {children}
             </h3>
           ),
 
           // Custom paragraph styles
-          p: ({ children }: any) => (
+          p: ({ children }: PropsWithChildren) => (
             <p className="text-sm leading-relaxed text-card-foreground mb-3 last:mb-0">
               {children}
             </p>
           ),
 
           // Custom list styles
-          ul: ({ children }: any) => (
+          ul: ({ children }: PropsWithChildren) => (
             <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>
           ),
-          ol: ({ children }: any) => (
+          ol: ({ children }: PropsWithChildren) => (
             <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>
           ),
-          li: ({ children }: any) => (
+          li: ({ children }: PropsWithChildren) => (
             <li className="text-sm text-card-foreground">{children}</li>
           ),
 
           // Custom code styles
-          code: ({ children, className, ...props }: any) => {
+          code: ({ children, className, ...props }) => {
             const isInline = !className?.includes("language-");
             if (isInline) {
               return (
@@ -78,14 +78,14 @@ export function MarkdownRenderer({
           },
 
           // Custom blockquote styles
-          blockquote: ({ children }: any) => (
+          blockquote: ({ children }) => (
             <blockquote className="border-l-4 border-primary/30 pl-4 py-2 my-3 bg-muted/50 rounded-r">
               {children}
             </blockquote>
           ),
 
           // Custom link styles
-          a: ({ children, href }: any) => (
+          a: ({ children, href }) => (
             <a
               href={href}
               className="text-primary hover:text-primary/80 underline underline-offset-2"
@@ -97,22 +97,22 @@ export function MarkdownRenderer({
           ),
 
           // Custom table styles
-          table: ({ children }: any) => (
+          table: ({ children }) => (
             <div className="overflow-x-auto my-3">
               <table className="min-w-full border border-border rounded-lg">
                 {children}
               </table>
             </div>
           ),
-          thead: ({ children }: any) => (
+          thead: ({ children }) => (
             <thead className="bg-muted">{children}</thead>
           ),
-          th: ({ children }: any) => (
+          th: ({ children }) => (
             <th className="px-3 py-2 text-left text-xs font-semibold text-foreground border-b border-border">
               {children}
             </th>
           ),
-          td: ({ children }: any) => (
+          td: ({ children }) => (
             <td className="px-3 py-2 text-xs text-card-foreground border-b border-border">
               {children}
             </td>
