@@ -21,12 +21,14 @@ export class ChatApiError extends Error {
   }
 }
 
+import env from "@/config/env";
+
 export async function sendChatMessage(
   request: ChatRequest
 ): Promise<ChatResponse> {
   try {
     console.log(JSON.stringify(request));
-    const response = await fetch("http://0.0.0.0:8000/api/chat", {
+    const response = await fetch(`${env.api.url}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
