@@ -22,6 +22,7 @@ export class ChatApiError extends Error {
 }
 
 import env from "@/config/env";
+import { getFriendlyErrorMessage } from "@/lib/HttpError";
 
 export async function sendChatMessage(
   request: ChatRequest
@@ -38,11 +39,12 @@ export async function sendChatMessage(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new ChatApiError(
-        errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      const friendlyMessage = getFriendlyErrorMessage(
         response.status,
-        errorData
+        errorData.message || response.statusText
       );
+
+      throw new ChatApiError(friendlyMessage, response.status, errorData);
     }
 
     const data = await response.json();
