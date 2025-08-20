@@ -60,7 +60,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
 
       const errorMessage: Message = {
         id: `error_${Date.now()}`,
-        content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        content: `Sorry, I encountered an error: ${error.message}.`,
         sender: "bot",
         timestamp: new Date(),
         isError: true,
