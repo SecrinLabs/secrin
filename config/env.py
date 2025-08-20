@@ -123,6 +123,9 @@ class Settings:
         # SSL Configuration (for production)
         self.SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
         self.SSL_KEY_FILE = os.getenv("SSL_KEY_FILE")
+
+        # Redis Configurations
+        self.REDIS_SERVER_URL = os.getenv("REDIS_SERVER_URL")
         
         # Create required directories
         # self._create_directories()

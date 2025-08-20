@@ -4,8 +4,12 @@ import os
 # Append root directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_limiter import FastAPILimiter
+from fastapi_limiter.depends import RateLimiter
+from contextlib import asynccontextmanager
+import redis.asyncio as aioredis
 
 from api.routers import chat
 from api.utils.monitoring import setup_service_monitoring, get_service_stats
@@ -13,10 +17,23 @@ from config import settings
 
 config = settings
 
+# Lifespan handler replaces on_event
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    redis = await aioredis.from_url(
+        config.REDIS_SERVER_URL, encoding="utf-8", decode_responses=True
+    )
+    await FastAPILimiter.init(redis)
+    yield
+    # Shutdown
+    await redis.close()
+
 app = FastAPI(
     title="DevSecRin API",
     description="API for web scraping, document embedding, and real-time service monitoring",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Initialize WebSocket notification system
@@ -24,7 +41,7 @@ setup_service_monitoring()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # set this to your frontend URL in prod
+    allow_origins=[config.NEXT_PUBLIC_API_BASE_URL],  # set this to your frontend URL in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
