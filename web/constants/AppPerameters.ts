@@ -6,9 +6,9 @@ export const AppPerameter = {
   welcomeBotMessage:
     "Hello! I'm DevSecrin, your security assistant. I can help you with security best practices, vulnerability assessments, and secure development guidelines. How can I assist you today?",
   thinkingMessage: "DevSecrin is thinking...",
-  landingPageQuestion1: "What are the OWASP Top 10 vulnerabilities?",
+  landingPageQuestion1: "How to Self-host the col.com project on AWS?",
   landingPageQuestion2: "How to implement secure authentication?",
-  landingPageQuestion3: "Best practices for API security",
+  landingPageQuestion3: "Best practices for API security for cal.com?",
   landingPageQuestion4: "Guide for secure code review process",
   whatCanIHelpWith: "What can I help with?",
   footerImportantInfo:
