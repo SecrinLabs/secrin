@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 import redis.asyncio as aioredis
 
 from api.routers import chat
+from api.routers import auth
 from api.utils.monitoring import setup_service_monitoring, get_service_stats
 from config import settings
 
@@ -84,5 +85,6 @@ def health_check():
 # app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
 # app.include_router(embed.router, prefix="/api/embed", tags=["embed"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 # app.include_router(integration.router, prefix="/api/integration", tags=["integration"])
 # app.include_router(websocket.router, prefix="/ws", tags=["websocket"])

@@ -63,6 +63,7 @@ opentelemetry-semantic-conventions==0.56b0
 orjson==3.11.0
 overrides==7.7.0
 packaging==25.0
+passlib==1.7.4
 posthog==5.4.0
 protobuf==6.31.1
 psycopg2-binary==2.9.10
