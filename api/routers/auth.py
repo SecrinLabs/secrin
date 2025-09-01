@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from api.models.auth import UserSignup, UserLogin
-from api.core.auth.index import Auth
+from api.core.auth import Auth
 from api.utils.standard_response import standard_response
 
 router = APIRouter()

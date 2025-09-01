@@ -6,7 +6,13 @@ from fastapi import APIRouter, HTTPException
 
 from api.utils.standard_response import standard_response
 from config import settings
-from api.models.connect import GithubConnect
+from api.models.connect import GithubConnect, InstallationToken
+
+from sqlalchemy.orm import Session
+from db.index import SessionLocal
+from db.models.user import User
+
+from api.core.auth import Auth
 
 router = APIRouter()
 
@@ -58,6 +64,32 @@ def github_app_auth(request: GithubConnect):
                 "access_token": access_token,
                 "expires_at": response.json()["expires_at"]
             }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.post("/github/save-installation-token")
+def github_save_installation_token(request: InstallationToken):
+    try:
+        session: Session = SessionLocal()
+
+        user = session.query(User).filter(User.id == request.user_id).first()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="User Not found")
+          
+        user.github_installation_id = int(request.installation_token)
+
+        session.commit()
+        session.refresh(user)
+        session.close()
+
+        return standard_response(
+            success=True,
+            message="installation token added",
+            data={}
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
