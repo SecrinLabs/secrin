@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
 
 from engine.main import run_generator
-from api.models.ChatRequest import ChatRequest
+from api.models.chat import ChatRequest
 
 router = APIRouter()
 

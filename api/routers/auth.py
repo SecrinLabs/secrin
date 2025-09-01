@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from api.models.UserSignup import UserSignup
-from api.models.UserLogin import UserLogin
+from api.models.auth import UserSignup, UserLogin
 from api.core.auth.index import Auth
 from api.utils.standard_response import standard_response
 

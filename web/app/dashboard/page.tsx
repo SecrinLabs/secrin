@@ -1,23 +1,29 @@
-"use client";
-
-import React from "react";
-import { useSession } from "next-auth/react";
+import { AppSidebar } from "@/components/app-sidebar";
+import GithubConnector from "@/components/dashboard/GithubConnector";
+import { SiteHeader } from "@/components/site-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Page() {
-  const { data: session, status } = useSession();
-
-  if (status === "loading") {
-    return <div>Loading...</div>;
-  }
-
-  if (status === "unauthenticated") {
-    return <div>You are not logged in</div>;
-  }
-
   return (
-    <div>
-      <h1>User Info</h1>
-      <pre>{JSON.stringify(session?.user, null, 2)}</pre>
-    </div>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <SiteHeader />
+        <div className="flex flex-1 flex-col">
+          <div className="@container/main flex flex-1 flex-col gap-2">
+            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+              <GithubConnector />
+            </div>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
