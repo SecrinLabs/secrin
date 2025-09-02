@@ -42,7 +42,7 @@ setup_service_monitoring()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.NEXT_PUBLIC_API_BASE_URL],  # set this to your frontend URL in prod
+    allow_origins=[config.NEXT_PUBLIC_API_BASE_URL, "http://localhost:3000"],  # set this to your frontend URL in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

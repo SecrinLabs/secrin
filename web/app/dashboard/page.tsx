@@ -3,7 +3,7 @@ import GithubConnector from "@/components/dashboard/GithubConnector";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
-export default function Page() {
+export default async function Page() {
   return (
     <SidebarProvider
       style={
