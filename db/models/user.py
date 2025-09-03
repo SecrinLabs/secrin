@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, BigInteger, Text
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import relationship
 
-Base = declarative_base()
-
+from db.index import Base
 class User(Base):
     __tablename__ = "users"
 
@@ -11,3 +10,4 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=True)
     password_hash = Column(Text, nullable=False)
     github_installation_id = Column(BigInteger, nullable=True)
+

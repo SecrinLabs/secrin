@@ -1,18 +1,14 @@
-import base64
-import time
-import jwt
-import requests
 from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm import Session
 
 from api.utils.standard_response import standard_response
 from config import settings
-from api.models.connect import GithubConnect, InstallationToken
-
-from sqlalchemy.orm import Session
+from api.models.connect import InstallationToken, SaveRepository
 from db.index import SessionLocal
 from db.models.user import User
-
-from api.core.auth import Auth
+from db.models.repository import Repository
+from api.utils.github_token import get_github_access_token
+from api.core.connect import get_repositories
 
 router = APIRouter()
 
@@ -20,76 +16,68 @@ router = APIRouter()
 GITHUB_APP_ID = settings.GITHUB_APP_ID
 PRIVATE_KEY_B64 = settings.GITHUB_APP_SEC_KEY  # base64 string from env
 
-def generate_jwt():
-    """Generate a GitHub App JWT using RS256 with base64-decoded private key."""
-    # Decode base64 -> PEM string
-    private_key = base64.b64decode(PRIVATE_KEY_B64).decode("utf-8")
-
-    now = int(time.time())
-    payload = {
-        "iat": now - 60,        # issued at
-        "exp": now + (10 * 60), # max 10 min allowed
-        "iss": GITHUB_APP_ID
-    }
-
-    # Sign with RS256
-    token = jwt.encode(payload, private_key, algorithm="RS256")
-    return token
-
-
-@router.post("/github/get-installation-token")
-def github_app_auth(request: GithubConnect):
-    try:
-        # 1. Create JWT
-        app_jwt = generate_jwt()
-
-        # 2. Exchange JWT for installation access token
-        url = f"https://api.github.com/app/installations/{request.installation_id}/access_tokens"
-        headers = {
-            "Authorization": f"Bearer {app_jwt}",
-            "Accept": "application/vnd.github+json"
-        }
-
-        response = requests.post(url, headers=headers)
-
-        if response.status_code != 201:
-            raise HTTPException(status_code=response.status_code, detail=response.json())
-
-        access_token = response.json()["token"]
-
-        return standard_response(
-            success=True,
-            message="GitHub installation token generated",
-            data={
-                "access_token": access_token,
-                "expires_at": response.json()["expires_at"]
-            }
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-
 @router.post("/github/save-installation-token")
 def github_save_installation_token(request: InstallationToken):
     try:
         session: Session = SessionLocal()
 
+        # find user
         user = session.query(User).filter(User.id == request.user_id).first()
-
         if not user:
-            raise HTTPException(status_code=401, detail="User Not found")
-          
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # save installation ID
         user.github_installation_id = int(request.installation_token)
-
         session.commit()
         session.refresh(user)
-        session.close()
+
+        # get installation access token
+        access_token = get_github_access_token(user.github_installation_id)
+
+        # fetch repos for this installation
+        repos = get_repositories(access_token)
 
         return standard_response(
             success=True,
-            message="installation token added",
-            data={}
+            message="Installation token saved, repos fetched",
+            data={
+                "repos": repos.get("repositories", [])
+            }
         )
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
+
+@router.post("/github/save-repository")
+def save_repository(request: SaveRepository):
+    try:
+        session: Session = SessionLocal()
+
+        # check if user exists
+        user = session.query(User).filter(User.id == request.user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # save each repo
+        for repo in request.repository_list:
+            new_repo = Repository(
+                user_id=request.user_id,
+                repo_name=repo.name,
+                repo_url=repo.url
+            )
+            session.add(new_repo)
+
+        session.commit()
+
+        return standard_response(
+            success=True,
+            message="Repositories saved successfully",
+            data={"count": len(request.repository_list)}
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
