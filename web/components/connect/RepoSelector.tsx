@@ -19,12 +19,45 @@ import {
 
 export type Repository = {
   id: number;
+  node_id: string;
   name: string;
   full_name: string;
   description: string | null;
   private: boolean;
   fork: boolean;
+  html_url: string;
+  url: string;
+  clone_url: string;
+  ssh_url: string;
+  svn_url: string;
+  homepage: string | null;
+  language: string | null;
+  topics: string[];
   stargazers_count: number;
+  watchers_count: number;
+  forks_count: number;
+  open_issues_count: number;
+  default_branch: string;
+  has_issues: boolean;
+  has_projects: boolean;
+  has_wiki: boolean;
+  has_pages: boolean;
+  has_discussions: boolean;
+  archived: boolean;
+  disabled: boolean;
+  visibility: string;
+  created_at: string; // ISO datetime
+  updated_at: string; // ISO datetime
+  pushed_at: string; // ISO datetime
+  owner: {
+    login: string;
+    id: number;
+    node_id: string;
+    avatar_url: string;
+    html_url: string;
+    type: string;
+    site_admin: boolean;
+  };
 };
 
 interface RepoSelectorProps {

@@ -52,7 +52,7 @@ def github_save_installation_token(request: InstallationToken):
         session.close()
 
 @router.post("/github/save-repository")
-def save_repository(request: SaveRepository):
+def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositoryList, not SaveRepository
     try:
         session: Session = SessionLocal()
 
@@ -65,14 +65,46 @@ def save_repository(request: SaveRepository):
         for repo in request.repository_list:
             stmt = insert(Repository).values(
                 user_id=request.user_id,
+                repo_id=repo.id,
                 repo_name=repo.name,
-                repo_url=repo.url
+                full_name=repo.full_name,
+                repo_url=repo.html_url,
+                description=repo.description,
+                private=repo.private,
+                language=repo.language,
+                topics=repo.topics,
+                stargazers_count=repo.stargazers_count,
+                forks_count=repo.forks_count,
+                watchers_count=repo.watchers_count,
+                default_branch=repo.default_branch,
+                open_issues_count=repo.open_issues_count,
+                has_issues=repo.has_issues,
+                has_discussions=repo.has_discussions,
+                archived=repo.archived,
+                created_at=repo.created_at,
+                updated_at=repo.updated_at,
+                pushed_at=repo.pushed_at,
+                clone_url=repo.clone_url,
+                owner_login=repo.owner.login if repo.owner else None,
+                owner_type=repo.owner.type if repo.owner else None,
             ).on_conflict_do_update(
-                index_elements=["user_id", "repo_url"],  # matches your unique constraint
+                index_elements=["user_id", "repo_url"],  # unique constraint must exist on these
                 set_={
-                    "repo_name": repo.name  # update repo_name if it changes
+                    "repo_name": repo.name,
+                    "description": repo.description,
+                    "language": repo.language,
+                    "topics": repo.topics,
+                    "stargazers_count": repo.stargazers_count,
+                    "forks_count": repo.forks_count,
+                    "watchers_count": repo.watchers_count,
+                    "open_issues_count": repo.open_issues_count,
+                    "updated_at": repo.updated_at,
+                    "pushed_at": repo.pushed_at,
+                    "owner_login": repo.owner.login if repo.owner else None,
+                    "owner_type": repo.owner.type if repo.owner else None,
                 }
             )
+
             session.execute(stmt)
 
         session.commit()
@@ -80,7 +112,7 @@ def save_repository(request: SaveRepository):
         return standard_response(
             success=True,
             message="Repositories saved successfully",
-            data={"count": len(request.repository_list)}
+            data={"count": len(request.repository_list)},
         )
     except Exception as e:
         print(e)

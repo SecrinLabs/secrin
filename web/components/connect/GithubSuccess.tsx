@@ -74,12 +74,36 @@ export default function GithubSuccess({
       selectedRepoIds.includes(repo.id)
     );
 
+    // Map into payload structure
     const payload = selectedRepos.map((repo) => ({
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
-      url: `https://github.com/${repo.full_name}`,
+      url: repo.url ?? `https://api.github.com/repos/${repo.full_name}`, // fallback
+      html_url: repo.html_url,
+      description: repo.description,
+      private: repo.private,
+      language: repo.language,
+      topics: repo.topics ?? [],
+      stargazers_count: repo.stargazers_count,
+      forks_count: repo.forks_count,
+      watchers_count: repo.watchers_count,
+      default_branch: repo.default_branch,
+      open_issues_count: repo.open_issues_count,
+      has_issues: repo.has_issues,
+      has_discussions: repo.has_discussions,
+      archived: repo.archived,
+      created_at: repo.created_at,
+      updated_at: repo.updated_at,
+      pushed_at: repo.pushed_at,
+      clone_url: repo.clone_url,
+      owner: {
+        login: repo.owner?.login,
+        type: repo.owner?.type,
+      },
     }));
+
+    console.log(payload);
 
     const res = await saveRepositoryList({
       repository_list: payload,
