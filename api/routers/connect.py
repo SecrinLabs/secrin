@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert
 
 from api.utils.standard_response import standard_response
 from config import settings
@@ -62,12 +63,17 @@ def save_repository(request: SaveRepository):
 
         # save each repo
         for repo in request.repository_list:
-            new_repo = Repository(
+            stmt = insert(Repository).values(
                 user_id=request.user_id,
                 repo_name=repo.name,
                 repo_url=repo.url
+            ).on_conflict_do_update(
+                index_elements=["user_id", "repo_url"],  # matches your unique constraint
+                set_={
+                    "repo_name": repo.name  # update repo_name if it changes
+                }
             )
-            session.add(new_repo)
+            session.execute(stmt)
 
         session.commit()
 

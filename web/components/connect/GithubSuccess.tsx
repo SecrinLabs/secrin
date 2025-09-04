@@ -3,8 +3,15 @@
 import { saveInstallationToken, saveRepositoryList } from "@/service/connect";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Repository } from "./RepoSelector";
-import { Github, CheckCircle2, XCircle, LoaderCircle } from "lucide-react";
+import {
+  Github,
+  CheckCircle2,
+  XCircle,
+  LoaderCircle,
+  Loader2Icon,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,7 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { RepoSelector } from "./RepoSelector";
+import { RepoSelector, Repository } from "./RepoSelector";
 
 export default function GithubSuccess({
   installation_token,
@@ -30,6 +37,10 @@ export default function GithubSuccess({
   const [message, setMessage] = useState("");
   const [selectedRepoIds, setSelectedRepoIds] = useState<number[]>([]);
   const [repositories, setRepositories] = useState<Repository[]>([]);
+
+  const [saveRepoLoading, setsaveRepoLoading] = useState(false);
+
+  const router = useRouter();
 
   const saveToken = useCallback(async () => {
     try {
@@ -58,15 +69,11 @@ export default function GithubSuccess({
   }, [installation_token, userId]);
 
   async function getAndSaveRepository() {
-    // Find the selected repositories
+    setsaveRepoLoading(true);
     const selectedRepos = repositories.filter((repo) =>
       selectedRepoIds.includes(repo.id)
     );
 
-    // Now you can send them to your API or background service
-    console.log("Starting service for repos:", selectedRepos);
-
-    // Example: build a payload
     const payload = selectedRepos.map((repo) => ({
       id: repo.id,
       name: repo.name,
@@ -74,13 +81,16 @@ export default function GithubSuccess({
       url: `https://github.com/${repo.full_name}`,
     }));
 
-    console.log("Payload:", payload);
-    // TODO: call your API with payload
-
     const res = await saveRepositoryList({
       repository_list: payload,
       user_id: Number(userId),
     });
+
+    if (res.success) {
+      router.push("/dashboard");
+    }
+
+    setsaveRepoLoading(false);
   }
 
   useEffect(() => {
@@ -257,16 +267,23 @@ export default function GithubSuccess({
               selectedIds={selectedRepoIds}
             />
             <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="default"
-                disabled={!selectedRepoIds?.length}
-                onClick={() => {
-                  // Handle starting the background service for selected repos
-                  getAndSaveRepository();
-                }}
-              >
-                Start Service
-              </Button>
+              {saveRepoLoading ? (
+                <Button disabled>
+                  <Loader2Icon className="animate-spin" />
+                  Please wait
+                </Button>
+              ) : (
+                <Button
+                  variant="default"
+                  disabled={!selectedRepoIds?.length}
+                  onClick={() => {
+                    // Handle starting the background service for selected repos
+                    getAndSaveRepository();
+                  }}
+                >
+                  Start Service
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
