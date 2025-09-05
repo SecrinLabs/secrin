@@ -54,8 +54,6 @@ export default function GithubSuccess({
         user_id: Number(userId),
       });
 
-      console.log(res);
-
       if (!res.success) throw new Error(res.message || "Failed to save token");
 
       const data = res.data as { repos?: Repository[] };
