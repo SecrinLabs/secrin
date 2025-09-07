@@ -10,6 +10,8 @@ from db.models.user import User
 from db.models.repository import Repository
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
+from engine.ingest.main import update_vectorstore
+from engine.query.main import qa_chain
 
 router = APIRouter()
 
@@ -52,7 +54,7 @@ def github_save_installation_token(request: InstallationToken):
         session.close()
 
 @router.post("/github/save-repository")
-def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositoryList, not SaveRepository
+async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositoryList, not SaveRepository
     try:
         session: Session = SessionLocal()
 
@@ -107,6 +109,8 @@ def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositor
 
             session.execute(stmt)
 
+        await update_vectorstore()
+
         session.commit()
 
         return standard_response(
@@ -119,3 +123,23 @@ def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositor
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
+
+from pydantic import BaseModel
+
+class GetAns(BaseModel):
+    query: str
+
+@router.post("/github/get-ans")
+async def get_ans(request: GetAns):
+    try:
+        res = qa_chain(request.query)
+        return standard_response(
+            success=True,
+            message="Installation token saved, repos fetched",
+            data={
+                "repos": res
+            }
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))

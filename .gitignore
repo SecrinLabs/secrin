@@ -53,3 +53,4 @@ next-env.d.ts
 # App-specific persistent storage
 chroma_store/
 gemini_store/
+chrome_db/
