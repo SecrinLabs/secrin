@@ -1,10 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  sendChatMessage,
-  ChatRequest,
-  ChatResponse,
-  ChatApiError,
-} from "@/service/chat";
+import { sendChatMessage } from "@/service/chat";
+import { ChatApiError, ChatRequest, ChatResponse } from "@/types";
 
 export interface UseChatMutationOptions {
   onSuccess?: (data: ChatResponse, variables: ChatRequest) => void;
