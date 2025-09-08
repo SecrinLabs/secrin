@@ -1,7 +1,6 @@
 """
 Graph builder for creating knowledge graphs from database content.
 """
-import time
 import os
 from typing import Dict, List, Set, Tuple
 from tqdm import tqdm
