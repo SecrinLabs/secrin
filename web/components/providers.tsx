@@ -3,7 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
-import { ChatApiError } from "@/service/chat";
+import { SessionProvider } from "next-auth/react";
+import { ChatApiError, GithubApiError } from "@/types";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -16,6 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               // Don't retry on 4xx errors
               if (
                 error instanceof ChatApiError &&
+                error instanceof GithubApiError &&
                 error.status >= 400 &&
                 error.status < 500
               ) {
@@ -29,6 +31,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               // Don't retry on 4xx errors for mutations
               if (
                 error instanceof ChatApiError &&
+                error instanceof GithubApiError &&
                 error.status >= 400 &&
                 error.status < 500
               ) {
@@ -43,7 +46,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <SessionProvider>{children}</SessionProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

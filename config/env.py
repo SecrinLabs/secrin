@@ -127,8 +127,9 @@ class Settings:
         # Redis Configurations
         self.REDIS_SERVER_URL = os.getenv("REDIS_SERVER_URL")
         
-        # Create required directories
-        # self._create_directories()
+        # Github App Configurations
+        self.GITHUB_APP_SEC_KEY = os.getenv("GITHUB_APP_SEC_KEY")
+        self.GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
     
     def _create_directories(self):
         """Create required directories if they don't exist"""

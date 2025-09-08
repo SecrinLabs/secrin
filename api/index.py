@@ -11,7 +11,8 @@ from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
 import redis.asyncio as aioredis
 
-from api.routers import chat
+from api.routers import chat, auth, connect
+
 from api.utils.monitoring import setup_service_monitoring, get_service_stats
 from config import settings
 
@@ -41,7 +42,7 @@ setup_service_monitoring()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.NEXT_PUBLIC_API_BASE_URL],  # set this to your frontend URL in prod
+    allow_origins=[config.NEXT_PUBLIC_API_BASE_URL, "http://localhost:3000"],  # set this to your frontend URL in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,8 +82,6 @@ def health_check():
     }
 
 # Include routers
-# app.include_router(scraper.router, prefix="/api/scraper", tags=["scraper"])
-# app.include_router(embed.router, prefix="/api/embed", tags=["embed"])
 app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-# app.include_router(integration.router, prefix="/api/integration", tags=["integration"])
-# app.include_router(websocket.router, prefix="/ws", tags=["websocket"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(connect.router, prefix="/api/connect", tags=["connect"])

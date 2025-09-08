@@ -1,28 +1,6 @@
-export interface ChatRequest {
-  question: string;
-  conversation_id?: string;
-}
-
-export interface ChatResponse {
-  answer: string;
-  conversation_id?: string;
-  timestamp?: string;
-}
-
-export interface ApiError {
-  message: string;
-  status: number;
-}
-
-export class ChatApiError extends Error {
-  constructor(message: string, public status: number, public data?: unknown) {
-    super(message);
-    this.name = "ChatApiError";
-  }
-}
-
 import env from "@/config/env";
 import { getFriendlyErrorMessage } from "@/lib/HttpError";
+import { ChatApiError, ChatRequest, ChatResponse } from "@/types";
 
 export async function sendChatMessage(
   request: ChatRequest
