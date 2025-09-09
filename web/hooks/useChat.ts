@@ -12,6 +12,7 @@ export function useChat(options?: UseChatMutationOptions) {
 
   const mutation = useMutation({
     mutationFn: sendChatMessage,
+    retry: false,
     onSuccess: (data, variables) => {
       // Optionally cache successful chat responses
       queryClient.setQueryData(["chat", variables.conversation_id], data);

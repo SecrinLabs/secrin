@@ -1,15 +1,24 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
 
-from engine.main import run_generator
 from api.models.chat import ChatRequest
 
-router = APIRouter()
+from engine.query.main import qa_chain
+from api.utils.standard_response import standard_response
 
-@router.post("/", dependencies=[Depends(RateLimiter(times=3, seconds=60))])
+router = APIRouter()
+#dependencies=[Depends(RateLimiter(times=3, seconds=60))]
+@router.post("/")
 def trigger_chat(request: ChatRequest):
     try:
-        ans = run_generator(request.question)
-        return {"answer": ans}
+        res = qa_chain(request.question)
+        return standard_response(
+            success=True,
+            message="Installation token saved, repos fetched",
+            data={
+                "repos": res
+            }
+        )
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))

@@ -27,14 +27,14 @@ export async function sendChatMessage(
 
     const data = await response.json();
 
+    const answer = data?.data?.repos?.result;
     // Validate response structure
-    if (!data.answer) {
+    if (!answer) {
       throw new ChatApiError("Invalid response format from server", 500, data);
     }
 
     return {
-      answer: data.answer,
-      conversation_id: data.conversation_id || "",
+      answer: answer,
       timestamp: data.timestamp || new Date().toISOString(),
     };
   } catch (error) {
