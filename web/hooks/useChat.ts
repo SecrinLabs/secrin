@@ -1,10 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  sendChatMessage,
-  ChatRequest,
-  ChatResponse,
-  ChatApiError,
-} from "@/service/chat";
+import { sendChatMessage } from "@/service/chat";
+import { ChatApiError, ChatRequest, ChatResponse } from "@/types";
 
 export interface UseChatMutationOptions {
   onSuccess?: (data: ChatResponse, variables: ChatRequest) => void;
@@ -16,6 +12,7 @@ export function useChat(options?: UseChatMutationOptions) {
 
   const mutation = useMutation({
     mutationFn: sendChatMessage,
+    retry: false,
     onSuccess: (data, variables) => {
       // Optionally cache successful chat responses
       queryClient.setQueryData(["chat", variables.conversation_id], data);

@@ -21,7 +21,7 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
 # LLM
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite",
+    model="gemini-2.0-flash-lite",
     google_api_key=settings.GEMINI_API_KEY,
     temperature=0.2
 )
@@ -43,5 +43,5 @@ qa_chain = RetrievalQA.from_chain_type(
     retriever=retriever,
     chain_type="stuff",
     chain_type_kwargs={"prompt": qa_prompt},
-    return_source_documents=True,
+    return_source_documents=False,
 )

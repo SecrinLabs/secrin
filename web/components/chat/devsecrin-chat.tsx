@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { User, Bot, Loader2, AlertCircle } from "lucide-react";
+import { User, Bot, Loader2, AlertCircle, Send, Square } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { AppPerameter } from "@/constants/AppPerameters";
@@ -152,7 +152,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
   if (!hasStartedChat) {
     return (
       <div
-        className={`flex flex-col h-full bg-background transition-all duration-700 ease-in-out ${className}`}
+        className={`flex flex-col h-full transition-all duration-700 ease-in-out ${className}`}
       >
         {/* Centered content */}
         <div className="flex-1 flex items-center justify-center px-6">
@@ -175,19 +175,81 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
             </div>
 
             {/* Input area */}
-            <Card className="bg-card border-border shadow-lg rounded-3xl py-0">
+            {/* <div className="border-border shadow-lg rounded-3xl py-4">
               <div className="p-4">
-                <Textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask anything"
-                  className="min-h-[20px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base leading-relaxed placeholder:text-muted-foreground"
-                  disabled={chat.isLoading}
-                />
+                <div className="flex-1 relative">
+                  <Textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Ask anything…"
+                    className="w-full min-h-[24px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 text-base leading-relaxed placeholder:text-muted-foreground p-0 overflow-hidden"
+                    disabled={chat.isLoading}
+                    aria-label="Chat input"
+                    rows={1}
+                  />
+                </div>
               </div>
-            </Card>
+            </div> */}
+
+            <div className="relative">
+              <div className="border border-border bg-background rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 focus-within:shadow-md focus-within:border-ring/20">
+                <div className="flex items-end gap-3 p-4">
+                  <div className="flex-1 relative">
+                    <Textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyPress}
+                      placeholder="Ask anything…"
+                      className="w-full min-h-[24px] max-h-[200px] resize-none border-0 !bg-transparent focus-visible:ring-0 text-base leading-relaxed placeholder:text-muted-foreground p-0 overflow-hidden"
+                      disabled={chat.isLoading}
+                      aria-label="Chat input"
+                      rows={1}
+                    />
+                  </div>
+
+                  <div className="flex-shrink-0 pb-1">
+                    {chat.isLoading ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 w-8 p-0 rounded-lg border-border hover:bg-muted bg-transparent"
+                        aria-label="Stop generation"
+                      >
+                        <Square className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleSendMessage}
+                        size="sm"
+                        disabled={!inputValue.trim()}
+                        className="h-8 w-8 p-0 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Send message"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subtle bottom border for visual separation */}
+                <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent opacity-50" />
+              </div>
+
+              {/* Helper text */}
+              <div className="flex items-center justify-between mt-2 px-2">
+                <p className="text-xs text-muted-foreground">
+                  Press Enter to send, Shift+Enter for new line
+                </p>
+                {inputValue.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {inputValue.length} characters
+                  </p>
+                )}
+              </div>
+            </div>
 
             {/* Quick suggestions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -321,7 +383,7 @@ export function DevSecrinChat({ className }: DevSecrinChatProps) {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask anything"
-                className="border-0 bg-transparent focus-visible:ring-0 text-base h-auto py-2"
+                className="border-0 focus-visible:ring-0 text-base h-auto py-2"
                 disabled={chat.isLoading}
               />
             </div>
