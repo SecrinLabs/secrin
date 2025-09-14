@@ -7,11 +7,14 @@ from config import settings
 from api.models.connect import InstallationToken, SaveRepository
 from db.index import SessionLocal
 from db.models.user import User
+from db.models.integration import Integration, IntegrationType
 from db.models.repository import Repository
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
 from engine.ingest.main import update_vectorstore
 from engine.query.main import qa_chain
+
+from service.main import run_scraper_by_name
 
 router = APIRouter()
 
@@ -30,12 +33,25 @@ def github_save_installation_token(request: InstallationToken):
             raise HTTPException(status_code=401, detail="User not found")
         
         # save installation ID
-        user.github_installation_id = int(request.installation_token)
+        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()
+        
+        if integration:
+            # update config
+            integration.config = {"installation_token": request.installation_token}
+        else:
+            # create new integration
+            integration = Integration(
+                user_id=request.user_id,
+                type=IntegrationType.github,
+                config={"installation_token": request.installation_token}
+            )
+            session.add(integration)
+    
         session.commit()
-        session.refresh(user)
+        session.refresh(integration)
 
         # get installation access token
-        access_token = get_github_access_token(user.github_installation_id)
+        access_token = get_github_access_token(request.installation_token)
 
         # fetch repos for this installation
         repos = get_repositories(access_token)
@@ -135,9 +151,25 @@ async def get_ans(request: GetAns):
         res = qa_chain(request.query)
         return standard_response(
             success=True,
-            message="Installation token saved, repos fetched",
+            message="success",
             data={
                 "repos": res
+            }
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+    
+### TODO: accept user id from frontend
+@router.get("/")
+def run_scrapper():
+    try:
+        run_scraper_by_name(IntegrationType.github, 4)
+        return standard_response(
+            success=True,
+            message="success",
+            data={
+                "repos": "demo"
             }
         )
     except Exception as e:

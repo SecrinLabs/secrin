@@ -4,17 +4,16 @@ import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from markdownify import markdownify as md
-from sqlalchemy.orm import sessionmaker
 
-from src.models.Sitemap import Sitemap
-from src.models import engine
+from service.src.models.Sitemap import Sitemap
+
+from db.index import SessionLocal
 
 from config import get_logger
 
 # Setup logger for this module
 logger = get_logger(__name__)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class SitemapScraper:
     def __init__(self, sitemap_url: str, output_base_dir: str = "./data"):
@@ -22,8 +21,6 @@ class SitemapScraper:
         self.output_base_dir = output_base_dir
         self.site_name = self._get_site_name()
         self.db = SessionLocal()
-        Sitemap.metadata.create_all(bind=engine)
-
 
     def _slugify(self, url: str) -> str:
         return re.sub(r'[^a-zA-Z0-9\-]', '-', url.strip('/').split('/')[-1])
