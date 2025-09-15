@@ -10,6 +10,7 @@ from .llm.factory import get_llm
 from .graph import GraphBasedRAG
 from .graph.chatbot import create_graph_chatbot, rebuild_knowledge_graph, clear_knowledge_graph_cache
 from config import settings
+from engine.ingest.builder import EmbeddingBuilder
 
 config = settings
 
@@ -39,3 +40,10 @@ def create_chatbot(embedder, vectorstore, llm=None):
     if llm is None:
         llm = get_llm(config.LLM_PROVIDER)
     return create_graph_chatbot(embedder, vectorstore, llm)
+
+def run_embedder_v2():
+    embedder = get_embedder(config.EMBEDDER_NAME)
+    vectorstore = get_vectorstore("chroma", collection_name=config.CHROMA_COLLECTION_NAME)
+    llm = get_llm(config.LLM_PROVIDER)
+    embedderV2 = EmbeddingBuilder(embedder, vectorstore, llm)
+    embedderV2.embed_github_commits()

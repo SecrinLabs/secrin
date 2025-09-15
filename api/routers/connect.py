@@ -13,6 +13,7 @@ from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
 from engine.ingest.main import update_vectorstore
 from engine.query.main import qa_chain
+from engine.main import run_embedder_v2
 
 from service.main import run_scraper_by_name
 
@@ -164,7 +165,8 @@ async def get_ans(request: GetAns):
 @router.get("/")
 def run_scrapper():
     try:
-        run_scraper_by_name(IntegrationType.github, 4)
+        # run_scraper_by_name(IntegrationType.github, 4)
+        run_embedder_v2()
         return standard_response(
             success=True,
             message="success",
