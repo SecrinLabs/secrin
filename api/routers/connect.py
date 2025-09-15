@@ -160,7 +160,7 @@ async def get_ans(request: GetAns):
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
     
-### TODO: accept user id from frontend
+# TODO: accept user id from frontend
 @router.get("/")
 def run_scrapper():
     try:
