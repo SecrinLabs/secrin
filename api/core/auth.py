@@ -7,7 +7,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class Auth:
     # Add new user
-    def add_user(self, email: str, username: str, password: str, github_installation_id: int = None):
+    def add_user(self, email: str, username: str, password: str):
         session: Session = SessionLocal()
         try:
             hashed_password = pwd_context.hash(password)
@@ -15,8 +15,7 @@ class Auth:
             user = User(
                 email=email,
                 username=username,
-                password_hash=hashed_password,
-                github_installation_id=github_installation_id,
+                password_hash=hashed_password
             )
             session.add(user)
             session.commit()
