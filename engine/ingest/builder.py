@@ -2,8 +2,7 @@ from tqdm import tqdm
 
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit
-from config import settings, get_logger
-from engine.llm.factory import get_llm
+from config import get_logger
 
 logger = get_logger(__name__)
 
@@ -12,15 +11,6 @@ class EmbeddingBuilder:
     self.embedder = embedder
     self.vectorstore = vectorstore
     self.session = SessionLocal()
-        
-        # Initialize LLM - use factory if not provided
-    if llm is None:
-        llm_provider = settings.LLM_PROVIDER
-        self.llm = get_llm(llm_provider)
-        logger.info(f"Initialized LLM with provider: {llm_provider}")
-    else:
-        self.llm = llm
-        logger.info(f"Using provided LLM: {self.llm.get_model_info()}")
 
   def _serialize_commit(self, commit: GithubCommit) -> str:
     """Convert a commit row into canonical text for embedding."""

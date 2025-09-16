@@ -1,11 +1,12 @@
-from .store.ollama import OllamaEmbedder
-from .store.gemini import GeminiEmbedder
-from .base import Embedder
+from engine.embeddings.store.gemini import GeminiStore
+from engine.embeddings.store.ollama import OllamaStore
+from engine.embeddings.base import BaseStore
+from config import settings
 
-def get_embedder(name: str) -> Embedder:
-    if name.lower() == "ollama":
-        return OllamaEmbedder()
-    elif name.lower() == "gemini":
-        return GeminiEmbedder()
+def get_store() -> BaseStore:
+    if settings.EMBEDDER_NAME == "gemini":
+        return GeminiStore()
+    elif settings.EMBEDDER_NAME == "ollama":
+        return OllamaStore()
     else:
-        raise ValueError(f"Unsupported embedder type: {name}")
+        raise ValueError(f"Unsupported embedder: {settings.EMBEDDER_NAME}")

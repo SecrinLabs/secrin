@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Union
 
-class Embedder(ABC):
+class BaseStore(ABC):
     @abstractmethod
-    def embed(self, text: str) -> List[float]:
-        """
-        Given a string or list of strings, return a list of embeddings.
-        Each embedding is a list of floats.
-        """
+    def getEmbedder(self):
+        pass
+
+    @abstractmethod
+    def getLlm(self):
         pass

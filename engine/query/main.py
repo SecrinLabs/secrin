@@ -1,29 +1,17 @@
 from pydantic import BaseModel
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from config import settings
-
+from engine.embeddings.factory import get_store
 
 class QueryRequest(BaseModel):
     question: str
 
+store = get_store()
 
-# Choose embeddings dynamically
-if settings.EMBEDDER_NAME == "gemini":
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001",
-        google_api_key=settings.GEMINI_API_KEY,
-    )
-elif settings.EMBEDDER_NAME == "ollama":
-    embeddings = OllamaEmbeddings(
-        model=settings.OLLAMA_MODEL or "mxbai-embed-large"  # default Ollama embedding model
-    )
-else:
-    raise ValueError(f"Unsupported embedder: {settings.EMBEDDER_NAME}")
-
+# Get embeddings and LLM from store
+embeddings = store.getEmbedder()
+llm = store.getLlm()
 
 # Initialize vectorstore
 vectorstore = Chroma(
@@ -32,30 +20,17 @@ vectorstore = Chroma(
 )
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-
-# Choose LLM dynamically (if you want to switch LLMs too)
-if settings.EMBEDDER_NAME == "gemini":
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-lite",
-        google_api_key=settings.GEMINI_API_KEY,
-        temperature=0.2,
-    )
-elif settings.EMBEDDER_NAME == "ollama":
-    from langchain_community.chat_models import ChatOllama
-
-    llm = ChatOllama(model=settings.OLLAMA_MODEL or "llama3")
-else:
-    raise ValueError(f"Unsupported LLM: {settings.LLM_NAME}")
-
-
-# Prompt template
 qa_prompt = PromptTemplate(
     input_variables=["context", "question"],
     template=(
-        "You are an assistant. Use the context to answer the question.\n\n"
-        "Context:\n{context}\n\n"
-        "Question: {question}\n\n"
-        "Answer clearly and concisely:"
+        "You are a careful assistant. Your job is to answer strictly based on the provided context.\n\n"
+        "### Rules:\n"
+        "- Use ONLY the information in the Context section.\n"
+        "- Do NOT use external knowledge or make assumptions.\n"
+        "- If the answer is not present in the context, say: 'The context does not provide that information.'\n\n"
+        "### Context:\n{context}\n\n"
+        "### Question:\n{question}\n\n"
+        "### Answer:"
     ),
 )
 
@@ -65,5 +40,5 @@ qa_chain = RetrievalQA.from_chain_type(
     retriever=retriever,
     chain_type="stuff",
     chain_type_kwargs={"prompt": qa_prompt},
-    return_source_documents=False,
+    return_source_documents=True,
 )
