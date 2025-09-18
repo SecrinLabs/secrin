@@ -33,3 +33,21 @@ export interface SaveRepositoryList {
     };
   }[];
 }
+
+export interface DisconnectServiceRequest {
+  user_id: string;
+  service_type: string;
+}
+
+export interface GetAllIntegrationsRequest {
+  user_id: string;
+}
+
+export interface IntegrationDTO {
+  id: string;
+  type: string;
+}
+
+export interface GetUserIntegrationsResponse {
+  integrations: IntegrationDTO[];
+}

@@ -1,6 +1,9 @@
 import requests
 from fastapi import HTTPException
 
+from db.index import SessionLocal
+from db.models.integration import Integration, IntegrationType
+
 GITHUB_API_URL = "https://api.github.com"
 
 def get_repositories(installation_token: str):
@@ -29,3 +32,37 @@ def get_repositories(installation_token: str):
         )
 
     return response.json()
+
+def get_integration_type(integration_name) -> IntegrationType:
+    if integration_name == "github":
+        return IntegrationType.github
+    return None
+
+
+def remove_integration(user_id: int, integration_name: str) -> bool:
+    session = SessionLocal()
+    try:
+        integration_type = get_integration_type(integration_name)
+        if not integration_type:
+            return False
+
+        integration = (
+            session.query(Integration)
+            .filter(
+                Integration.user_id == user_id,
+                Integration.type == integration_type,
+            )
+            .first()
+        )
+
+        if not integration:
+            return False
+
+        session.delete(integration)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
