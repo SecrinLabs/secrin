@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 import { SessionProvider } from "next-auth/react";
-import { ChatApiError, GithubApiError } from "@/types";
+import { ChatApiError, GithubApiError, SourceApiError } from "@/types";
 import { ThemeProvider } from "./theme-provider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -19,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               if (
                 error instanceof ChatApiError &&
                 error instanceof GithubApiError &&
+                error instanceof SourceApiError &&
                 error.status >= 400 &&
                 error.status < 500
               ) {
@@ -33,6 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               if (
                 error instanceof ChatApiError &&
                 error instanceof GithubApiError &&
+                error instanceof SourceApiError &&
                 error.status >= 400 &&
                 error.status < 500
               ) {

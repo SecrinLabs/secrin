@@ -170,8 +170,6 @@ export async function getUserIntegrations(
       body: JSON.stringify(request),
     });
 
-    console.log(response);
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new GithubApiError(
