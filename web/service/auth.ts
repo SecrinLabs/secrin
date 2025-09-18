@@ -67,8 +67,6 @@ export async function loginUser(request: UserLoginRequest) {
       throw error;
     }
 
-    console.error("Login error:", error);
-
     if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new AuthApiError("Unable to connect to auth service", 0);
     }
