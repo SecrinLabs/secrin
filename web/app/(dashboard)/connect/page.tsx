@@ -25,8 +25,7 @@ const initialConnectors: Connector[] = [
     id: "github",
     name: "GitHub",
     icon: Icons.github,
-    description:
-      "Connect to your GitHub repositories for code analysis and security scanning.",
+    description: "Connect to your GitHub account.",
     connected: false,
   },
 ];

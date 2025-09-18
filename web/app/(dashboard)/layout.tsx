@@ -14,6 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 function layout({
   children,
@@ -49,6 +50,7 @@ function layout({
         </header>
         <div>{children}</div>
       </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   );
 }

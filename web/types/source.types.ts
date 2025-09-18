@@ -2,13 +2,13 @@ export interface GetAllSourcesRequest {
   user_id: string;
 }
 
-// Metadata types for each source
 export interface RepositoryMetadata {
   url: string;
   created_at?: string;
+  repo_id: number;
+  name: string;
 }
 
-// Integration types (discriminated union)
 export type Integration = {
   id: number;
   type: "repository";
@@ -16,11 +16,24 @@ export type Integration = {
   metadata: RepositoryMetadata;
 };
 
-// 3. Response wrapper
 export interface GetAllSourcesResponse {
-  success: boolean;
-  message: string;
-  data: {
-    integrations: Integration[];
-  };
+  integrations: Integration[];
+}
+
+export interface GetGithubRemainingRepositoryRequest {
+  user_id: string;
+}
+
+export interface GetGithubRemainingRepositoryResponse {
+  repositorys: RepositoryMetadata[];
+}
+
+export interface RemoveGithubRepositoryRequest {
+  user_id: string;
+  repo_id: number;
+}
+
+export interface AddGithubRepositoryRequest {
+  user_id: string;
+  repo_id: number;
 }
