@@ -40,3 +40,10 @@ class RepositorySchema(BaseModel):
 class SaveRepository(BaseModel):
     repository_list: list[RepositorySchema]
     user_id: int
+
+class DisconnectService(BaseModel):
+    user_id: int
+    service_type: str
+
+class GetAllIntegrations(BaseModel):
+    user_id: int

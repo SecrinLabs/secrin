@@ -4,13 +4,13 @@ from sqlalchemy.dialects.postgresql import insert
 
 from api.utils.standard_response import standard_response
 from config import settings
-from api.models.connect import InstallationToken, SaveRepository
+from api.models.connect import InstallationToken, SaveRepository, DisconnectService, GetAllIntegrations
 from db.index import SessionLocal
 from db.models.user import User
 from db.models.integration import Integration, IntegrationType
 from db.models.repository import Repository
 from api.utils.github_token import get_github_access_token
-from api.core.connect import get_repositories
+from api.core.connect import get_repositories, remove_integration
 from engine.ingest.main import update_vectorstore
 from engine.query.main import qa_chain
 from engine.main import run_embedder_v2
@@ -161,7 +161,62 @@ async def get_ans(request: GetAns):
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
     
+@router.post("/disconnect")
+def disconnect_service(request: DisconnectService):
+    try:
+        removed = remove_integration(request.user_id, request.service_type)
+
+        if not removed:
+            return standard_response(
+                success=False,
+                message=f"No integration found for {request.service_type}",
+                data=None,
+            )
+
+        return standard_response(
+            success=True,
+            message=f"Successfully disconnected {request.service_type}",
+            data={},  # replace with real payload if needed
+        )
+
+    except Exception as e:
+        print(f"Error while disconnecting service: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/integrations")
+def get_user_integrations(request: GetAllIntegrations):
+    try:
+        session = SessionLocal()
+        integrations = (
+            session.query(Integration)
+            .filter(Integration.user_id == request.user_id)
+            .all()
+        )
+
+        # Convert ORM objects to dicts (assuming Integration has `id`, `type`, `created_at` etc.)
+        integration_list = [
+            {
+                "id": integration.id,
+                "type": integration.type.value if hasattr(integration.type, "value") else integration.type,
+            }
+            for integration in integrations
+        ]
+
+        return standard_response(
+            success=True,
+            message=f"success",
+            data={"integrations": integration_list},
+        )
+
+    except Exception as e:
+        print(f"Error while fetching integrations: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
+
+
 # TODO: accept user id from frontend
+# TODO: response is in not valid format
 @router.get("/")
 def run_scrapper():
     try:
