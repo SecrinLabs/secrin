@@ -16,17 +16,17 @@ interface Channel {
 
 const initialChannels: Channel[] = [
   {
+    id: "chat",
+    name: "Chat",
+    icon: Icons.chat,
+    description: "chat directly in secrin app.",
+    connected: false,
+  },
+  {
     id: "github",
     name: "Github",
     icon: Icons.github,
     description: "Stay connected inside Github.",
-    connected: false,
-  },
-  {
-    id: "slack",
-    name: "Slack",
-    icon: Icons.slack,
-    description: "Collaborate directly from Slack.",
     connected: false,
   },
 ];
