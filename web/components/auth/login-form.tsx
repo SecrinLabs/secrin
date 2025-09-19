@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,69 +42,62 @@ export function LoginForm({
       setError(result.error);
     } else {
       // login successful — redirect to dashboard or homepage
-      window.location.href = "/dashboard";
+      window.location.href = "/connect";
     }
   };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+      <Card className="border-border shadow-sm">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-xl">Sign in</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your email and password to access your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
+            <div className="flex flex-col gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-10"
                 />
               </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
                 </div>
                 <Input
                   id="password"
                   type="password"
+                  placeholder="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-10"
                 />
               </div>
-              <div className="flex flex-col gap-3">
-                <Button
-                  type="submit"
-                  className="w-full cursor-pointer"
-                  disabled={loading}
-                >
-                  {loading ? "Logging in..." : "Login"}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </Button>
               {error && (
-                <p className="text-sm text-red-500 text-center">{error}</p>
+                <p className="text-sm text-destructive text-center">{error}</p>
               )}
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <a href="#" className="underline underline-offset-4">
-                Sign up
-              </a>
             </div>
           </form>
         </CardContent>

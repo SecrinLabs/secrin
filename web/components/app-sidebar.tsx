@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import { MessageCircleMore, Zap } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { MessageCircleMore, Zap, FilePlus, Plug } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -16,7 +16,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Icons } from "./Icons";
-import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 // This is sample data.
 const data = {
@@ -34,7 +34,17 @@ const data = {
     },
     {
       title: "Connect",
-      url: "/dashboard/connect",
+      url: "/connect",
+      icon: Plug,
+    },
+    {
+      title: "Source",
+      url: "/source",
+      icon: FilePlus,
+    },
+    {
+      title: "Channel",
+      url: "/channel",
       icon: Zap,
     },
   ],
@@ -42,26 +52,33 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+
+  const navItems = data.navMain.map((item) => ({
+    ...item,
+    isActive: pathname.startsWith(item.url),
+  }));
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <div>
                 <div className="flex size-12 items-center justify-center">
                   <Icons.logo className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-medium">Devsecrin</span>
                 </div>
-              </a>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

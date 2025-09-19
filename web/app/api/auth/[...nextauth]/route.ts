@@ -28,8 +28,6 @@ export const authOptions = {
             password: credentials.password,
           });
 
-          console.log(response);
-
           if (response.data.user) {
             return response.data.user; // <- This will become session.user
           }
