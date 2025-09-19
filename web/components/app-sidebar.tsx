@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { MessageCircleMore, Zap } from "lucide-react";
+import { MessageCircleMore, Zap, FilePlus, Plug } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -33,8 +33,18 @@ const data = {
       isActive: true,
     },
     {
+      title: "Source",
+      url: "/source",
+      icon: FilePlus,
+    },
+    {
       title: "Connect",
-      url: "/dashboard/connect",
+      url: "/connect",
+      icon: Plug,
+    },
+    {
+      title: "Channel",
+      url: "/channel",
       icon: Zap,
     },
   ],
@@ -48,14 +58,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <div>
                 <div className="flex size-12 items-center justify-center">
                   <Icons.logo className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-medium">Devsecrin</span>
                 </div>
-              </a>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
