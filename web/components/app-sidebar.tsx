@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useSession } from "next-auth/react";
 import { MessageCircleMore, Zap, FilePlus, Plug } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -16,7 +16,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Icons } from "./Icons";
-import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 // This is sample data.
 const data = {
@@ -33,14 +33,14 @@ const data = {
       isActive: true,
     },
     {
-      title: "Source",
-      url: "/source",
-      icon: FilePlus,
-    },
-    {
       title: "Connect",
       url: "/connect",
       icon: Plug,
+    },
+    {
+      title: "Source",
+      url: "/source",
+      icon: FilePlus,
     },
     {
       title: "Channel",
@@ -52,6 +52,13 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+
+  const navItems = data.navMain.map((item) => ({
+    ...item,
+    isActive: pathname.startsWith(item.url),
+  }));
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -71,7 +78,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser
