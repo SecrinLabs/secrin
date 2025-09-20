@@ -7,14 +7,15 @@ from engine.query.main import qa_chain
 from api.utils.standard_response import standard_response
 
 router = APIRouter()
-#dependencies=[Depends(RateLimiter(times=3, seconds=60))]
+
+dependencies=[Depends(RateLimiter(times=3, seconds=60))]
 @router.post("/")
 def trigger_chat(request: ChatRequest):
     try:
         res = qa_chain(request.question)
         return standard_response(
             success=True,
-            message="Installation token saved, repos fetched",
+            message="",
             data={
                 "repos": res
             }
