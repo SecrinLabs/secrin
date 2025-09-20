@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
+import requests
+from fastapi import Request
 
 from api.models.chat import ChatRequest
-
 from engine.query.main import qa_chain
 from api.utils.standard_response import standard_response
+from api.utils.github_token import get_github_access_token
 
 router = APIRouter()
 
@@ -35,6 +37,7 @@ async def github_app_webhook_event(request: Request):
 
         action = payload.get("action")
         repo = payload.get("repository", {}).get("full_name")
+        installation_id = payload.get("installation", {}).get("id")
 
         issue = payload.get("issue", {})
         issue_number = issue.get("number")
@@ -53,15 +56,31 @@ async def github_app_webhook_event(request: Request):
             )
             print(context_msg)
 
-        res = qa_chain(context_msg)
+            res = qa_chain(context_msg)
+            reply_body = res.get("result", "Sorry, I couldn't generate a reply.")
 
-        print(res)
+            token = get_github_access_token(installation_id)
 
-        return standard_response(
-            success=True,
-            message="Webhook received",
-            data={"issue_number": issue_number, "repo": repo}
-        )
+            answer = f"Hi @{payload['comment']['user']['login']}, here’s an automated answer to your comment! \n"
+
+            # Post back to GitHub
+            url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
+            headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
+            r = requests.post(url, headers=headers, json={"body": answer + reply_body})
+            r.raise_for_status()
+
+
+            return standard_response(
+                success=True,
+                message="Webhook received",
+                data={"issue_number": issue_number, "repo": repo}
+            )
+        else:
+            return standard_response(
+                success=True,
+                message="Webhook received",
+                data={}
+            )
 
     except Exception as e:
         print("Error processing webhook:", e)
