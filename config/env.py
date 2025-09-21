@@ -130,6 +130,9 @@ class Settings:
         # Github App Configurations
         self.GITHUB_APP_SEC_KEY = os.getenv("GITHUB_APP_SEC_KEY")
         self.GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
+
+        # Github Webhook Secret
+        self.GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
     
     def _create_directories(self):
         """Create required directories if they don't exist"""
