@@ -38,8 +38,6 @@ export function LoginForm({
 
     setLoading(false);
 
-    console.log(result);
-
     if (result?.error) {
       setError(result.error);
     } else {
