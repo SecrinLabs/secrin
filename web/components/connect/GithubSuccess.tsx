@@ -3,14 +3,7 @@
 import { saveInstallationToken, saveRepositoryList } from "@/service/connect";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Github,
-  CheckCircle2,
-  XCircle,
-  LoaderCircle,
-  Loader2Icon,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Github, CheckCircle2, XCircle, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
-import { RepoSelector, Repository } from "./RepoSelector";
+import { Repository } from "./RepoSelector";
 
 export default function GithubSuccess({
   installation_token,
@@ -35,12 +28,6 @@ export default function GithubSuccess({
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
-  const [selectedRepoIds, setSelectedRepoIds] = useState<number[]>([]);
-  const [repositories, setRepositories] = useState<Repository[]>([]);
-
-  const [saveRepoLoading, setsaveRepoLoading] = useState(false);
-
-  const router = useRouter();
 
   const saveToken = useCallback(async () => {
     try {
@@ -57,7 +44,11 @@ export default function GithubSuccess({
       if (!res.success) throw new Error(res.message || "Failed to save token");
 
       const data = res.data as { repos?: Repository[] };
-      setRepositories(data.repos || []);
+
+      console.log(data.repos);
+
+      getAndSaveRepository(data.repos || []);
+
       setStatus("success");
       setMessage(res.message || "Token saved successfully");
     } catch (err: unknown) {
@@ -66,14 +57,9 @@ export default function GithubSuccess({
     }
   }, [installation_token, userId]);
 
-  async function getAndSaveRepository() {
-    setsaveRepoLoading(true);
-    const selectedRepos = repositories.filter((repo) =>
-      selectedRepoIds.includes(repo.id)
-    );
-
+  async function getAndSaveRepository(repositories: Repository[]) {
     // Map into payload structure
-    const payload = selectedRepos.map((repo) => ({
+    const payload = repositories.map((repo) => ({
       id: repo.id,
       name: repo.name,
       full_name: repo.full_name,
@@ -107,12 +93,6 @@ export default function GithubSuccess({
       repository_list: payload,
       user_id: Number(userId),
     });
-
-    if (res.success) {
-      router.push("/dashboard");
-    }
-
-    setsaveRepoLoading(false);
   }
 
   useEffect(() => {
@@ -277,35 +257,6 @@ export default function GithubSuccess({
               <span className="text-muted-foreground">
                 Your GitHub app is now linked to your account.
               </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-stretch gap-4">
-            <RepoSelector
-              repositories={repositories}
-              onSelect={(repos) => {
-                setSelectedRepoIds(repos.map((repo) => repo.id));
-              }}
-              selectedIds={selectedRepoIds}
-            />
-            <div className="flex items-center justify-end gap-2">
-              {saveRepoLoading ? (
-                <Button disabled>
-                  <Loader2Icon className="animate-spin" />
-                  Please wait
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  disabled={!selectedRepoIds?.length}
-                  onClick={() => {
-                    // Handle starting the background service for selected repos
-                    getAndSaveRepository();
-                  }}
-                >
-                  Start Service
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
