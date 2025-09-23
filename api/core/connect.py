@@ -3,6 +3,8 @@ from fastapi import HTTPException
 
 from db.index import SessionLocal
 from db.models.integration import Integration, IntegrationType
+from db.models.repository import Repository
+from db.models.githubcommits import GithubCommit, GithubCommitFile
 
 GITHUB_API_URL = "https://api.github.com"
 
@@ -57,6 +59,12 @@ def remove_integration(user_id: int, integration_name: str) -> bool:
 
         if not integration:
             return False
+        
+            # Delete repos
+        session.query(Repository).filter(Repository.user_id == user_id).delete(synchronize_session=False)
+
+        # Delete commits (files will cascade-delete)
+        session.query(GithubCommit).filter(GithubCommit.user_id == user_id).delete(synchronize_session=False)
 
         session.delete(integration)
         session.commit()
