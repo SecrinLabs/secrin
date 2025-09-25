@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.dialects.postgresql import insert
+
 
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit
@@ -10,9 +12,8 @@ from db.models.githubcommits import GithubCommit
 class GithubScraper:
     GITHUB_API_URL = "https://api.github.com/graphql"
 
-    def __init__(self, token: str, owner_or_url: str,  user_id: int, repo: str = "", limit: int = 100):
+    def __init__(self, token: str, owner_or_url: str,  user_id: int, repo: str = "", limit: int = 20):
         self.token = token
-        self.limit = limit
         self.user_id = user_id
 
         # Parse repo/owner from URL or params
@@ -22,7 +23,7 @@ class GithubScraper:
             self.repo = parsed["repo"]
         else:
             self.owner = owner_or_url
-            if repo.startswith("http"):
+            if repo.startswith("http"): 
                 parsed = self._parse_github_url(repo)
                 self.owner = parsed["owner"]
                 self.repo = parsed["repo"]
@@ -34,7 +35,34 @@ class GithubScraper:
             "Content-Type": "application/json",
         }
 
+        self.limit = self.get_commit_count()
+
         print(f"🔍 GitHub Scraper initialized - Owner: {self.owner}, Repo: {self.repo}")
+
+    def get_commit_count(self) -> int:
+        query = f"""
+        {{
+        repository(owner: "{self.owner}", name: "{self.repo}") {{
+            defaultBranchRef {{
+            target {{
+                ... on Commit {{
+                history {{
+                    totalCount
+                }}
+                }}
+            }}
+            }}
+        }}
+        }}
+        """
+        response = requests.post(
+            self.GITHUB_API_URL,
+            headers=self.headers,
+            json={"query": query}
+        )
+        data = response.json()
+        return data["data"]["repository"]["defaultBranchRef"]["target"]["history"]["totalCount"]
+
 
     def _parse_github_url(self, url: str) -> Dict[str, str]:
         url = url.rstrip("/").rstrip(".git")
@@ -44,7 +72,7 @@ class GithubScraper:
             raise ValueError(f"Invalid GitHub URL: {url}")
         return {"owner": match.group(1), "repo": match.group(2)}
 
-    def build_query(self, after_cursor: str = None, page_size: int = 100) -> str:
+    def build_query(self, after_cursor: str = None, page_size: int = 20) -> str:
         after_clause = f', after: "{after_cursor}"' if after_cursor else ""
         return f"""
         {{
@@ -84,13 +112,22 @@ class GithubScraper:
         }}
         """
 
-    def fetch_diff(self, pr_number: int) -> str:
-        diff_url = f"https://patch-diff.githubusercontent.com/raw/{self.owner}/{self.repo}/pull/{pr_number}.diff"
+    def fetch_pr_diff(self, pr_number: int) -> str:
+        diff_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/pulls/{pr_number}"
         try:
-            response = requests.get(diff_url, headers={"Authorization": f"Bearer {self.token}"})
+            response = requests.get(diff_url, headers={"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github.v3.diff"})
             return response.text if response.status_code == 200 else ""
         except Exception as e:
             print(f"❌ Error fetching diff for PR #{pr_number}: {e}")
+            return ""
+        
+    def fetch_diff(self, sha: int) -> str:
+        diff_url = f"https://api.github.com/repos/{self.owner}/{self.repo}/commits/{sha}"
+        try:
+            response = requests.get(diff_url, headers={"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github.v3.diff"})
+            return response.text if response.status_code == 200 else ""
+        except Exception as e:
+            print(f"❌ Error fetching diff for sha #{sha}: {e}")
             return ""
 
     def fetch_data(self) -> List[Dict[str, Any]]:
@@ -101,7 +138,7 @@ class GithubScraper:
 
         while fetched_count < self.limit:
             remaining = self.limit - fetched_count
-            page_size = min(remaining, 100)
+            page_size = min(remaining, 20)
 
             print(f"📡 Making GraphQL request... (fetched: {fetched_count}/{self.limit})")
             
@@ -169,7 +206,9 @@ class GithubScraper:
             for commit in commits:
                 sha = commit["oid"]
 
-                commit_obj = GithubCommit(
+                commit_diff = self.fetch_diff(sha)
+
+                stmt = insert(GithubCommit).values(
                     user_id=user_id,
                     sha=sha,
                     message=commit.get("message"),
@@ -177,10 +216,20 @@ class GithubScraper:
                     author_email=commit.get("author", {}).get("email"),
                     author_date=commit.get("committedDate"),
                     html_url=commit.get("url"),
-                    raw_payload=commit,  # store whole node for future-proofing
+                    raw_payload=commit_diff
+                ).on_conflict_do_update(
+                    index_elements=['sha'],  # your unique constraint column
+                    set_={
+                        "message": commit.get("message"),
+                        "author_name": commit.get("author", {}).get("name"),
+                        "author_email": commit.get("author", {}).get("email"),
+                        "author_date": commit.get("committedDate"),
+                        "html_url": commit.get("url"),
+                        "raw_payload": commit_diff
+                    }
                 )
 
-                session.add(commit_obj)
+                session.execute(stmt)
 
             session.commit()
             print(f"✅ Inserted {len(commits)} commits into DB")
