@@ -22,7 +22,6 @@ class GitHubPipeline:
             f"Date: {commit.author_date}\n"
             f"Message: {commit.message}\n"
             f"URL: {commit.html_url or ''}\n"
-            f"COMMIT DIFF: {commit.raw_payload}\n"
         )
 
     def _sanitize_metadata(self, metadata: dict) -> dict:
@@ -68,8 +67,6 @@ class GitHubPipeline:
                         documents=[document],
                         ids=[doc_id],
                     )
-
-                    print(self.vector_store._collection.count())
 
                     logger.info(f"Embedded commit {commit.sha}")
                 except Exception as e:

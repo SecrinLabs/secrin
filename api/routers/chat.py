@@ -37,6 +37,8 @@ def trigger_chat_v2(request: ChatRequest):
         searcher = SimilaritySearch("github")  # TODO: pass collection name
         res = searcher.get_similar_answer(request.question)
 
+        print(res)
+
         llm = ChatOllama(
             model=settings.OLLAMA_MODEL,
             reasoning=False
@@ -46,7 +48,7 @@ def trigger_chat_v2(request: ChatRequest):
             ("human", f"You are an assistant. Use the context to answer the question.\n\n"
                       f"Context:\n{res}\n\n"
                       f"Question: {request.question}\n\n"
-                      "Answer clearly and concisely:"),
+                      "Answer clearly and concisely in English:"),
         ]
 
         llm_res = llm.invoke(messages)  # await if async supported
