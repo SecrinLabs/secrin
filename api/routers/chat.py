@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
 import requests
 from fastapi import Request
+from langchain_ollama import ChatOllama
 
 from api.models.chat import ChatRequest
 from engine.query.main import qa_chain
@@ -9,6 +10,8 @@ from api.utils.standard_response import standard_response
 from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
 from api.core.chat import verify_github_signature
+from semantic.search.SimilaritySearch import SimilaritySearch
+from config import settings
 
 router = APIRouter()
 
@@ -27,6 +30,40 @@ def trigger_chat(request: ChatRequest):
     except Exception as e:
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/v2")
+def trigger_chat_v2(request: ChatRequest):
+    try:
+        searcher = SimilaritySearch("github")  # TODO: pass collection name
+        res = searcher.get_similar_answer(request.question)
+
+        print(res)
+
+        llm = ChatOllama(
+            model=settings.OLLAMA_MODEL,
+            reasoning=False
+        )
+        messages = [
+            ("system", "You are a helpful translator. Translate the user sentence to French."),
+            ("human", f"You are an assistant. Use the context to answer the question.\n\n"
+                      f"Context:\n{res}\n\n"
+                      f"Question: {request.question}\n\n"
+                      "Answer clearly and concisely in English:"),
+        ]
+
+        llm_res = llm.invoke(messages)  # await if async supported
+
+        print(llm_res.content)
+
+        return standard_response(
+            success=True,
+            message="success",
+            data={"repos": llm_res.content}
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+    
     
 @router.post("/github")
 async def github_app_webhook_event(request: Request):

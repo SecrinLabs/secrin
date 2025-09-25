@@ -12,8 +12,7 @@ from db.models.repository import Repository
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories, remove_integration
 from engine.ingest.main import update_vectorstore
-from engine.query.main import qa_chain
-from engine.main import run_embedder_v2
+from semantic.pipeline.github import GitHubPipeline
 
 from service.main import run_scraper_by_name
 
@@ -141,26 +140,6 @@ async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRep
     finally:
         session.close()
 
-from pydantic import BaseModel
-
-class GetAns(BaseModel):
-    query: str
-
-@router.post("/github/get-ans")
-async def get_ans(request: GetAns):
-    try:
-        res = qa_chain(request.query)
-        return standard_response(
-            success=True,
-            message="success",
-            data={
-                "repos": res
-            }
-        )
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=str(e))
-    
 @router.post("/disconnect")
 def disconnect_service(request: DisconnectService):
     try:
@@ -217,11 +196,14 @@ def get_user_integrations(request: GetAllIntegrations):
 
 # TODO: accept user id from frontend
 # TODO: response is in not valid format
+# TODO: add collection name in GithubPipeline
 @router.get("/")
 def run_scrapper():
     try:
         # run_scraper_by_name(IntegrationType.github, 4)
-        run_embedder_v2()
+        #run_embedder_v2()
+        github_pipeline = GitHubPipeline("github")
+        github_pipeline.embed_github_commits()
         return standard_response(
             success=True,
             message="success",

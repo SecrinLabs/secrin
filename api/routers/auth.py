@@ -26,24 +26,25 @@ def user_signup(request: UserSignup):
     
 @router.post("/login")
 def user_login(request: UserLogin):
+    auth = Auth()
     try:
-        auth = Auth()
         user = auth.login_user(request.email, request.password)
-
-        if not user:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
-
-        # ⚡ Optional: generate JWT token here instead of raw user
-        return standard_response(
-            success=True,
-            message="Login successful",
-            data={
-                "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "username": user.username
-                }
-            }
-        )
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+
+    # ⚡ Optional: generate JWT token here instead of raw user
+    return standard_response(
+        success=True,
+        message="Login successful",
+        data={
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username
+            }
+        }
+    )
