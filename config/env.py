@@ -133,6 +133,11 @@ class Settings:
 
         # Github Webhook Secret
         self.GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
+
+        # User session setting
+        self.SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY")
+        self.SESSION_ALGORITHM = os.getenv("SESSION_ALGORITHM")
+        self.SESSION_ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("SESSION_ACCESS_TOKEN_EXPIRE_MINUTES")
     
     def _create_directories(self):
         """Create required directories if they don't exist"""

@@ -1,18 +1,41 @@
 import { NextResponse } from "next/server";
 import { NextRequestWithAuth, withAuth } from "next-auth/middleware";
+import { jwtDecode } from "jwt-decode"; // Changed: use named import instead of default import
 
 export default withAuth(
   function middleware(request: NextRequestWithAuth) {
-    if (!request.nextauth.token) {
-      // Return 404 response directly instead of a redirect
-      return NextResponse.redirect(new URL("/404", request.url));
+    const token = request.nextauth.token;
+
+    // No token → redirect to login
+    if (!token) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
     }
+
+    try {
+      // Decode the JWT from NextAuth session
+      const accessToken = token.accessToken as string;
+      if (!accessToken) {
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+
+      const payload: { exp: number } = jwtDecode(accessToken);
+      const now = Date.now() / 1000;
+
+      // Token expired → redirect to login
+      if (payload.exp < now) {
+        return NextResponse.redirect(new URL("/auth/login", request.url));
+      }
+    } catch {
+      // Invalid token → redirect to login
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    }
+
+    // Token valid → continue
     return NextResponse.next();
   },
   {
     pages: {
-      // This prevents the default redirect to signin
-      signIn: "/404",
+      signIn: "/auth/login", // default login page
     },
   }
 );
