@@ -1,0 +1,2 @@
+ALTER TABLE users
+ADD COLUMN guid UUID DEFAULT gen_random_uuid () UNIQUE NOT NULL;

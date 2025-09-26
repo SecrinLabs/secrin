@@ -41,10 +41,10 @@ function Page() {
       setLoading(true);
       try {
         if (status === "loading") return;
-        if (!session?.user?.id) return;
+        if (!session?.user?.userGUID) return;
 
         const response = await getUserSources({
-          user_id: session.user.id.toString(),
+          user_guid: session.user.userGUID,
         });
 
         // Assuming your API returns: { success, message, data: { integrations: [] } }
@@ -57,13 +57,13 @@ function Page() {
     };
 
     fetchSources();
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.userGUID]);
 
   const handleClick = async (id: number) => {
     setLoadingButtons((prev) => ({ ...prev, [id]: true }));
     try {
       const request: RemoveGithubRepositoryRequest = {
-        user_id: session?.user?.id ?? "", // wherever you keep the logged-in user id
+        user_guid: session?.user?.userGUID ?? "", // wherever you keep the logged-in user id
         repo_id: id,
       };
 

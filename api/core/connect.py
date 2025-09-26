@@ -1,9 +1,11 @@
 import requests
 from fastapi import HTTPException
+from uuid import UUID
 
 from db.index import SessionLocal
 from db.models.integration import Integration, IntegrationType
 from db.models.repository import Repository
+from db.models.user import User
 from db.models.githubcommits import GithubCommit, GithubCommitFile
 
 GITHUB_API_URL = "https://api.github.com"
@@ -41,9 +43,14 @@ def get_integration_type(integration_name) -> IntegrationType:
     return None
 
 
-def remove_integration(user_id: int, integration_name: str) -> bool:
+def remove_integration(user_guid: UUID, integration_name: str) -> bool:
     session = SessionLocal()
     try:
+        # check if user exists
+        user = session.query(User).filter(User.guid == user_guid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
         integration_type = get_integration_type(integration_name)
         if not integration_type:
             return False
@@ -51,7 +58,7 @@ def remove_integration(user_id: int, integration_name: str) -> bool:
         integration = (
             session.query(Integration)
             .filter(
-                Integration.user_id == user_id,
+                Integration.user_id == user.id,
                 Integration.type == integration_type,
             )
             .first()
@@ -61,10 +68,10 @@ def remove_integration(user_id: int, integration_name: str) -> bool:
             return False
         
             # Delete repos
-        session.query(Repository).filter(Repository.user_id == user_id).delete(synchronize_session=False)
+        session.query(Repository).filter(Repository.user_id == user.id).delete(synchronize_session=False)
 
         # Delete commits (files will cascade-delete)
-        session.query(GithubCommit).filter(GithubCommit.user_id == user_id).delete(synchronize_session=False)
+        session.query(GithubCommit).filter(GithubCommit.user_id == user.id).delete(synchronize_session=False)
 
         session.delete(integration)
         session.commit()

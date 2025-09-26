@@ -10,6 +10,7 @@ declare module "next-auth" {
       userGUID?: string;
       isUserPro?: boolean;
     } & DefaultSession["user"];
+    accessToken: JWT;
   }
 
   interface User {
@@ -18,6 +19,7 @@ declare module "next-auth" {
     username?: string;
     userGUID?: string;
     isUserPro?: boolean;
+    accessToken: JWT;
   }
 }
 

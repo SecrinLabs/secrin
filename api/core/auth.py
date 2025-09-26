@@ -2,14 +2,24 @@ from sqlalchemy.orm import Session
 from db.models.user import User
 from db.index import SessionLocal
 from passlib.context import CryptContext
+from fastapi import HTTPException
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError
+from api.utils.auth import decode_access_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 class Auth:
     # Add new user
     def add_user(self, email: str, username: str, password: str):
         session: Session = SessionLocal()
         try:
+            user = session.query(User).filter(User.email == email).first()
+            if user:
+                raise HTTPException(status_code=400, detail="Email not available")
+            
             hashed_password = pwd_context.hash(password)
             
             user = User(
@@ -74,3 +84,23 @@ class Auth:
         if not self.verify_password(password, user.password_hash):
             return None  # invalid password
         return user
+    
+def get_db():
+    db: Session = SessionLocal()  # create a new DB session
+    try:
+        yield db  # this will be injected into your route
+    finally:
+        db.close()
+    
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    try:
+        user_guid = decode_access_token(token)
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+    user = db.query(User).filter(User.guid == user_guid).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

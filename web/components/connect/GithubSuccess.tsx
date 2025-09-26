@@ -38,7 +38,7 @@ export default function GithubSuccess({
 
       const res = await saveInstallationToken({
         installation_token,
-        user_id: Number(userId),
+        user_guid: userId,
       });
 
       if (!res.success) throw new Error(res.message || "Failed to save token");
@@ -87,11 +87,9 @@ export default function GithubSuccess({
       },
     }));
 
-    console.log(payload);
-
     const res = await saveRepositoryList({
       repository_list: payload,
-      user_id: Number(userId),
+      user_guid: userId || "",
     });
   }
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
@@ -13,6 +13,7 @@ from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories, remove_integration
 from engine.ingest.main import update_vectorstore
 from semantic.pipeline.github import GitHubPipeline
+from api.core.auth import get_current_user
 
 from service.main import run_scraper_by_name
 
@@ -23,17 +24,17 @@ GITHUB_APP_ID = settings.GITHUB_APP_ID
 PRIVATE_KEY_B64 = settings.GITHUB_APP_SEC_KEY  # base64 string from env
 
 @router.post("/github/save-installation-token")
-def github_save_installation_token(request: InstallationToken):
+def github_save_installation_token(request: InstallationToken, current_user: User = Depends(get_current_user)):
     try:
         session: Session = SessionLocal()
 
         # find user
-        user = session.query(User).filter(User.id == request.user_id).first()
+        user = session.query(User).filter(User.guid == request.user_guid).first()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         
         # save installation ID
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()
         
         if integration:
             # update config
@@ -41,7 +42,7 @@ def github_save_installation_token(request: InstallationToken):
         else:
             # create new integration
             integration = Integration(
-                user_id=request.user_id,
+                user_id=user.id,
                 type=IntegrationType.github,
                 config={"installation_token": request.installation_token}
             )
@@ -70,19 +71,19 @@ def github_save_installation_token(request: InstallationToken):
         session.close()
 
 @router.post("/github/save-repository")
-async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositoryList, not SaveRepository
+async def save_repository(request: SaveRepository, current_user: User = Depends(get_current_user)):  # <-- I assume it's SaveRepositoryList, not SaveRepository
     try:
         session: Session = SessionLocal()
 
         # check if user exists
-        user = session.query(User).filter(User.id == request.user_id).first()
+        user = session.query(User).filter(User.guid == request.user_guid).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         # save each repo
         for repo in request.repository_list:
             stmt = insert(Repository).values(
-                user_id=request.user_id,
+                user_id=user.id,
                 repo_id=repo.id,
                 repo_name=repo.name,
                 full_name=repo.full_name,
@@ -141,9 +142,9 @@ async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRep
         session.close()
 
 @router.post("/disconnect")
-def disconnect_service(request: DisconnectService):
+def disconnect_service(request: DisconnectService, current_user: User = Depends(get_current_user)):
     try:
-        removed = remove_integration(request.user_id, request.service_type)
+        removed = remove_integration(request.user_guid, request.service_type)
 
         if not removed:
             return standard_response(
@@ -163,12 +164,18 @@ def disconnect_service(request: DisconnectService):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/integrations")
-def get_user_integrations(request: GetAllIntegrations):
+def get_user_integrations(request: GetAllIntegrations, current_user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
+        
+        # check if user exists
+        user = session.query(User).filter(User.guid == request.user_guid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
         integrations = (
             session.query(Integration)
-            .filter(Integration.user_id == request.user_id)
+            .filter(Integration.user_id == user.id)
             .all()
         )
 

@@ -9,17 +9,24 @@ import {
   GetAllIntegrationsRequest,
   GetUserIntegrationsResponse,
 } from "@/types";
+import { getSession } from "next-auth/react";
 
 export async function saveInstallationToken(
   request: SaveInstallationTokenRequest
 ): Promise<CommonAPIResponse> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new GithubApiError("User is not authenticated", 401);
+    }
+
     const response = await fetch(
       `${env.api.url}/api/connect/github/save-installation-token`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify(request),
       }
@@ -65,12 +72,17 @@ export async function saveRepositoryList(
   request: SaveRepositoryList
 ): Promise<CommonAPIResponse> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new GithubApiError("User is not authenticated", 401);
+    }
     const response = await fetch(
       `${env.api.url}/api/connect/github/save-repository`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
         },
         body: JSON.stringify(request),
       }
@@ -116,10 +128,15 @@ export async function disconnectService(
   request: DisconnectServiceRequest
 ): Promise<CommonAPIResponse> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new GithubApiError("User is not authenticated", 401);
+    }
     const response = await fetch(`${env.api.url}/api/connect/disconnect`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session.accessToken}`,
       },
       body: JSON.stringify(request),
     });
@@ -164,9 +181,16 @@ export async function getUserIntegrations(
   request: GetAllIntegrationsRequest
 ): Promise<CommonAPIResponse<GetUserIntegrationsResponse>> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new GithubApiError("User is not authenticated", 401);
+    }
     const response = await fetch(`${env.api.url}/api/connect/integrations`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.accessToken}`,
+      },
       body: JSON.stringify(request),
     });
 

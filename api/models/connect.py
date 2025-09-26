@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from uuid import UUID
 
 class GithubConnect(BaseModel):
     installation_id: str
 
 class InstallationToken(BaseModel):
     installation_token: str
-    user_id: int
+    user_guid: UUID
 
 class OwnerSchema(BaseModel):
     login: Optional[str]
@@ -39,11 +40,11 @@ class RepositorySchema(BaseModel):
 
 class SaveRepository(BaseModel):
     repository_list: list[RepositorySchema]
-    user_id: int
+    user_guid: UUID
 
 class DisconnectService(BaseModel):
-    user_id: int
+    user_guid: UUID
     service_type: str
 
 class GetAllIntegrations(BaseModel):
-    user_id: int
+    user_guid: UUID

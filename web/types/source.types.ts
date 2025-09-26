@@ -1,5 +1,5 @@
 export interface GetAllSourcesRequest {
-  user_id: string;
+  user_guid: string;
 }
 
 export interface RepositoryMetadata {
@@ -21,7 +21,7 @@ export interface GetAllSourcesResponse {
 }
 
 export interface GetGithubRemainingRepositoryRequest {
-  user_id: string;
+  user_guid: string;
 }
 
 export interface GetGithubRemainingRepositoryResponse {
@@ -29,11 +29,11 @@ export interface GetGithubRemainingRepositoryResponse {
 }
 
 export interface RemoveGithubRepositoryRequest {
-  user_id: string;
+  user_guid: string;
   repo_id: number;
 }
 
 export interface AddGithubRepositoryRequest {
-  user_id: string;
+  user_guid: string;
   repo_id: number;
 }

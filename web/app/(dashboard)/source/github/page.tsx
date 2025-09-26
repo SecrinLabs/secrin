@@ -22,10 +22,10 @@ export default function Page() {
       setLoading(true);
       try {
         if (status === "loading") return;
-        if (!session?.user?.id) return;
+        if (!session?.user?.userGUID) return;
 
         const response = await getGithubRemainingRepository({
-          user_id: session.user.id,
+          user_guid: session.user.userGUID,
         });
 
         setRepos(response.data?.repositorys || []);
@@ -37,17 +37,17 @@ export default function Page() {
     };
 
     fetchRepos();
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.userGUID]);
 
   async function handleClick(repoId: number) {
     try {
       if (status === "loading") return;
-      if (!session?.user?.id) return;
+      if (!session?.user?.userGUID) return;
 
       setLoadingRepoId(repoId);
 
       const response = await addGithubRepository({
-        user_id: session.user.id,
+        user_guid: session.user.userGUID,
         repo_id: repoId,
       });
 

@@ -28,8 +28,11 @@ export const authOptions = {
             password: credentials.password,
           });
 
-          if (response.data.user) {
-            return response.data.user; // <- This will become session.user
+          if (response.data.access_token) {
+            return {
+              ...response.data.user,
+              accessToken: response.data.access_token, // <- save JWT
+            };
           }
 
           return null;
@@ -54,6 +57,7 @@ export const authOptions = {
         token.username = user.username;
         token.userGUID = user.userGUID;
         token.isUserPro = user.isUserPro;
+        token.accessToken = user.accessToken;
       }
       return token;
     },
@@ -65,6 +69,7 @@ export const authOptions = {
         session.user.userGUID = token.userGUID;
         session.user.isUserPro = token.isUserPro;
       }
+      session.accessToken = token.accessToken;
       return session;
     },
   },

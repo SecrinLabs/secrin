@@ -1,10 +1,10 @@
 export interface SaveInstallationTokenRequest {
   installation_token: string;
-  user_id: number;
+  user_guid: string;
 }
 
 export interface SaveRepositoryList {
-  user_id: number;
+  user_guid: string;
   repository_list: {
     id: number; // GitHub repo id
     name: string; // repo_name
@@ -35,12 +35,12 @@ export interface SaveRepositoryList {
 }
 
 export interface DisconnectServiceRequest {
-  user_id: string;
+  user_guid: string;
   service_type: string;
 }
 
 export interface GetAllIntegrationsRequest {
-  user_id: string;
+  user_guid: string;
 }
 
 export interface IntegrationDTO {

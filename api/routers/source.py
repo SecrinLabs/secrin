@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
@@ -10,13 +10,14 @@ from db.models.user import User
 from db.models.integration import Integration, IntegrationType
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
+from api.core.auth import get_current_user
 
 from config import settings
 
 router = APIRouter()
 
 @router.post("/get-all-integrations")
-def get_connected_source(request: ConnectedSourceDTO):
+def get_connected_source(request: ConnectedSourceDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
 
@@ -24,7 +25,7 @@ def get_connected_source(request: ConnectedSourceDTO):
 
         github_repos = (
             session.query(Repository)
-            .filter(Repository.user_id == request.user_id)
+            .filter(Repository.user_id == user.id)
             .all()
         )
 
@@ -53,15 +54,11 @@ def get_connected_source(request: ConnectedSourceDTO):
         session.close()
 
 @router.post("/github/get-remaining-repository")
-def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
+def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
 
-        user = session.query(User).filter(User.id == request.user_id).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()            
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()            
 
         installation_token = None
         if integration and integration.config:
@@ -77,7 +74,7 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
         repos = get_repositories(access_token)
         repos_list = repos.get("repositories", [])
 
-        savedRepo = session.query(Repository).filter(Repository.user_id == request.user_id).all()
+        savedRepo = session.query(Repository).filter(Repository.user_id == user.id).all()
         saved_repo_ids = {repo.repo_id for repo in savedRepo}
         
         remaining_repos = [
@@ -102,13 +99,13 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
         session.close()
 
 @router.post("/github/remove-repository")
-def remove_repository(request: RemoveRepositoryDTO):
+def remove_repository(request: RemoveRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
 
         # find the repo to delete
         repo = session.query(Repository).filter(
-            Repository.user_id == request.user_id,
+            Repository.user_id == user.id,
             Repository.repo_id == request.repo_id
         ).first()
 
@@ -131,24 +128,20 @@ def remove_repository(request: RemoveRepositoryDTO):
         session.close()
 
 @router.post("/github/add-repository")
-def remove_repository(request: AddRepositoryDTO):
+def remove_repository(request: AddRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
 
         # find the repo to delete
         repo = session.query(Repository).filter(
-            Repository.user_id == request.user_id,
+            Repository.user_id == user.id,
             Repository.repo_id == request.repo_id
         ).first()
 
         if repo:
             raise HTTPException(status_code=200, detail="repository alredy added")
 
-        user = session.query(User).filter(User.id == request.user_id).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()            
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()            
 
         installation_token = None
         if integration and integration.config:
@@ -171,7 +164,7 @@ def remove_repository(request: AddRepositoryDTO):
         
         # save the repo
         stmt = insert(Repository).values(
-            user_id=request.user_id,
+            user_id=user.id,
             repo_id=repo["id"],
             repo_name=repo["name"],
             full_name=repo.get("full_name"),
