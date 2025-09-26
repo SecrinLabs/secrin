@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
@@ -10,20 +10,16 @@ from db.models.user import User
 from db.models.integration import Integration, IntegrationType
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
+from api.core.auth import get_current_user
 
 from config import settings
 
 router = APIRouter()
 
 @router.post("/get-all-integrations")
-def get_connected_source(request: ConnectedSourceDTO):
+def get_connected_source(request: ConnectedSourceDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
-
-        # check if user exists
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
 
         integrations = []
 
@@ -58,13 +54,9 @@ def get_connected_source(request: ConnectedSourceDTO):
         session.close()
 
 @router.post("/github/get-remaining-repository")
-def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
+def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
-
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
 
         integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()            
 
@@ -107,13 +99,9 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
         session.close()
 
 @router.post("/github/remove-repository")
-def remove_repository(request: RemoveRepositoryDTO):
+def remove_repository(request: RemoveRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
-
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
 
         # find the repo to delete
         repo = session.query(Repository).filter(
@@ -140,13 +128,9 @@ def remove_repository(request: RemoveRepositoryDTO):
         session.close()
 
 @router.post("/github/add-repository")
-def remove_repository(request: AddRepositoryDTO):
+def remove_repository(request: AddRepositoryDTO, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
-
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
 
         # find the repo to delete
         repo = session.query(Repository).filter(

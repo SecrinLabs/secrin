@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
@@ -13,6 +13,7 @@ from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories, remove_integration
 from engine.ingest.main import update_vectorstore
 from semantic.pipeline.github import GitHubPipeline
+from api.core.auth import get_current_user
 
 from service.main import run_scraper_by_name
 
@@ -23,7 +24,7 @@ GITHUB_APP_ID = settings.GITHUB_APP_ID
 PRIVATE_KEY_B64 = settings.GITHUB_APP_SEC_KEY  # base64 string from env
 
 @router.post("/github/save-installation-token")
-def github_save_installation_token(request: InstallationToken):
+def github_save_installation_token(request: InstallationToken, current_user: User = Depends(get_current_user)):
     try:
         session: Session = SessionLocal()
 
@@ -70,7 +71,7 @@ def github_save_installation_token(request: InstallationToken):
         session.close()
 
 @router.post("/github/save-repository")
-async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRepositoryList, not SaveRepository
+async def save_repository(request: SaveRepository, current_user: User = Depends(get_current_user)):  # <-- I assume it's SaveRepositoryList, not SaveRepository
     try:
         session: Session = SessionLocal()
 
@@ -141,7 +142,7 @@ async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRep
         session.close()
 
 @router.post("/disconnect")
-def disconnect_service(request: DisconnectService):
+def disconnect_service(request: DisconnectService, current_user: User = Depends(get_current_user)):
     try:
         removed = remove_integration(request.user_guid, request.service_type)
 
@@ -163,7 +164,7 @@ def disconnect_service(request: DisconnectService):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/integrations")
-def get_user_integrations(request: GetAllIntegrations):
+def get_user_integrations(request: GetAllIntegrations, current_user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
         

@@ -10,16 +10,24 @@ import {
   RemoveGithubRepositoryRequest,
   SourceApiError,
 } from "@/types";
+import { getSession } from "next-auth/react";
 
 export async function getUserSources(
   request: GetAllSourcesRequest
 ): Promise<CommonAPIResponse<GetAllSourcesResponse>> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new SourceApiError("User is not authenticated", 401);
+    }
     const response = await fetch(
       `${env.api.url}/api/source/get-all-integrations`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
         body: JSON.stringify(request),
       }
     );
@@ -62,11 +70,18 @@ export async function getGithubRemainingRepository(
   request: GetGithubRemainingRepositoryRequest
 ): Promise<CommonAPIResponse<GetGithubRemainingRepositoryResponse>> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new SourceApiError("User is not authenticated", 401);
+    }
     const response = await fetch(
       `${env.api.url}/api/source/github/get-remaining-repository`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
         body: JSON.stringify(request),
       }
     );
@@ -109,11 +124,18 @@ export async function deleteGithubRepository(
   request: RemoveGithubRepositoryRequest
 ): Promise<CommonAPIResponse> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new SourceApiError("User is not authenticated", 401);
+    }
     const response = await fetch(
       `${env.api.url}/api/source/github/remove-repository`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
         body: JSON.stringify(request),
       }
     );
@@ -156,11 +178,18 @@ export async function addGithubRepository(
   request: AddGithubRepositoryRequest
 ): Promise<CommonAPIResponse> {
   try {
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new SourceApiError("User is not authenticated", 401);
+    }
     const response = await fetch(
       `${env.api.url}/api/source/github/add-repository`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.accessToken}`,
+        },
         body: JSON.stringify(request),
       }
     );

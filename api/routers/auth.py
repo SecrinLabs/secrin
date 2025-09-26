@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from api.models.auth import UserSignup, UserLogin
 from api.core.auth import Auth
 from api.utils.standard_response import standard_response
+from api.utils.auth import create_access_token
 
 from config import settings
 
@@ -42,12 +43,7 @@ def user_login(request: UserLogin):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
     # Generate JWT with GUID as subject
-    expire = timedelta(days=settings.SESSION_ACCESS_TOKEN_EXPIRE_MINUTES)
-    token = jwt.encode(
-        {"sub": str(user.guid), "exp": datetime.utcnow() + expire},
-        settings.SESSION_SECRET_KEY,
-        algorithm=settings.SESSION_ALGORITHM,
-    )
+    token = create_access_token(str(user.guid))
 
     # ⚡ Optional: generate JWT token here instead of raw user
     return standard_response(
