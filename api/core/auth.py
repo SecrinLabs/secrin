@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from db.models.user import User
 from db.index import SessionLocal
 from passlib.context import CryptContext
+from fastapi import HTTPException
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -10,6 +12,10 @@ class Auth:
     def add_user(self, email: str, username: str, password: str):
         session: Session = SessionLocal()
         try:
+            user = session.query(User).filter(User.email == email).first()
+            if user:
+                raise HTTPException(status_code=400, detail="Email not available")
+            
             hashed_password = pwd_context.hash(password)
             
             user = User(

@@ -44,7 +44,8 @@ def user_login(request: UserLogin):
             "user": {
                 "id": user.id,
                 "email": user.email,
-                "username": user.username
+                "username": user.username,
+                "userGUID": user.guid
             }
         }
     )
