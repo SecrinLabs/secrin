@@ -7,16 +7,6 @@ export interface UserLoginRequest {
   password: string;
 }
 
-// export interface User {
-//   id: number;
-//   email: string;
-//   username: string;
-// }
-
-// export interface UserLoginResponse {
-//   user: User | null;
-// }
-
 export interface ApiError {
   message: string;
   status: number;

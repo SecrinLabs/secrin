@@ -18,7 +18,7 @@ function Page() {
     <div>
       <GithubSuccess
         installation_token={installationId}
-        userId={session?.user.id}
+        userId={session?.user.userGUID}
       />
     </div>
   );

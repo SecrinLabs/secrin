@@ -20,11 +20,16 @@ def get_connected_source(request: ConnectedSourceDTO):
     try:
         session = SessionLocal()
 
+        # check if user exists
+        user = session.query(User).filter(User.guid == request.user_guid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
         integrations = []
 
         github_repos = (
             session.query(Repository)
-            .filter(Repository.user_id == request.user_id)
+            .filter(Repository.user_id == user.id)
             .all()
         )
 
@@ -57,11 +62,11 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
     try:
         session = SessionLocal()
 
-        user = session.query(User).filter(User.id == request.user_id).first()
+        user = session.query(User).filter(User.guid == request.user_guid).first()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
 
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()            
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()            
 
         installation_token = None
         if integration and integration.config:
@@ -77,7 +82,7 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO):
         repos = get_repositories(access_token)
         repos_list = repos.get("repositories", [])
 
-        savedRepo = session.query(Repository).filter(Repository.user_id == request.user_id).all()
+        savedRepo = session.query(Repository).filter(Repository.user_id == user.id).all()
         saved_repo_ids = {repo.repo_id for repo in savedRepo}
         
         remaining_repos = [
@@ -106,9 +111,13 @@ def remove_repository(request: RemoveRepositoryDTO):
     try:
         session = SessionLocal()
 
+        user = session.query(User).filter(User.guid == request.user_guid).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
         # find the repo to delete
         repo = session.query(Repository).filter(
-            Repository.user_id == request.user_id,
+            Repository.user_id == user.id,
             Repository.repo_id == request.repo_id
         ).first()
 
@@ -135,20 +144,20 @@ def remove_repository(request: AddRepositoryDTO):
     try:
         session = SessionLocal()
 
+        user = session.query(User).filter(User.guid == request.user_guid).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
         # find the repo to delete
         repo = session.query(Repository).filter(
-            Repository.user_id == request.user_id,
+            Repository.user_id == user.id,
             Repository.repo_id == request.repo_id
         ).first()
 
         if repo:
             raise HTTPException(status_code=200, detail="repository alredy added")
 
-        user = session.query(User).filter(User.id == request.user_id).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()            
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()            
 
         installation_token = None
         if integration and integration.config:
@@ -171,7 +180,7 @@ def remove_repository(request: AddRepositoryDTO):
         
         # save the repo
         stmt = insert(Repository).values(
-            user_id=request.user_id,
+            user_id=user.id,
             repo_id=repo["id"],
             repo_name=repo["name"],
             full_name=repo.get("full_name"),

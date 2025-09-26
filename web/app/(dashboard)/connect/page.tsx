@@ -44,12 +44,12 @@ export default function Page() {
       if (status === "loading") return;
       try {
         setLoading(true);
-        if (!session?.user.id) {
+        if (!session?.user.userGUID) {
           return;
         }
 
         const response = await getUserIntegrations({
-          user_id: session?.user.id,
+          user_guid: session?.user.userGUID,
         });
 
         const activeIds = response.data?.integrations.map((i) => i.type) ?? [];
@@ -89,12 +89,12 @@ export default function Page() {
   };
 
   const handleDisconnect = async (connectorId: string) => {
-    if (!session?.user.id) return;
+    if (!session?.user.userGUID) return;
     setLoadingButtons((prev) => ({ ...prev, [connectorId]: true }));
 
     try {
       const request: DisconnectServiceRequest = {
-        user_id: session.user.id,
+        user_guid: session.user.userGUID || "",
         service_type: connectorId,
       };
 

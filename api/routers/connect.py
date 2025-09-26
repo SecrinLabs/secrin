@@ -28,12 +28,12 @@ def github_save_installation_token(request: InstallationToken):
         session: Session = SessionLocal()
 
         # find user
-        user = session.query(User).filter(User.id == request.user_id).first()
+        user = session.query(User).filter(User.guid == request.user_guid).first()
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         
         # save installation ID
-        integration = session.query(Integration).filter(Integration.user_id == request.user_id, Integration.type == IntegrationType.github).first()
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()
         
         if integration:
             # update config
@@ -41,7 +41,7 @@ def github_save_installation_token(request: InstallationToken):
         else:
             # create new integration
             integration = Integration(
-                user_id=request.user_id,
+                user_id=user.id,
                 type=IntegrationType.github,
                 config={"installation_token": request.installation_token}
             )
@@ -75,14 +75,14 @@ async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRep
         session: Session = SessionLocal()
 
         # check if user exists
-        user = session.query(User).filter(User.id == request.user_id).first()
+        user = session.query(User).filter(User.guid == request.user_guid).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         # save each repo
         for repo in request.repository_list:
             stmt = insert(Repository).values(
-                user_id=request.user_id,
+                user_id=user.id,
                 repo_id=repo.id,
                 repo_name=repo.name,
                 full_name=repo.full_name,
@@ -143,7 +143,7 @@ async def save_repository(request: SaveRepository):  # <-- I assume it's SaveRep
 @router.post("/disconnect")
 def disconnect_service(request: DisconnectService):
     try:
-        removed = remove_integration(request.user_id, request.service_type)
+        removed = remove_integration(request.user_guid, request.service_type)
 
         if not removed:
             return standard_response(
@@ -166,9 +166,15 @@ def disconnect_service(request: DisconnectService):
 def get_user_integrations(request: GetAllIntegrations):
     try:
         session = SessionLocal()
+        
+        # check if user exists
+        user = session.query(User).filter(User.guid == request.user_guid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
         integrations = (
             session.query(Integration)
-            .filter(Integration.user_id == request.user_id)
+            .filter(Integration.user_id == user.id)
             .all()
         )
 
