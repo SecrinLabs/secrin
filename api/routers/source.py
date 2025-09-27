@@ -12,13 +12,15 @@ from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories
 from api.core.auth import get_current_user
 
-from config import settings
+from config import settings, get_logger
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 @router.post("/get-all-integrations")
 def get_connected_source(request: ConnectedSourceDTO, user: User = Depends(get_current_user)):
     try:
+        logger.info(f"get all integrations for user")
         session = SessionLocal()
 
         integrations = []
@@ -48,7 +50,7 @@ def get_connected_source(request: ConnectedSourceDTO, user: User = Depends(get_c
         )
 
     except Exception as e:
-        print(f"Error while fetching integrations: {e}")
+        logger.error("Error fetching all integrations", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
@@ -93,7 +95,6 @@ def get_remaining_repository_to_connect(request: GetRemainingRepositoryDTO, user
             data={"repositorys": remaining_repos},
         )
     except Exception as e:
-        print(f"Error while fetching integrations: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
@@ -122,7 +123,6 @@ def remove_repository(request: RemoveRepositoryDTO, user: User = Depends(get_cur
             data={},
         )
     except Exception as e:
-        print(f"Error while removing repository: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
@@ -200,7 +200,6 @@ def remove_repository(request: AddRepositoryDTO, user: User = Depends(get_curren
             data={},
         )
     except Exception as e:
-        print(f"Error while removing repository: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()

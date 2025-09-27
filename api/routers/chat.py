@@ -11,15 +11,20 @@ from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
 from api.core.chat import verify_github_signature
 from semantic.search.SimilaritySearch import SimilaritySearch
-from config import settings
+from config import settings, get_logger
 
 router = APIRouter()
+
+logger = get_logger(__name__)
 
 dependencies=[Depends(RateLimiter(times=3, seconds=60))]
 @router.post("/")
 def trigger_chat(request: ChatRequest):
     try:
+        logger.info(f"Triggering chat with question: {request.question}")
         res = qa_chain(request.question)
+
+        logger.debug(f"qa_chain response: {res}")
         return standard_response(
             success=True,
             message="",
@@ -28,21 +33,21 @@ def trigger_chat(request: ChatRequest):
             }
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Error in trigger_chat: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.post("/v2")
 def trigger_chat_v2(request: ChatRequest):
     try:
+        logger.info(f"Triggering chat_v2 with question: {request.question}")
         searcher = SimilaritySearch("github")  # TODO: pass collection name
         res = searcher.get_similar_answer(request.question)
-
-        print(res)
 
         llm = ChatOllama(
             model=settings.OLLAMA_MODEL,
             reasoning=False
         )
+
         messages = [
             ("system", "You are a helpful translator. Translate the user sentence to French."),
             ("human", f"You are an assistant. Use the context to answer the question.\n\n"
@@ -53,21 +58,20 @@ def trigger_chat_v2(request: ChatRequest):
 
         llm_res = llm.invoke(messages)  # await if async supported
 
-        print(llm_res.content)
-
         return standard_response(
             success=True,
             message="success",
             data={"repos": llm_res.content}
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Error in trigger_chat_v2: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     
     
 @router.post("/github")
 async def github_app_webhook_event(request: Request):
     try:
+        logger.info("Received GitHub webhook event")
         await verify_github_signature(request)
         
         payload = await request.json()
@@ -139,8 +143,7 @@ async def github_app_webhook_event(request: Request):
                 message="Webhook received",
                 data={}
             )
-
     except Exception as e:
-        print("Error processing webhook:", e)
+        logger.error(f"Error in github_app_webhook_event: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
