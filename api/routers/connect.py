@@ -11,9 +11,9 @@ from db.models.integration import Integration, IntegrationType
 from db.models.repository import Repository
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories, remove_integration
-from engine.ingest.main import update_vectorstore
 from semantic.pipeline.github import GitHubPipeline
 from api.core.auth import get_current_user
+from semantic.pipeline.initial import InitialPipeline
 
 from service.main import run_scraper_by_name
 
@@ -24,15 +24,10 @@ GITHUB_APP_ID = settings.GITHUB_APP_ID
 PRIVATE_KEY_B64 = settings.GITHUB_APP_SEC_KEY  # base64 string from env
 
 @router.post("/github/save-installation-token")
-def github_save_installation_token(request: InstallationToken, current_user: User = Depends(get_current_user)):
+def github_save_installation_token(request: InstallationToken, user: User = Depends(get_current_user)):
     try:
         session: Session = SessionLocal()
 
-        # find user
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        
         # save installation ID
         integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.github).first()
         
@@ -71,14 +66,9 @@ def github_save_installation_token(request: InstallationToken, current_user: Use
         session.close()
 
 @router.post("/github/save-repository")
-async def save_repository(request: SaveRepository, current_user: User = Depends(get_current_user)):  # <-- I assume it's SaveRepositoryList, not SaveRepository
+async def save_repository(request: SaveRepository, user: User = Depends(get_current_user)):
     try:
         session: Session = SessionLocal()
-
-        # check if user exists
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
 
         # save each repo
         for repo in request.repository_list:
@@ -126,7 +116,8 @@ async def save_repository(request: SaveRepository, current_user: User = Depends(
 
             session.execute(stmt)
 
-        await update_vectorstore()
+        initialPipeline = InitialPipeline(user.guid)
+        await initialPipeline.run_initial_pipeline()
 
         session.commit()
 
@@ -164,14 +155,9 @@ def disconnect_service(request: DisconnectService, current_user: User = Depends(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/integrations")
-def get_user_integrations(request: GetAllIntegrations, current_user: User = Depends(get_current_user)):
+def get_user_integrations(request: GetAllIntegrations, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
-        
-        # check if user exists
-        user = session.query(User).filter(User.guid == request.user_guid).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
         
         integrations = (
             session.query(Integration)
