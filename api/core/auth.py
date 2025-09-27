@@ -60,7 +60,6 @@ class Auth:
     def get_user(self, user_id: int):
         session: Session = SessionLocal()
         try:
-            print(session.query(User).first())
             return session.query(User).filter(User.id == user_id).first()
         finally:
             session.close()

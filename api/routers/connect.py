@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
 from api.utils.standard_response import standard_response
-from config import settings
+from config import settings, get_logger
 from api.models.connect import InstallationToken, SaveRepository, DisconnectService, GetAllIntegrations
 from db.index import SessionLocal
 from db.models.user import User
@@ -18,6 +18,7 @@ from semantic.pipeline.initial import InitialPipeline
 from service.main import run_scraper_by_name
 
 router = APIRouter()
+logger = get_logger(__name__)
 
 # GitHub App credentials
 GITHUB_APP_ID = settings.GITHUB_APP_ID
@@ -26,6 +27,7 @@ PRIVATE_KEY_B64 = settings.GITHUB_APP_SEC_KEY  # base64 string from env
 @router.post("/github/save-installation-token")
 def github_save_installation_token(request: InstallationToken, user: User = Depends(get_current_user)):
     try:
+        logger.info(f"Saving installation token for user {user.id}")
         session: Session = SessionLocal()
 
         # save installation ID
@@ -60,14 +62,15 @@ def github_save_installation_token(request: InstallationToken, user: User = Depe
             }
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Error in github_save_installation_token: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
 
 @router.post("/github/save-repository")
-async def save_repository(request: SaveRepository, user: User = Depends(get_current_user)):
+async def save_repository(request: SaveRepository, background_tasks: BackgroundTasks, user: User = Depends(get_current_user)):
     try:
+        logger.info(f"Saving repositories for user {user.id}, count={len(request.repository_list)}")
         session: Session = SessionLocal()
 
         # save each repo
@@ -116,10 +119,16 @@ async def save_repository(request: SaveRepository, user: User = Depends(get_curr
 
             session.execute(stmt)
 
-        initialPipeline = InitialPipeline(user.guid)
-        await initialPipeline.run_initial_pipeline()
-
         session.commit()
+
+        initialPipeline = InitialPipeline(str(user.guid))
+        # run initial pipeline synchronously (keeps current behaviour); move to background if needed
+        initialPipeline.run_initial_pipeline()
+
+        # Schedule background tasks correctly by passing the callable and its args (don't call it here)
+        background_tasks.add_task(run_scraper_by_name, IntegrationType.github, user.id)
+        gitHubPipeline = GitHubPipeline(str(user.guid))
+        background_tasks.add_task(gitHubPipeline.embed_github_commits, user.id)
 
         return standard_response(
             success=True,
@@ -127,7 +136,7 @@ async def save_repository(request: SaveRepository, user: User = Depends(get_curr
             data={"count": len(request.repository_list)},
         )
     except Exception as e:
-        print(e)
+        logger.error(f"Error in save_repository: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()
@@ -135,6 +144,7 @@ async def save_repository(request: SaveRepository, user: User = Depends(get_curr
 @router.post("/disconnect")
 def disconnect_service(request: DisconnectService, current_user: User = Depends(get_current_user)):
     try:
+        logger.info(f"Disconnecting service {request.service_type} for user {request.user_guid}")
         removed = remove_integration(request.user_guid, request.service_type)
 
         if not removed:
@@ -151,12 +161,13 @@ def disconnect_service(request: DisconnectService, current_user: User = Depends(
         )
 
     except Exception as e:
-        print(f"Error while disconnecting service: {e}")
+        logger.error(f"Error in disconnect_service: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/integrations")
 def get_user_integrations(request: GetAllIntegrations, user: User = Depends(get_current_user)):
     try:
+        logger.info(f"Fetching integrations for user {user.id}")
         session = SessionLocal()
         
         integrations = (
@@ -181,29 +192,7 @@ def get_user_integrations(request: GetAllIntegrations, user: User = Depends(get_
         )
 
     except Exception as e:
-        print(f"Error while fetching integrations: {e}")
+        logger.error(f"Error in get_user_integrations: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
-
-
-# TODO: accept user id from frontend
-# TODO: response is in not valid format
-# TODO: add collection name in GithubPipeline
-@router.get("/")
-def run_scrapper():
-    try:
-        # run_scraper_by_name(IntegrationType.github, 4)
-        #run_embedder_v2()
-        github_pipeline = GitHubPipeline("github")
-        github_pipeline.embed_github_commits()
-        return standard_response(
-            success=True,
-            message="success",
-            data={
-                "repos": "demo"
-            }
-        )
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=500, detail=str(e))

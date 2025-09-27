@@ -47,10 +47,10 @@ class GitHubPipeline:
         }
         return self._sanitize_metadata(raw)
 
-    def embed_github_commits(self, batch_size: int = 100) -> None:
+    def embed_github_commits(self, userId, batch_size: int = 100) -> None:
         try:
-            total = self.session.query(GithubCommit).count()
-            query = self.session.query(GithubCommit).yield_per(batch_size)
+            total = self.session.query(GithubCommit).filter(GithubCommit.user_id == userId).count()
+            query = self.session.query(GithubCommit).filter(GithubCommit.user_id == userId).yield_per(batch_size)
 
             for commit in tqdm(query, total=total, desc="Embedding commits"):
                 try:
