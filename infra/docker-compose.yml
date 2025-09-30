@@ -1,31 +1,28 @@
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: devsecrin
-      POSTGRES_USER: devsecrin
-      POSTGRES_PASSWORD: devsecrin
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ../packages/dbup/sql:/docker-entrypoint-initdb.d
+  # Ollama Service (for local AI model)
+  ollama:
+    image: ollama/ollama:latest
     ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devsecrin"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
 
-  # # Ollama Service (for local AI model)
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   environment:
-  #     - OLLAMA_HOST=0.0.0.0
+  # Redis for rate-limiting and caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # API Service
   devsecrin-api:
@@ -39,19 +36,22 @@ services:
       - "8000:8000"
     environment:
       - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://devsecrin:devsecrin@postgres:5432/devsecrin
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_SERVER_URL=redis://redis:6379
       - OLLAMA_HOST=http://ollama:11434
       - OLLAMA_MODEL=deepseek-r1:1.5b
-      - CHROMA_PERSIST_DIRECTORY=/app/gemini_store
+      - CHROMA_PERSIST_DIRECTORY=/app/chroma_store
       - API_HOST=0.0.0.0
       - API_PORT=8000
       - EMBEDDER_NAME=${EMBEDDER_NAME}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     volumes:
       - ../gemini_store:/app/gemini_store
+      - ../chroma_store:/app/chroma_store
       - ../logs:/app/logs
+    restart: unless-stopped
     depends_on:
-      postgres:
+      redis:
         condition: service_healthy
       # ollama:
       #   condition: service_started
@@ -64,4 +64,7 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:
+  redis_data:
+  # Host bind mounts used for gemini_store and chroma_store so we don't declare named volumes here
   # ollama_data:
