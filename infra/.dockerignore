@@ -1,0 +1,16 @@
+__pycache__
+*.pyc
+.pytest_cache
+venv
+node_modules
+/.env
+/.venv
+logs
+.DS_Store
+chroma_db
+*.sqlite3
+gemini_store
+.git
+dist
+build
+*.egg-info

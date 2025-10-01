@@ -29,6 +29,10 @@ COPY config/ ./config/
 COPY engine/ ./engine/
 COPY service/ ./service/
 COPY migration/ ./migration/
+COPY semantic/ ./semantic
+COPY db ./db/
+COPY infra/entrypoint.sh ./
+RUN chmod +x /app/entrypoint.sh
 
 # Create necessary directories for data persistence
 RUN mkdir -p gemini_store chroma_store logs
@@ -45,5 +49,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8000/health || exit 1
 
-# Start the API server
-CMD ["uvicorn", "api.index:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the API server via entrypoint (runs migrations, ensures stores exist)
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

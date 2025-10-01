@@ -1,0 +1,9 @@
+FROM ollama/ollama:latest
+
+# Copy startup script
+COPY start-ollama.sh /start-ollama.sh
+RUN chmod +x /start-ollama.sh
+
+EXPOSE 11434
+
+ENTRYPOINT ["/bin/sh", "/start-ollama.sh"]
