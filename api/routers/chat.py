@@ -16,6 +16,7 @@ from semantic.PromptStore import PromptStoreFactory, PromptType
 from db.index import SessionLocal
 from db.models.repository import Repository
 from db.models.user import User
+from api.core.auth import get_current_user
 
 router = APIRouter()
 
@@ -23,17 +24,24 @@ logger = get_logger(__name__)
 
 dependencies=[Depends(RateLimiter(times=3, seconds=60))]
 @router.post("/")
-def trigger_chat(request: ChatRequest):
+async def trigger_chat(request: ChatRequest, user: User = Depends(get_current_user)):
     try:
-        logger.info(f"Triggering chat with question: {request.question}")
-        res = qa_chain(request.question)
+        searcher = SimilaritySearch(str(user.guid))
+        res = searcher.get_similar_answer(request.question)
 
-        logger.debug(f"qa_chain response: {res}")
+        llm = LLMStore().get_llm()
+
+        prompt_store = PromptStoreFactory.create(PromptType.BUSINESS_ANALYST)
+        prompt = prompt_store.format_prompt(request.question, res)
+
+        res = llm.invoke(prompt).content
+        reply_body = clean_reply(res)
+
         return standard_response(
             success=True,
             message="",
             data={
-                "repos": res
+                "answer": reply_body
             }
         )
     except Exception as e:
@@ -99,7 +107,7 @@ async def github_app_webhook_event(request: Request):
         comment_body = comment.get("body")
 
         session = SessionLocal()
-        
+
         if action == "created" and comment:
             comment_author = comment.get("user", {}).get("login")
     
