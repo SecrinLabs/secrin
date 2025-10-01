@@ -1,16 +1,21 @@
 import env from "@/config/env";
 import { getFriendlyErrorMessage } from "@/lib/HttpError";
 import { ChatApiError, ChatRequest, ChatResponse } from "@/types";
+import { getSession } from "next-auth/react";
 
 export async function sendChatMessage(
   request: ChatRequest
 ): Promise<ChatResponse> {
   try {
-    console.log(JSON.stringify(request));
+    const session = await getSession();
+    if (!session?.accessToken) {
+      throw new ChatApiError("User is not authenticated", 401);
+    }
     const response = await fetch(`${env.api.url}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${session.accessToken}`,
       },
       body: JSON.stringify(request),
     });
@@ -27,7 +32,7 @@ export async function sendChatMessage(
 
     const data = await response.json();
 
-    const answer = data?.data?.repos?.result;
+    const answer = data?.data?.answer;
     // Validate response structure
     if (!answer) {
       throw new ChatApiError("Invalid response format from server", 500, data);
