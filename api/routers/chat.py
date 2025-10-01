@@ -11,7 +11,9 @@ from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
 from api.core.chat import verify_github_signature
 from semantic.search.SimilaritySearch import SimilaritySearch
+from semantic.LLMStore import LLMStore
 from config import settings, get_logger
+from semantic.PromptStore import PromptStoreFactory, PromptType
 
 router = APIRouter()
 
@@ -37,36 +39,36 @@ def trigger_chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.post("/v2")
-def trigger_chat_v2(request: ChatRequest):
+async def trigger_chat_v2(request: ChatRequest):
     try:
         logger.info(f"Triggering chat_v2 with question: {request.question}")
-        searcher = SimilaritySearch("github")  # TODO: pass collection name
+        
+        # Retrieve similar context
+        searcher = SimilaritySearch("f37c42d6-a775-4fd5-bbbe-4bd3b9fe029a")  # TODO: pass collection name dynamically
         res = searcher.get_similar_answer(request.question)
 
-        llm = ChatOllama(
-            model=settings.OLLAMA_MODEL,
-            reasoning=False
+        # Get LLM instance
+        llm = LLMStore().get_llm()
+
+        # Construct prompt
+        messages = (
+            f"You are an assistant. Use the context to answer the question.\n\n"
+            f"Context:\n{res}\n\n"
+            f"Question: {request.question}\n\n"
+            "Answer clearly and concisely:"
         )
 
-        messages = [
-            ("system", "You are a helpful translator. Translate the user sentence to French."),
-            ("human", f"You are an assistant. Use the context to answer the question.\n\n"
-                      f"Context:\n{res}\n\n"
-                      f"Question: {request.question}\n\n"
-                      "Answer clearly and concisely in English:"),
-        ]
-
-        llm_res = llm.invoke(messages)  # await if async supported
+        answer = llm.invoke(messages).content
+            
 
         return standard_response(
             success=True,
             message="success",
-            data={"repos": llm_res.content}
+            data={"repos": answer}
         )
     except Exception as e:
         logger.error(f"Error in trigger_chat_v2: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-    
     
 @router.post("/github")
 async def github_app_webhook_event(request: Request):
@@ -110,16 +112,24 @@ async def github_app_webhook_event(request: Request):
                     data={}
                 )
             
-            context_msg = (
+            footer = "\n\nTo reply, just mention [@secrin](https://github.com/apps/devsecrin)."
+
+            text_body = (
                 f"[{repo}] Issue #{issue_number}: {issue_title}\n\n"
                 f"Issue description:\n{issue_body}\n\n"
-                f"New comment by {comment_author}:\n{comment_body}"
+                f"New comment by {comment_author}: \n {comment_body}"
             )
-            footer = "\n\n---\nTo reply, just mention [@secrin](https://github.com/apps/devsecrin)."
 
-            res = qa_chain(context_msg)
-            reply_body = res.get("result", "Sorry, I couldn't generate a reply.")
-            reply_body = clean_reply(reply_body)
+            searcher = SimilaritySearch("f37c42d6-a775-4fd5-bbbe-4bd3b9fe029a")
+            res = searcher.get_similar_answer(text_body)
+
+            llm = LLMStore().get_llm()
+
+            prompt_store = PromptStoreFactory.create(PromptType.BUSINESS_ANALYST)
+            prompt = prompt_store.format_prompt(comment_body, res)
+
+            res = llm.invoke(prompt).content
+            reply_body = clean_reply(res)
 
             token = get_github_access_token(installation_id)
 
