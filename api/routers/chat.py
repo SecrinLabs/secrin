@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
 import requests
 from fastapi import Request
-from langchain_ollama import ChatOllama
 
 from api.models.chat import ChatRequest
 from engine.query.main import qa_chain
@@ -12,8 +11,11 @@ from api.utils.common import clean_reply
 from api.core.chat import verify_github_signature
 from semantic.search.SimilaritySearch import SimilaritySearch
 from semantic.LLMStore import LLMStore
-from config import settings, get_logger
+from config import get_logger
 from semantic.PromptStore import PromptStoreFactory, PromptType
+from db.index import SessionLocal
+from db.models.repository import Repository
+from db.models.user import User
 
 router = APIRouter()
 
@@ -82,6 +84,8 @@ async def github_app_webhook_event(request: Request):
         BOT_TRIGGER = "@secrin"
 
         action = payload.get("action")
+        repo_id = payload.get("repository", {}).get("id")
+
         repo = payload.get("repository", {}).get("full_name")
         installation_id = payload.get("installation", {}).get("id")
 
@@ -94,6 +98,8 @@ async def github_app_webhook_event(request: Request):
         comment_author = comment.get("user", {}).get("login")
         comment_body = comment.get("body")
 
+        session = SessionLocal()
+        
         if action == "created" and comment:
             comment_author = comment.get("user", {}).get("login")
     
@@ -120,7 +126,18 @@ async def github_app_webhook_event(request: Request):
                 f"New comment by {comment_author}: \n {comment_body}"
             )
 
-            searcher = SimilaritySearch("f37c42d6-a775-4fd5-bbbe-4bd3b9fe029a")
+            repo_in_db = session.query(Repository).filter(Repository.repo_id == repo_id).first()
+
+            if not repo_in_db:
+                return standard_response(
+                        success=True,
+                        message="not valid request",
+                        data={}
+                    )
+            
+            user = session.query(User).filter(User.id == repo_in_db.user_id).first()
+
+            searcher = SimilaritySearch(str(user.guid))
             res = searcher.get_similar_answer(text_body)
 
             llm = LLMStore().get_llm()
@@ -156,4 +173,6 @@ async def github_app_webhook_event(request: Request):
     except Exception as e:
         logger.error(f"Error in github_app_webhook_event: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()
 
