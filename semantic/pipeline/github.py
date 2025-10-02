@@ -1,10 +1,10 @@
 from tqdm import tqdm
+from langchain_core.documents import Document
 
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit
-from config import get_logger
 from semantic.VectorStore import VectorStore
-from langchain_core.documents import Document
+from config import get_logger
 
 logger = get_logger(__name__)
 

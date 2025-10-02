@@ -1,11 +1,11 @@
-from sqlalchemy.orm import Session
-from db.models.user import User
-from db.index import SessionLocal
-from passlib.context import CryptContext
-from fastapi import HTTPException
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
+from sqlalchemy.orm import Session
+from passlib.context import CryptContext
+
+from db.models.user import User
+from db.index import SessionLocal
 from api.utils.auth import decode_access_token
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -3,7 +3,6 @@ from db.index import SessionLocal
 
 from db.models.integration import IntegrationType
 from db.models.repository import Repository
-
 from api.utils.github_token import get_github_access_token
 
 class ScraperFactory:

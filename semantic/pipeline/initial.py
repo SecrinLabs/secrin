@@ -2,8 +2,8 @@ from langchain_core.documents import Document
 from sqlalchemy.orm import Session
 
 from db.models.repository import Repository
-from semantic.VectorStore import VectorStore
 from db.index import SessionLocal
+from semantic.VectorStore import VectorStore
 from config import get_logger
 
 logger = get_logger(__name__)

@@ -1,6 +1,6 @@
-from semantic.EmbeddingStore import EmbeddingStore
 from langchain_chroma import Chroma
 
+from semantic.EmbeddingStore import EmbeddingStore
 from config import settings
 
 class VectorStore:
