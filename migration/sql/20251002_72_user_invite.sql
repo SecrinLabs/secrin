@@ -7,3 +7,5 @@ ADD COLUMN IF NOT EXISTS status SMALLINT NOT NULL DEFAULT 0;
 -- status meaning:
 -- 0 = pending (user invited but password not set)
 -- 1 = active (user has set password and can login)
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_username_key;

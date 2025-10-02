@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 @router.post("/invite-user")
-def invite_user(request: UserInvite):
+async def invite_user(request: UserInvite):
     logger.info(f"Invite attempt for email={request.email}")
 
     try:
@@ -29,13 +29,12 @@ def invite_user(request: UserInvite):
         token = generate_invite_token(user.email)
         invite_link = f"{settings.FRONTEND_URL}/set-password?token={token}"
 
-        # Render email template
-        html_body = EmailFactory.render(
+        EmailFactory.send(
             MailType.INVITE,
-            {"invite_link": invite_link, "user_name": user.username}
+            user.email,
+            {"invite_link": invite_link, "user_name": user.username},
+            subject="You're invited!"
         )
-
-        # send_email(to=user.email, subject="You're invited!", html_body=html_body)
 
         return standard_response(
             success=True,
