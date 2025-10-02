@@ -88,12 +88,6 @@ class Settings:
         self.GITHUB_REPO = os.getenv("GITHUB_REPO")
         self.ENABLE_GITHUB_INTEGRATION = os.getenv("ENABLE_GITHUB_INTEGRATION", "true").lower() == "true"
         
-        # Confluence Integration
-        self.CONFLUENCE_URL = os.getenv("CONFLUENCE_URL")
-        self.CONFLUENCE_USERNAME = os.getenv("CONFLUENCE_USERNAME")
-        self.CONFLUENCE_API_TOKEN = os.getenv("CONFLUENCE_API_TOKEN")
-        self.ENABLE_CONFLUENCE_INTEGRATION = os.getenv("ENABLE_CONFLUENCE_INTEGRATION", "true").lower() == "true"
-        
         # Performance Configuration
         self.EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", "50"))
         self.MAX_CONTEXT_LENGTH = int(os.getenv("MAX_CONTEXT_LENGTH", "4000"))

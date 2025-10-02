@@ -5,7 +5,7 @@ from config import settings
 
 class LLMStore:
   def __init__(self, provider: str | None = None) -> None:
-    self.provider = provider or settings.EMBEDDER_NAME
+    self.provider = provider or settings.LLM_PROVIDER
 
   def get_llm(self):
     if self.provider == "ollama":
