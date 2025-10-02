@@ -4,7 +4,6 @@ import requests
 from fastapi import Request
 
 from api.models.chat import ChatRequest
-from engine.query.main import qa_chain
 from api.utils.standard_response import standard_response
 from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
