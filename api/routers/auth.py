@@ -1,13 +1,12 @@
 
 import os
 from fastapi import APIRouter, HTTPException
-from uuid import uuid4
-from datetime import datetime, timedelta
+from jose import jwt, JWTError
 
-from api.models.auth import UserInvite, UserLogin
+from api.models.auth import UserInvite, UserLogin, SetPassword
 from api.core.auth import Auth
 from api.utils.standard_response import standard_response
-from api.utils.auth import create_access_token, generate_invite_token
+from api.utils.auth import create_access_token, generate_invite_token, validate_invite_token
 from config import get_logger, settings
 from mails.factory import EmailFactory, MailType
 from mails.types import MailType
@@ -50,6 +49,36 @@ async def invite_user(request: UserInvite):
     except Exception as e:
         logger.error(f"❌ Signup failed for email={request.email}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
+    
+@router.post("/set-password")
+def set_password(request: SetPassword):
+    if request.password != request.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    
+    try:
+        user_email = validate_invite_token(request.token)
+        if not user_email:
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    auth = Auth()
+    user = auth.get_user_by_email(user_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.status == 1:
+        raise HTTPException(status_code=400, detail="Password already set")
+    
+    auth.update_user_password(request.password)
+
+    return {
+        "success": True,
+        "message": "Password set successfully, you can now log in",
+        "data": {
+            "user": {"email": user.email}
+        },
+    }
     
 @router.post("/login")
 def user_login(request: UserLogin):

@@ -7,3 +7,8 @@ class UserLogin(BaseModel):
 class UserInvite(BaseModel):
     email: str
     username: str
+
+class SetPassword(BaseModel):
+    token: str
+    password: str
+    confirm_password: str
