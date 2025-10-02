@@ -27,7 +27,7 @@ async def invite_user(request: UserInvite):
 
         # Generate invite token
         token = generate_invite_token(user.email)
-        invite_link = f"{settings.FRONTEND_URL}/set-password?token={token}"
+        invite_link = f"{settings.FRONTEND_URL}/auth/invite?token={token}"
 
         EmailFactory.send(
             MailType.INVITE,
