@@ -1,10 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 class UserLogin(BaseModel):
     email: str
     password: str
 
-class UserSignup(BaseModel):
+class UserInvite(BaseModel):
     email: str
     username: str
+
+class SetPassword(BaseModel):
+    token: str
     password: str

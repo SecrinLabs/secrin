@@ -113,6 +113,7 @@ class Settings:
         
         # Frontend Configuration
         self.NEXT_PUBLIC_API_BASE_URL = os.getenv("NEXT_PUBLIC_API_BASE_URL", self.API_BASE_URL)
+        self.FRONTEND_URL = os.getenv("FRONTEND_URL")
         
         # SSL Configuration (for production)
         self.SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
@@ -132,6 +133,13 @@ class Settings:
         self.SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY")
         self.SESSION_ALGORITHM = os.getenv("SESSION_ALGORITHM")
         self.SESSION_ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("SESSION_ACCESS_TOKEN_EXPIRE_MINUTES")
+
+        # smtp config
+        self.SMTP_HOST = os.getenv("SMTP_HOST")
+        self.SMTP_PORT = os.getenv("SMTP_PORT")
+        self.SMTP_USER = os.getenv("SMTP_USER")
+        self.SMTP_PASS = os.getenv("SMTP_PASS")
+        self.SMTP_USE_TLS = True
     
     def _create_directories(self):
         """Create required directories if they don't exist"""

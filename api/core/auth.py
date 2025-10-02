@@ -37,6 +37,34 @@ class Auth:
         finally:
             session.close()
 
+    def invite_user(self, email: str, username: str) -> User:
+        session: Session = SessionLocal()
+        try:
+            # Check if email already exists
+            existing_user = session.query(User).filter(User.email == email).first()
+            if existing_user:
+                raise HTTPException(status_code=400, detail="Email not available")
+
+            # Create user with pending status, password_hash=None
+            user = User(
+                email=email,
+                username=username,
+                password_hash=None,       # password to be set later via invite link
+                status=0,                 # 0 = pending
+            )
+
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return user
+
+        except Exception as e:
+            session.rollback()
+            raise e
+
+        finally:
+            session.close()
+
     # Update existing user
     def update_user(self, user_id: int, **kwargs):
         session: Session = SessionLocal()
@@ -74,6 +102,9 @@ class Auth:
     # Verify password
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
+    
+    def create_password_hash(self, password_text: str):
+        return pwd_context.hash(password_text)
 
     # Login user
     def login_user(self, email: str, password: str):
@@ -83,6 +114,17 @@ class Auth:
         if not self.verify_password(password, user.password_hash):
             return None  # invalid password
         return user
+    
+    def update_user_password(self, user: User, password_text: str):
+        session: Session = SessionLocal()
+        try:
+            user.password_hash = self.create_password_hash(password_text)
+            user.status = 1
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+        finally:
+            session.close()
     
 def get_db():
     db: Session = SessionLocal()  # create a new DB session
