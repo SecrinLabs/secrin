@@ -113,6 +113,7 @@ class Settings:
         
         # Frontend Configuration
         self.NEXT_PUBLIC_API_BASE_URL = os.getenv("NEXT_PUBLIC_API_BASE_URL", self.API_BASE_URL)
+        self.FRONTEND_URL = os.getenv("FRONTEND_URL")
         
         # SSL Configuration (for production)
         self.SSL_CERT_FILE = os.getenv("SSL_CERT_FILE")
