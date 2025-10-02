@@ -44,8 +44,6 @@ class EmailFactory:
         msg["From"] = settings.SMTP_USER
         msg["To"] = to_email
 
-        print(html_body, email_subject)
-
         try:
             with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
                 if settings.SMTP_USE_TLS:
