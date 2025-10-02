@@ -51,10 +51,7 @@ async def invite_user(request: UserInvite):
         raise HTTPException(status_code=500, detail="Internal server error")
     
 @router.post("/set-password")
-def set_password(request: SetPassword):
-    if request.password != request.confirm_password:
-        raise HTTPException(status_code=400, detail="Passwords do not match")
-    
+def set_password(request: SetPassword):    
     try:
         user_email = validate_invite_token(request.token)
         if not user_email:
@@ -70,7 +67,7 @@ def set_password(request: SetPassword):
     if user.status == 1:
         raise HTTPException(status_code=400, detail="Password already set")
     
-    auth.update_user_password(request.password)
+    auth.update_user_password(user, request.password)
 
     return {
         "success": True,

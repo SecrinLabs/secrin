@@ -1,14 +1,21 @@
 "use client";
 
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { checkPasswordAndSave } from "@/service/auth";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function InvitePage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const token = searchParams.get("token");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,11 +32,24 @@ export default function InvitePage() {
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      // TODO: call your API to set password
-      setSuccess("Password set successfully! You can now log in.");
+      const result = await checkPasswordAndSave({
+        token: token as string,
+        password: password,
+      });
+
+      console.log(result);
+      setSuccess("Password set successfully! Redirecting to login...");
+
+      // Redirect to login page after 1.5 seconds
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 1500);
     } catch {
       setError("Failed to set password. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -56,9 +76,10 @@ export default function InvitePage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter password"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -70,20 +91,39 @@ export default function InvitePage() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Confirm password"
                 required
+                disabled={isLoading}
               />
             </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
-            {success && <p className="text-sm text-green-500">{success}</p>}
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
+                <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="flex items-center gap-2 p-3 bg-primary/10 border border-primary/20 rounded text-sm text-primary">
+                <CheckCircle className="w-4 h-4" />
+                <span>{success}</span>
+              </div>
+            )}
 
             <button
               type="submit"
-              className="w-full bg-primary text-white py-2 rounded hover:bg-primary/90 transition"
+              disabled={isLoading}
+              className="w-full bg-primary text-white py-2 rounded hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Set Password
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Setting Password...</span>
+                </>
+              ) : (
+                <span>Set Password</span>
+              )}
             </button>
 
             <p className="text-xs text-muted-foreground mt-2">

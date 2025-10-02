@@ -11,4 +11,3 @@ class UserInvite(BaseModel):
 class SetPassword(BaseModel):
     token: str
     password: str
-    confirm_password: str
