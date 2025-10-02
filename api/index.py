@@ -7,12 +7,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
-from fastapi_limiter.depends import RateLimiter
 from contextlib import asynccontextmanager
 import redis.asyncio as aioredis
 
 from api.routers import chat, auth, connect, source
-
 from api.utils.monitoring import setup_service_monitoring, get_service_stats
 from config import settings
 

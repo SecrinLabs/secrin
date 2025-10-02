@@ -1,21 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
-import requests
 from fastapi import Request
+import requests
 
 from api.models.chat import ChatRequest
 from api.utils.standard_response import standard_response
 from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
 from api.core.chat import verify_github_signature
+from api.core.auth import get_current_user
 from semantic.search.SimilaritySearch import SimilaritySearch
 from semantic.LLMStore import LLMStore
-from config import get_logger
 from semantic.PromptStore import PromptStoreFactory, PromptType
 from db.index import SessionLocal
 from db.models.repository import Repository
 from db.models.user import User
-from api.core.auth import get_current_user
+from config import get_logger
 
 router = APIRouter()
 

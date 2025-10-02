@@ -6,9 +6,7 @@ from urllib.parse import urlparse
 from markdownify import markdownify as md
 
 from service.src.models.Sitemap import Sitemap
-
 from db.index import SessionLocal
-
 from config import get_logger
 
 # Setup logger for this module

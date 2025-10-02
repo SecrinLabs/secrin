@@ -3,19 +3,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert
 
 from api.utils.standard_response import standard_response
-from config import settings, get_logger
+from api.utils.github_token import get_github_access_token
+from api.core.connect import get_repositories, remove_integration
+from api.core.auth import get_current_user
 from api.models.connect import InstallationToken, SaveRepository, DisconnectService, GetAllIntegrations
 from db.index import SessionLocal
 from db.models.user import User
 from db.models.integration import Integration, IntegrationType
 from db.models.repository import Repository
-from api.utils.github_token import get_github_access_token
-from api.core.connect import get_repositories, remove_integration
 from semantic.pipeline.github import GitHubPipeline
-from api.core.auth import get_current_user
 from semantic.pipeline.initial import InitialPipeline
-
 from service.main import run_scraper_by_name
+from config import settings, get_logger
 
 router = APIRouter()
 logger = get_logger(__name__)

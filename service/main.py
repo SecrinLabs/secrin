@@ -1,8 +1,7 @@
 from service.src.factory import ScraperFactory
+
 from db.index import SessionLocal
-
 from db.models.integration import Integration, IntegrationType
-
 from config import get_logger
 
 # Setup logger for this module

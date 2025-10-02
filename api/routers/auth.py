@@ -1,13 +1,10 @@
-from datetime import timedelta, datetime
-from jose import jwt
-
 from fastapi import APIRouter, HTTPException
+
 from api.models.auth import UserSignup, UserLogin
 from api.core.auth import Auth
 from api.utils.standard_response import standard_response
 from api.utils.auth import create_access_token
-
-from config import settings, get_logger
+from config import get_logger
 
 logger = get_logger(__name__)
 

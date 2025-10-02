@@ -1,10 +1,8 @@
 import requests
 import re
-from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.dialects.postgresql import insert
-
 
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit

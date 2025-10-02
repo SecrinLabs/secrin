@@ -1,5 +1,6 @@
 from langchain_ollama import OllamaEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
 from config import settings
 
 class EmbeddingStore:
