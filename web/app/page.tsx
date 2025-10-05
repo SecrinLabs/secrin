@@ -24,6 +24,7 @@ import {
   MobileNavToggle,
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
+import { useRouter } from "next/navigation";
 
 // Reusable Badge Component
 function Badge({ icon, text }: { icon: React.ReactNode; text: string }) {
@@ -42,6 +43,7 @@ function Badge({ icon, text }: { icon: React.ReactNode; text: string }) {
 export default function LandingPage() {
   const mountedRef = useRef(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const router = useRouter();
 
   const navItems = [
     {
@@ -152,7 +154,12 @@ export default function LandingPage() {
                   <NavbarLogo />
                   <NavItems items={navItems} />
                   <div className="flex items-center gap-4">
-                    <NavbarButton variant="gradient">Try Now</NavbarButton>
+                    <NavbarButton
+                      variant="gradient"
+                      onClick={() => router.push("/contact")}
+                    >
+                      Try Now
+                    </NavbarButton>
                   </div>
                 </NavBody>
 
@@ -182,18 +189,13 @@ export default function LandingPage() {
                     ))}
                     <div className="flex w-full flex-col gap-4">
                       <NavbarButton
-                        onClick={() => setIsMobileMenuOpen(false)}
+                        onClick={() => {
+                          router.push("/contact");
+                        }}
                         variant="primary"
                         className="w-full"
                       >
-                        Login
-                      </NavbarButton>
-                      <NavbarButton
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        variant="primary"
-                        className="w-full"
-                      >
-                        Book a call
+                        Try Now
                       </NavbarButton>
                     </div>
                   </MobileNavMenu>
