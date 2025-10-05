@@ -52,7 +52,7 @@ export default function LandingPage() {
     },
     {
       name: "Contact",
-      link: "#contact",
+      link: "/contact",
     },
   ];
 
