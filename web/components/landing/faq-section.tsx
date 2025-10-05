@@ -9,34 +9,29 @@ interface FAQItem {
 
 const faqData: FAQItem[] = [
   {
-    question: "What is Brillance and who is it for?",
+    question: "Why do people keep asking the same questions again and again?",
     answer:
-      "Brillance is a comprehensive billing automation platform designed for businesses that need custom contract management. It's perfect for SaaS companies, service providers, and enterprises looking to streamline their billing processes.",
+      "Because knowledge in teams isn’t lost, it’s just scattered. Every answer already exists somewhere, but no one remembers where to look. @secrin brings all that knowledge together. Just mention it, and it finds the right answer from your code, docs, or chats instantly.",
   },
   {
-    question: "How does the custom contract billing work?",
+    question: "Why is onboarding new engineers so painful?",
     answer:
-      "Our platform automatically processes your custom contracts, calculates billing amounts based on your specific terms, and generates invoices. You can set up complex pricing structures, usage-based billing, and custom billing cycles.",
+      "Because project history lives in people’s heads, not in one place. Every new hire has to rebuild the same mental map from scratch. @secrin turns your team’s past discussions, commits, and tasks into searchable context so new members ramp up without waiting for handovers.",
   },
   {
-    question: "Can I integrate Brillance with my existing tools?",
+    question: "Why do our docs get outdated so fast?",
     answer:
-      "Yes! Brillance integrates seamlessly with popular CRM systems, accounting software, and payment processors. We support APIs and webhooks for custom integrations with your existing workflow.",
+      "Because no one writes documentation while they’re building and by the time they do, the context is gone. @secrin keeps knowledge alive as work happens, linking conversations and commits automatically so documentation updates itself through usage.",
   },
   {
-    question: "What kind of support do you provide?",
+    question: "Why does finding one answer take ten open tabs?",
     answer:
-      "We offer 24/7 customer support, dedicated account managers for enterprise clients, comprehensive documentation, and onboarding assistance to help you get started quickly.",
+      "Because tools weren’t designed to talk to each other. Slack knows what happened. GitHub knows how. Jira knows why. None of them share it. @secrin bridges them. Ask once anywhere and it pulls the complete answer across your connected tools.",
   },
   {
-    question: "Is my data secure with Brillance?",
+    question: "Why does knowledge disappear when people leave?",
     answer:
-      "Absolutely. We use enterprise-grade security measures including end-to-end encryption, SOC 2 compliance, and regular security audits. Your data is stored in secure, redundant data centers.",
-  },
-  {
-    question: "How do I get started with Brillance?",
-    answer:
-      "Getting started is simple! Sign up for our free trial, connect your existing systems, and our onboarding team will help you set up your first custom billing workflow within 24 hours.",
+      "Because our systems remember files, not decisions. When someone leaves, their reasoning leaves too. @secrin keeps decisions discoverable by linking every change to its context, so the “why” stays even when people move on.",
   },
 ];
 
@@ -76,12 +71,12 @@ export default function FAQSection() {
         {/* Left Column - Header */}
         <div className="w-full lg:flex-1 flex flex-col justify-center items-start gap-4 lg:py-5">
           <div className="w-full flex flex-col justify-center text-[#49423D] font-semibold leading-tight md:leading-[44px] font-sans text-4xl tracking-tight">
-            Frequently Asked Questions
+            Frequently Asked Questions in Tech teams
           </div>
           <div className="w-full text-[#605A57] text-base font-normal leading-7 font-sans">
-            Explore your data, build your dashboard,
+            Ask better questions,
             <br className="hidden md:block" />
-            bring your team together.
+            build smarter teams.
           </div>
         </div>
 

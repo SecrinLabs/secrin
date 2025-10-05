@@ -11,3 +11,8 @@ class UserInvite(BaseModel):
 class SetPassword(BaseModel):
     token: str
     password: str
+
+class ContactMessage(BaseModel):
+    name: str
+    email: EmailStr
+    subject: str

@@ -3,7 +3,7 @@ import os
 from fastapi import APIRouter, HTTPException
 from jose import jwt, JWTError
 
-from api.models.auth import UserInvite, UserLogin, SetPassword
+from api.models.auth import UserInvite, UserLogin, SetPassword, ContactMessage
 from api.core.auth import Auth
 from api.utils.standard_response import standard_response
 from api.utils.auth import create_access_token, generate_invite_token, validate_invite_token
@@ -110,3 +110,32 @@ def user_login(request: UserLogin):
             "access_token": token
         }
     )
+
+@router.post("/new-user-interest")
+async def send_contact_email(data: ContactMessage):
+    try:
+        # Construct HTML email
+        html = f"""
+        <h3>New Contact Message</h3>
+        <p><b>Name:</b> {data.name}</p>
+        <p><b>Email:</b> {data.email}</p>
+        <p><b>Subject:</b> {data.subject}</p>
+        """
+
+        EmailFactory.send(
+            MailType.WAITINGLIST,
+            "jenilsavani1@gmail.com",
+            {"name": data.name, "email": data.email, "subject": data.subject},
+            subject="new interested user!"
+        )
+
+
+        return standard_response(
+            success=True,
+            message="Login successful",
+            data={}
+        )
+
+    except Exception as e:
+        print("Error sending email:", e)
+        raise HTTPException(status_code=500, detail="Failed to send email.")
