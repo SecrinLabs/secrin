@@ -102,6 +102,13 @@ export function LoginForm({
           </form>
         </CardContent>
       </Card>
+      <p>
+        if you want to create account contact us{" "}
+        <a href="/contact" className="text-primary">
+          here
+        </a>
+        .
+      </p>
     </div>
   );
 }
