@@ -49,6 +49,8 @@ next-env.d.ts
 # Hosting/deploy
 .vercel/
 .turbo/
+.source/
+
 
 # App-specific persistent storage
 chroma_store/
