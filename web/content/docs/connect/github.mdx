@@ -1,0 +1,49 @@
+---
+title: Connect GitHub
+description: How to connect your GitHub account to Secrin
+---
+
+# Connect GitHub
+
+Secrin integrates with GitHub to bring your repositories, issues, and pull requests into your internal knowledge assistant.  
+Connecting GitHub ensures Secrin can ingest project data and answer your questions with the most up-to-date context.
+
+---
+
+## How to Connect
+
+Follow these steps to link your GitHub account:
+
+1. Navigate to the **Connect Module** in Secrin.
+2. Click **Add GitHub Account**.
+3. You will be redirected to GitHub’s OAuth page.
+4. Review the permissions requested like:
+   - `repo` – access to private and public repositories.
+   - `read:org` – access to organization membership and teams.
+   - `webhook` – to get live updates of issue.
+5. Click **Authorize Secrin**.
+6. You will be redirected back to Secrin, and your GitHub account will appear in the **Connected Accounts** list.
+
+> ✅ Tip: Only GitHub accounts you authorize will be able to provide project data. Make sure you authorize the correct account.
+
+---
+
+## Verifying the Connection
+
+Once connected, Secrin will show a status indicator next to your GitHub account:
+
+- **Green checkmark** – Connection successful
+- **Pending** – OAuth process not completed
+- **Error** – Connection failed; check troubleshooting below
+
+You can also test ingestion by navigating to the **Source Module** and adding one of your repositories.
+
+---
+
+## Common Connection Errors
+
+| Error                      | Cause                            | Solution                                                     |
+| -------------------------- | -------------------------------- | ------------------------------------------------------------ |
+| `Authorization denied`     | User declined GitHub permissions | Retry connecting and accept permissions                      |
+| `Repository access denied` | Insufficient OAuth scope         | Ensure `repo` and `read:org` scopes are authorized           |
+| `Connection timeout`       | Network or GitHub API issue      | Retry after a few minutes or check network/firewall settings |

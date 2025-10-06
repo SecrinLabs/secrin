@@ -8,7 +8,7 @@ import {
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createRelativeLink } from "fumadocs-ui/mdx";
-import { getMDXComponents } from "@/components/mdx-components";
+import { getMDXComponents } from "@/components/mdx/mdx-components";
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
