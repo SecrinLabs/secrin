@@ -51,6 +51,10 @@ export default function LandingPage() {
       link: "#features",
     },
     {
+      name: "Docs",
+      link: "/docs",
+    },
+    {
       name: "Contact",
       link: "/contact",
     },
