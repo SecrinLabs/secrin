@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 import { SessionProvider } from "next-auth/react";
+import { RootProvider } from "fumadocs-ui/provider/next";
+
 import { ChatApiError, GithubApiError, SourceApiError } from "@/types";
 import { ThemeProvider } from "./theme-provider";
 
@@ -55,7 +57,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <RootProvider>{children}</RootProvider>
+        </SessionProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </ThemeProvider>
     </QueryClientProvider>
