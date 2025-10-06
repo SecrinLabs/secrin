@@ -128,7 +128,7 @@ export default function InvitePage() {
 
             <p className="text-xs text-muted-foreground mt-2">
               In case you forget your password in the future, please contact{" "}
-              <strong>jenil@secrinlabs.com</strong>
+              <strong>help@secrinlabs.com</strong>
             </p>
           </form>
         </div>
