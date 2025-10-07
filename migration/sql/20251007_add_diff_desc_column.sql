@@ -1,0 +1,1 @@
+ALTER TABLE githubcommits ADD COLUMN diff_desc TEXT

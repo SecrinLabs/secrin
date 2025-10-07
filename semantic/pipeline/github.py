@@ -4,6 +4,8 @@ from langchain_core.documents import Document
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit
 from semantic.VectorStore import VectorStore
+from semantic.LLMStore import LLMStore
+from semantic.PromptStore import PromptStoreFactory, PromptType
 from config import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +24,8 @@ class GitHubPipeline:
             f"Date: {commit.author_date}\n"
             f"Message: {commit.message}\n"
             f"URL: {commit.html_url or ''}\n"
+            f"commit_desc: {commit.diff_desc}\n"
+            f"commit_diff: {commit.raw_payload}\n"
         )
 
     def _sanitize_metadata(self, metadata: dict) -> dict:
@@ -43,6 +47,7 @@ class GitHubPipeline:
             "committer_name": commit.committer_name,
             "committer_email": commit.committer_email,
             "html_url": commit.html_url,
+            "commit_desc": commit.diff_desc,
             "inserted_at": str(commit.inserted_at) if commit.inserted_at else None,
         }
         return self._sanitize_metadata(raw)

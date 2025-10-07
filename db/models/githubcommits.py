@@ -27,6 +27,7 @@ class GithubCommit(Base):
     html_url = Column(Text)
     raw_payload = Column(JSONB)
     inserted_at = Column(DateTime(timezone=True), server_default=func.now())
+    diff_desc = Column(Text)
 
     # Relationship: one commit → many files
     files = relationship("GithubCommitFile", back_populates="commit", cascade="all, delete-orphan")

@@ -6,6 +6,9 @@ from sqlalchemy.dialects.postgresql import insert
 
 from db.index import SessionLocal
 from db.models.githubcommits import GithubCommit
+from semantic.VectorStore import VectorStore
+from semantic.LLMStore import LLMStore
+from semantic.PromptStore import PromptStoreFactory, PromptType
 
 class GithubScraper:
     GITHUB_API_URL = "https://api.github.com/graphql"
@@ -206,6 +209,8 @@ class GithubScraper:
 
                 commit_diff = self.fetch_diff(sha)
 
+                diff_desc = self.get_diff_summary(commit_diff)
+
                 stmt = insert(GithubCommit).values(
                     user_id=user_id,
                     sha=sha,
@@ -214,7 +219,8 @@ class GithubScraper:
                     author_email=commit.get("author", {}).get("email"),
                     author_date=commit.get("committedDate"),
                     html_url=commit.get("url"),
-                    raw_payload=commit_diff
+                    raw_payload=commit_diff,
+                    diff_desc=diff_desc
                 ).on_conflict_do_update(
                     index_elements=['sha'],  # your unique constraint column
                     set_={
@@ -263,3 +269,14 @@ class GithubScraper:
             print(f"❌ Scrape operation failed: {e}")
             import traceback
             traceback.print_exc()
+
+    def get_diff_summary(self, diff):
+        llm = LLMStore().get_llm()
+        prompt_store = PromptStoreFactory.create(PromptType.COMMIT_DIFF)
+        prompt = prompt_store.format_prompt(diff)
+        try:
+            res = llm.invoke(prompt).content
+            return res
+        except Exception as e:
+            print("Error while generating diff summary: %s", e)
+            raise
