@@ -1,6 +1,7 @@
 "use client";
 
 import { saveInstallationToken, saveRepositoryList } from "@/service/connect";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Github, CheckCircle2, XCircle, LoaderCircle } from "lucide-react";
@@ -17,17 +18,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Repository } from "./RepoSelector";
 
-export default function GithubSuccess({
-  installation_token,
-  userId,
-}: {
-  installation_token?: string | null;
-  userId?: string | null;
-}) {
+export default function GithubSuccess({ userId }: { userId?: string | null }) {
   const [status, setStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [message, setMessage] = useState("");
+
+  const searchParams = useSearchParams(); // gets query string params
+  const installation_token = searchParams.get("installation_id");
 
   const saveToken = useCallback(async () => {
     try {
