@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { disconnectService, getUserIntegrations } from "@/service/connect";
 import { DisconnectServiceRequest } from "@/types";
 
-const GITHUB_APP_URL = "https://github.com/apps/devsecrin"; // replace with actual app URL
+const GITHUB_APP_URL = "https://github.com/apps/secrinbot"; // replace with actual app URL
 
 interface Connector {
   id: string;

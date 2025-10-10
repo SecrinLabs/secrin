@@ -87,7 +87,7 @@ async def github_app_webhook_event(request: Request):
         
         payload = await request.json()
 
-        BOT_USERNAME = "devsecrin[bot]"
+        BOT_USERNAME = "secrinbot[bot]"
         BOT_TRIGGER = "@secrin"
 
         action = payload.get("action")
