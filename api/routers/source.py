@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from sqlalchemy.dialects.postgresql import insert
 
 from api.utils.standard_response import standard_response
@@ -10,6 +10,9 @@ from db.models.repository import Repository
 from db.models.user import User
 from db.models.integration import Integration, IntegrationType
 from db.index import SessionLocal
+from service.main import run_scraper_by_name
+from semantic.pipeline.github import GitHubPipeline
+
 from config import get_logger
 
 router = APIRouter()
@@ -126,7 +129,7 @@ def remove_repository(request: RemoveRepositoryDTO, user: User = Depends(get_cur
         session.close()
 
 @router.post("/github/add-repository")
-def remove_repository(request: AddRepositoryDTO, user: User = Depends(get_current_user)):
+def remove_repository(request: AddRepositoryDTO, background_tasks: BackgroundTasks, user: User = Depends(get_current_user)):
     try:
         session = SessionLocal()
 
@@ -190,7 +193,11 @@ def remove_repository(request: AddRepositoryDTO, user: User = Depends(get_curren
         session.execute(stmt)
         session.commit()
 
-        # TODO: add update_vectorstore() func here
+        # update vectorstore here
+        background_tasks.add_task(run_scraper_by_name, IntegrationType.github, user.id)
+        gitHubPipeline = GitHubPipeline(str(user.guid))
+        background_tasks.add_task(gitHubPipeline.embed_github_commits, user.id)
+
 
         return standard_response(
             success=True,
