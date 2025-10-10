@@ -125,7 +125,7 @@ async def save_repository(request: SaveRepository, background_tasks: BackgroundT
         initialPipeline.run_initial_pipeline()
 
         # Schedule background tasks correctly by passing the callable and its args (don't call it here)
-        #background_tasks.add_task(run_scraper_by_name, IntegrationType.github, user.id)
+        background_tasks.add_task(run_scraper_by_name, IntegrationType.github, user.id)
         gitHubPipeline = GitHubPipeline(str(user.guid))
         background_tasks.add_task(gitHubPipeline.embed_github_commits, user.id)
 
