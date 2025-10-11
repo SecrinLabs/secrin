@@ -16,33 +16,25 @@ logger = get_logger(__name__)
 class GithubScraper:
     GITHUB_API_URL = "https://api.github.com/graphql"
 
-    def __init__(self, token: str, owner_or_url: str, user_id: int, repo: str = "", limit: int = 20):
+    def __init__(self, token: str, owner: str, repo_name: str, user_id: int, repo: str = "", limit: int = 20):
         self.token = token
         self.user_id = user_id
 
-        if owner_or_url.startswith("http"):
-            parsed = self._parse_github_url(owner_or_url)
-            self.owner = parsed["owner"]
-            self.repo = parsed["repo"]
-        else:
-            self.owner = owner_or_url
-            if repo.startswith("http"):
-                parsed = self._parse_github_url(repo)
-                self.owner = parsed["owner"]
-                self.repo = parsed["repo"]
-            else:
-                self.repo = repo
+        self.repo = repo_name
+        self.owner = owner
 
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
 
-        self.limit = self.get_commit_count()
+        self.limit = 0
 
         logger.info(f"GitHub Scraper initialized — Owner: {self.owner}, Repo: {self.repo}")
 
     def get_commit_count(self) -> int:
+        logger.info(f"Scraper init for {self.owner}/{self.repo}")
+
         query = f"""
         {{
         repository(owner: "{self.owner}", name: "{self.repo}") {{
@@ -61,10 +53,33 @@ class GithubScraper:
         response = requests.post(
             self.GITHUB_API_URL,
             headers=self.headers,
-            json={"query": query}
+            json={"query": query},
+            timeout=30
         )
+
+        if response.status_code != 200:
+            logger.error(f"GitHub API error — Status: {response.status_code}, Response: {response.text}")
+            raise ValueError(f"GitHub API returned {response.status_code}")
+
         data = response.json()
-        return data["data"]["repository"]["defaultBranchRef"]["target"]["history"]["totalCount"]
+        if "errors" in data:
+            logger.error(f"GraphQL error while fetching commit count: {data['errors']}")
+            raise ValueError("GraphQL query failed")
+
+        repo_data = data.get("data", {}).get("repository")
+        if not repo_data:
+            logger.warning(f"Repository not found or no access for {self.owner}/{self.repo}")
+            return 0
+
+        try:
+            count = (
+                repo_data["defaultBranchRef"]
+                ["target"]["history"]["totalCount"]
+            )
+            return count
+        except (TypeError, KeyError) as e:
+            logger.warning(f"Could not get commit count for {self.owner}/{self.repo}: {e}")
+            return 0
 
     def _parse_github_url(self, url: str) -> Dict[str, str]:
         url = url.rstrip("/").rstrip(".git")
@@ -143,6 +158,8 @@ class GithubScraper:
         results = []
         after_cursor = None
         fetched_count = 0
+
+        self.limit = self.get_commit_count()
 
         while fetched_count < self.limit:
             remaining = self.limit - fetched_count

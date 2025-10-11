@@ -22,7 +22,8 @@ class ScraperFactory:
             scrapers = []
             for repo in repo_objs:
                 try:
-                    scrapers.append(GithubScraper(token, repo.repo_url, user_id))
+                    print(token, repo.repo_url, user_id)
+                    scrapers.append(GithubScraper(token, repo.owner_login, repo.repo_name, user_id))
                 except Exception as e:
                     # Don't let one bad repo stop the rest; print for visibility.
                     print(f"⚠️ Skipping repo {repo.repo_url}: {e}")
