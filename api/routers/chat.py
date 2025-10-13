@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi_limiter.depends import RateLimiter
 from fastapi import Request
 import requests
+from sqlalchemy import select, text
 
 from api.models.chat import ChatRequest, DiscordRequest
 from api.utils.standard_response import standard_response
@@ -15,6 +16,7 @@ from semantic.PromptStore import PromptStoreFactory, PromptType
 from db.index import SessionLocal
 from db.models.repository import Repository
 from db.models.user import User
+from db.models.integration import Integration, IntegrationType
 from config import get_logger
 
 router = APIRouter()
@@ -184,12 +186,46 @@ async def github_app_webhook_event(request: Request):
         session.close()
 
 @router.post("/discord")
-def handle_discord_query(request: DiscordRequest):
+async def handle_discord_query(request: DiscordRequest):
     try:
+        logger.info(f"Discord Request: Guild ID: {request.guild}, User: {request.user}, Channel: {request.channel}")
+
         session = SessionLocal()
-        return {"answer": "connection done"}
+
+        # Query Integration where config->'guild_id' == request.guild
+        integration = session.execute(
+            select(Integration)
+            .where(
+                Integration.type == IntegrationType.discord,
+                text("config->>'guild_id' = :guild_id")
+            )
+            .params(guild_id=str(request.guild))
+        ).scalars().first()
+
+        if not integration:
+            logger.warning(f"No integration found for guild_id {request.guild}")
+            raise HTTPException(status_code=404, detail="Integration not found")
+        
+        user = session.query(User).filter(User.id == integration.user_id).first()
+
+        text_body = (
+                f"New discord message: \n {request.question}"
+            )
+        
+        searcher = SimilaritySearch(str(user.guid))
+        res = searcher.get_similar_answer(text_body)
+
+        llm = LLMStore().get_llm()
+
+        prompt_store = PromptStoreFactory.create(PromptType.DISCORD_MESSAGE)
+        prompt = prompt_store.format_prompt(request.question, res)
+
+        res = llm.invoke(prompt).content
+        reply_body = clean_reply(res)
+
+        return {"answer": reply_body}
     except Exception as e:
-        logger.error(f"Error in github_app_webhook_event: {str(e)}", exc_info=True)
+        logger.error(f"Error in handle_discord_query: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         session.close()

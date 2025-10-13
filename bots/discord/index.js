@@ -35,6 +35,7 @@ client.on("messageCreate", async (message) => {
         question: query,
         user: message.author.username,
         channel: message.channel.id,
+        guild: message.guild ? message.guild.id : null,
       });
 
       const answer = response.data.answer || "No context found.";

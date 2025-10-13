@@ -7,3 +7,4 @@ class DiscordRequest(BaseModel):
     question: str
     user: str
     channel: str
+    guild: str
