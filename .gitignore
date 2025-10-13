@@ -28,7 +28,7 @@ yarn-error.log*
 
 # Env vars (don't commit secrets)
 .env
-.env.*
+.env.prod
 !*.example  # Keep templates like .env.example
 
 # System files

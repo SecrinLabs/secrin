@@ -3,7 +3,7 @@ from fastapi_limiter.depends import RateLimiter
 from fastapi import Request
 import requests
 
-from api.models.chat import ChatRequest
+from api.models.chat import ChatRequest, DiscordRequest
 from api.utils.standard_response import standard_response
 from api.utils.github_token import get_github_access_token
 from api.utils.common import clean_reply
@@ -183,3 +183,13 @@ async def github_app_webhook_event(request: Request):
     finally:
         session.close()
 
+@router.post("/discord")
+def handle_discord_query(request: DiscordRequest):
+    try:
+        session = SessionLocal()
+        return {"answer": "connection done"}
+    except Exception as e:
+        logger.error(f"Error in github_app_webhook_event: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        session.close()

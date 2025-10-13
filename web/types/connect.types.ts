@@ -51,3 +51,8 @@ export interface IntegrationDTO {
 export interface GetUserIntegrationsResponse {
   integrations: IntegrationDTO[];
 }
+
+export interface SaveDiscordTokenRequestDTO {
+  code: string;
+  guild_id: string;
+}

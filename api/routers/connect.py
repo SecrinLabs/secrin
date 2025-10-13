@@ -6,7 +6,7 @@ from api.utils.standard_response import standard_response
 from api.utils.github_token import get_github_access_token
 from api.core.connect import get_repositories, remove_integration
 from api.core.auth import get_current_user
-from api.models.connect import InstallationToken, SaveRepository, DisconnectService, GetAllIntegrations
+from api.models.connect import InstallationToken, SaveRepository, DisconnectService, GetAllIntegrations, SaveDiscordTokenRequestDTO
 from db.index import SessionLocal
 from db.models.user import User
 from db.models.integration import Integration, IntegrationType
@@ -192,6 +192,42 @@ def get_user_integrations(request: GetAllIntegrations, user: User = Depends(get_
 
     except Exception as e:
         logger.error(f"Error in get_user_integrations: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+    finally:
+        session.close()
+
+@router.post("/discord/save-installation-token")
+def save_discord_installation_token(request: SaveDiscordTokenRequestDTO, user: User = Depends(get_current_user)):
+    try:
+        logger.info(f"saving discord integrations for user {user.id}")
+
+        session = SessionLocal()
+
+        # save guild token
+        integration = session.query(Integration).filter(Integration.user_id == user.id, Integration.type == IntegrationType.discord).first()
+        
+        if integration:
+            # update config
+            integration.config = {"code": request.code, "guild_id": request.guild_id}
+        else:
+            # create new integration
+            integration = Integration(
+                user_id=user.id,
+                type=IntegrationType.github,
+                config={"code": request.code, "guild_id": request.guild_id}
+            )
+            session.add(integration)
+    
+        session.commit()
+        session.refresh(integration)
+
+        return standard_response(
+            success=True,
+            message=f"success",
+            data={},
+        )
+    except Exception as e:
+        logger.error(f"Error in save_discord_installation_token: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         session.close()
