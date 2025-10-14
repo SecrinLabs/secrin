@@ -213,7 +213,7 @@ def save_discord_installation_token(request: SaveDiscordTokenRequestDTO, user: U
             # create new integration
             integration = Integration(
                 user_id=user.id,
-                type=IntegrationType.github,
+                type=IntegrationType.discord,
                 config={"code": request.code, "guild_id": request.guild_id}
             )
             session.add(integration)
