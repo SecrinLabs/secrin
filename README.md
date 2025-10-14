@@ -1,10 +1,10 @@
-# 🧠 DevSecrin - AI-Powered Developer Context Engine
+# 🧠 Secrin - AI-Powered Developer Context Engine
 
 > **Intelligent codebase understanding through AI reasoning and knowledge graphs**
 
-DevSecrin transforms disconnected development tools (Git, Jira, Confluence) into a unified AI-powered context layer. Ask natural language questions about your codebase and get insights about *why* code was written, not just *what* changed.
+secrin transforms disconnected development tools (Git, Jira, Confluence) into a unified AI-powered context layer. Ask natural language questions about your codebase and get insights about *why* code was written, not just *what* changed.
 
-![devsecrin_arch](https://github.com/SecrinLabs/devsecrin/blob/main/static/img/image.png)
+![secrin_arch](https://github.com/SecrinLabs/devsecrin/blob/main/static/img/image.png)
 
 ## 🚀 Key Features
 
@@ -21,7 +21,7 @@ DevSecrin transforms disconnected development tools (Git, Jira, Confluence) into
 
 ### 🧠 AI Models & Providers
 
-DevSecrin supports multiple AI providers through a factory pattern:
+secrin supports multiple AI providers through a factory pattern:
 
 - **Ollama** (Local): DeepSeek-R1, Llama, CodeLlama, and other local models
 - **Gemini** (Cloud): Google's Gemini 1.5 Pro and other Gemini models
@@ -32,8 +32,8 @@ Switch providers easily through configuration - no code changes required!
 ## 📦 Quick Start
 
 ```bash
-git clone https://github.com/SecrinLabs/devsecrin.git
-cd devsecrin
+git clone https://github.com/SecrinLabs/secrin.git
+cd secrin
 
 # Install dependencies
 pip install -r requirements.txt
@@ -61,20 +61,6 @@ python start_api.py  # API: http://localhost:8000
 - Improves code review quality through historical context
 - Enables data-driven technical decisions
 - Bridges the gap between code and business requirements
-
---- 
-
-## 🔧 Project Structure
-
-```
-devsecrin/
-├── apps/        # api and frontend
-├── packages/
-│   ├── ai/      # embedding, reasoning
-│   ├── db/      # models and migrations
-│   └── scraper/ # data ingestion
-├── .env.example
-```
 
 ## 🤝 Contribute
 
