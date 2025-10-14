@@ -40,6 +40,10 @@ def get_repositories(installation_token: str):
 def get_integration_type(integration_name) -> IntegrationType:
     if integration_name == "github":
         return IntegrationType.github
+    if integration_name == "discord":
+        return IntegrationType.discord
+    if integration_name == "slack":
+        return IntegrationType.slack
     return None
 
 

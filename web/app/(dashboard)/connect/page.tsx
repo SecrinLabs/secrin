@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Clock, Loader2, Plug } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Icons } from "@/components/Icons";
 import { Button } from "@/components/ui/button";
 import { disconnectService, getUserIntegrations } from "@/service/connect";
 import { DisconnectServiceRequest } from "@/types";
-
-const GITHUB_APP_URL = "https://github.com/apps/secrinbot"; // replace with actual app URL
+import env from "@/config/env";
 
 interface Connector {
   id: string;
@@ -25,7 +25,14 @@ const initialConnectors: Connector[] = [
     id: "github",
     name: "GitHub",
     icon: Icons.github,
-    description: "Connect to your GitHub account.",
+    description: "Connect your GitHub account.",
+    connected: false,
+  },
+  {
+    id: "discord",
+    name: "Discord",
+    icon: Icons.discord,
+    description: "Connect your Discord account.",
     connected: false,
   },
 ];
@@ -69,13 +76,30 @@ export default function Page() {
     };
 
     fetchIntegrations();
-  }, [status, session?.user?.id]);
+  }, [status, session?.user?.userGUID]);
+
+  const getDiscordBotUrl = () => {
+    const params = new URLSearchParams({
+      client_id: env.discord.clientId,
+      permissions: env.discord.permissions,
+      integration_type: env.discord.integrationType,
+      scope: env.discord.scope,
+      redirect_uri: env.discord.redirectUri,
+      response_type: env.discord.responseType,
+    });
+
+    return `https://discord.com/oauth2/authorize?${params.toString()}`;
+  };
 
   // Handle connection
   const handleConnect = async (connectorId: string) => {
     try {
       if (connectorId === "github") {
-        router.push(GITHUB_APP_URL);
+        router.push(env.github.app_url);
+      }
+
+      if (connectorId === "discord") {
+        router.push(getDiscordBotUrl());
       }
 
       setConnectors((prev) =>
@@ -106,7 +130,14 @@ export default function Page() {
       }
 
       if (connectorId === "github") {
-        router.push(GITHUB_APP_URL);
+        router.push(env.github.app_url);
+        return;
+      }
+
+      if (connectorId === "discord") {
+        toast.info(
+          "We've removed the Discord integration on our side. Please remove the app from your Discord server to finish disconnecting."
+        );
         return;
       }
 

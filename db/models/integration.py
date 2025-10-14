@@ -5,8 +5,8 @@ import enum
 
 class IntegrationType(enum.Enum):
     github = "github"
-    bitbucket = "bitbucket"
-    linear = "linear"
+    discord = "discord"
+    slack = "slack"
 
 class Integration(Base):
     __tablename__ = "integration"

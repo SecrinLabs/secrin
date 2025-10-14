@@ -48,3 +48,7 @@ class DisconnectService(BaseModel):
 
 class GetAllIntegrations(BaseModel):
     user_guid: UUID
+
+class SaveDiscordTokenRequestDTO(BaseModel):
+    code: str
+    guild_id: str
