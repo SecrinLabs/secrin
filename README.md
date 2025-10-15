@@ -73,4 +73,4 @@ Built with ❤️ by [@jenilsavani9](https://github.com/jenilsavani9)
 
 ---
 
-*"In a world full of files and functions—context is your compass."*
+*"In a world full of files and functions context is your compass."*
