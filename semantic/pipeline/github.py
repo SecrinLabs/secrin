@@ -44,11 +44,9 @@ class GitHubPipeline:
             "sha": commit.sha,
             "author_name": commit.author_name,
             "author_email": commit.author_email,
-            "committer_name": commit.committer_name,
-            "committer_email": commit.committer_email,
             "html_url": commit.html_url,
             "commit_desc": commit.diff_desc,
-            "inserted_at": str(commit.inserted_at) if commit.inserted_at else None,
+            "author_date": str(commit.author_date) if commit.author_date else None,
         }
         return self._sanitize_metadata(raw)
 

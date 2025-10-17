@@ -1,3 +1,5 @@
+import datetime
+
 from semantic.VectorStore import VectorStore
 
 class SimilaritySearch:
@@ -5,6 +7,13 @@ class SimilaritySearch:
         self.vector_store = VectorStore(collection_name).get_vector_store()
 
     def get_similar_answer(self, question: str, k: int = 3):
-        return self.vector_store.similarity_search(question, k=k)
+        return self.vector_store.similarity_search(
+            question, 
+            filter={
+                "author_date": {"$lte": datetime.datetime.now()},
+            }, 
+            sort_by="author_date:desc",
+            k=k
+        )
     
 
