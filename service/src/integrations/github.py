@@ -224,9 +224,20 @@ class GithubScraper:
     def save_commits(self, commits: list, user_id: int):
         session = SessionLocal()
         try:
+            existing_shas = {
+                row[0] for row in session.query(GithubCommit.sha)
+                .filter(GithubCommit.user_id == user_id)
+                .all()
+            }
+
             for commit in commits:
                 sha = commit["oid"]
                 logger.debug(f"Processing commit: {sha}")
+
+                # Skip unnecessary recomputation
+                if sha in existing_shas:
+                    logger.debug(f"Commit {sha} already exists, skipping diff summary.")
+                    continue
 
                 commit_diff = self.fetch_diff(sha)
                 logger.info(f"LLM invoke for diff summary {sha}")
@@ -242,22 +253,12 @@ class GithubScraper:
                     html_url=commit.get("url"),
                     raw_payload=commit_diff,
                     diff_desc=diff_desc
-                ).on_conflict_do_update(
-                    index_elements=['sha'],
-                    set_={
-                        "message": commit.get("message"),
-                        "author_name": commit.get("author", {}).get("name"),
-                        "author_email": commit.get("author", {}).get("email"),
-                        "author_date": commit.get("committedDate"),
-                        "html_url": commit.get("url"),
-                        "raw_payload": commit_diff
-                    }
                 )
 
                 session.execute(stmt)
 
             session.commit()
-            logger.info(f"Inserted or updated {len(commits)} commits into DB successfully.")
+            logger.info(f"Inserted {len(commits)} new commits into DB successfully.")
 
         except IntegrityError:
             session.rollback()
@@ -267,6 +268,7 @@ class GithubScraper:
             logger.error(f"Failed to insert commits: {e}", exc_info=True)
         finally:
             session.close()
+
 
     def scrape(self):
         try:

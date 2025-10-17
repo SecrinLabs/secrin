@@ -14,7 +14,7 @@ const env = {
     responseType: process.env.NEXT_PUBLIC_DISCORD_RESPONSE_TYPE || "",
   },
   github: {
-    app_url: process.env.GITHUB_APP_URL || "",
+    app_url: process.env.NEXT_PUBLIC_GITHUB_APP_URL || "",
   },
 } as const;
 
