@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 from typing import LiteralString, cast
 
-from config.settings import Settings
+from packages.config.settings import Settings
 
 settings = Settings()
 

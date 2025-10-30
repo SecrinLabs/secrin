@@ -2,9 +2,7 @@
 name = "secrin"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Jenil Savani",email = "jenil@secrinlabs.com"}
-]
+authors = [{ name = "Jenil Savani", email = "jenil@secrinlabs.com" }]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,9 +10,14 @@ dependencies = [
     "uvicorn (>=0.38.0,<0.39.0)",
     "sqlalchemy (>=2.0.44,<3.0.0)",
     "pydantic-settings (>=2.11.0,<3.0.0)",
-    "neo4j (>=6.0.2,<7.0.0)"
+    "neo4j (>=6.0.2,<7.0.0)",
 ]
 
+[tool.poetry]
+packages = [{ include = "packages" }]
+
+[tool.poetry.scripts]
+migrate = "packages.database.graph.migrations.run_migrations:run_migrations"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
