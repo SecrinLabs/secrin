@@ -11,6 +11,10 @@ dependencies = [
     "sqlalchemy (>=2.0.44,<3.0.0)",
     "pydantic-settings (>=2.11.0,<3.0.0)",
     "neo4j (>=6.0.2,<7.0.0)",
+    "tree-sitter (>=0.25.2,<0.26.0)",
+    "gitpython (>=3.1.45,<4.0.0)",
+    "tree-sitter-python (>=0.25.0,<0.26.0)",
+    "tree-sitter-javascript (>=0.25.0,<0.26.0)",
 ]
 
 [tool.poetry]
