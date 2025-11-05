@@ -11,14 +11,15 @@ class Neo4jClient:
             settings.NEO4J_URI,
             auth=(settings.NEO4J_USER, settings.NEO4J_PASS)
         )
+        self.database = settings.NEO4J_DB
 
     def run_query(self, query: str, params: dict | None = None):
-        with self.driver.session() as session:
+        with self.driver.session(database=self.database) as session:
             result = session.run(cast(LiteralString, query), params or {})
             return list(result)
 
     def close(self):
         self.driver.close()
 
-# singleton
+# singleton - specify your database name
 neo4j_client = Neo4jClient()

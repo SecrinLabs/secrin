@@ -14,6 +14,11 @@ import argparse
 import sys
 from pathlib import Path
 
+from packages.parser.models import (
+        FileNode, ClassNode, FunctionNode, 
+        VariableNode, PackageNode, DocNode
+    )
+
 # Add parent directory to path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -52,11 +57,6 @@ def analyze_command(args):
     print("\n" + "=" * 60)
     print("Analysis Summary")
     print("=" * 60)
-    
-    from packages.parser.models import (
-        FileNode, ClassNode, FunctionNode, 
-        VariableNode, PackageNode, DocNode
-    )
     
     files = len(graph_data.get_nodes_by_type(FileNode))
     classes = len(graph_data.get_nodes_by_type(ClassNode))

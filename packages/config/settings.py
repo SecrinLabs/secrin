@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     NEO4J_URI: str = ""
     NEO4J_USER: str = ""
     NEO4J_PASS: str = ""
+    NEO4J_DB: str = ""
 
     # ---- Misc ----
     LOG_LEVEL: str = "INFO"
