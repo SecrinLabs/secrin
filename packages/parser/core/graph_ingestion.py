@@ -108,6 +108,9 @@ class GraphIngestionService:
         source_label = self._infer_label_from_id(rel.source_id)
         target_label = self._infer_label_from_id(rel.target_id)
         
+        # Convert relationship properties for Neo4j compatibility
+        props = self._sanitize_properties(rel.properties)
+        
         query = f"""
         MATCH (source:{source_label} {{id: $source_id}})
         MATCH (target:{target_label} {{id: $target_id}})
@@ -120,10 +123,44 @@ class GraphIngestionService:
             self.client.run_query(query, {
                 "source_id": rel.source_id,
                 "target_id": rel.target_id,
-                "props": rel.properties
+                "props": props
             })
         except Exception as e:
             print(f"Error ingesting relationship {rel.source_id} -> {rel.target_id}: {e}")
+    
+    def _sanitize_properties(self, properties: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sanitize properties for Neo4j compatibility
+        
+        Args:
+            properties: Dictionary of properties
+        
+        Returns:
+            Sanitized properties dictionary
+        """
+        import json
+        sanitized = {}
+        
+        for key, value in properties.items():
+            if isinstance(value, datetime):
+                sanitized[key] = value.isoformat()
+            elif value is None:
+                # Skip None values
+                continue
+            elif isinstance(value, dict):
+                # Convert dictionaries to JSON strings
+                sanitized[key] = json.dumps(value)
+            elif isinstance(value, list):
+                # Check if list contains only primitive types
+                if value and not all(isinstance(item, (str, int, float, bool)) for item in value):
+                    # Convert to JSON string if list contains complex objects
+                    sanitized[key] = json.dumps(value)
+                else:
+                    sanitized[key] = value
+            else:
+                sanitized[key] = value
+        
+        return sanitized
     
     def _node_to_properties(self, node: Any) -> Dict[str, Any]:
         """
@@ -136,19 +173,7 @@ class GraphIngestionService:
             Dictionary of properties
         """
         props = node.model_dump()
-        
-        # Convert datetime objects to ISO format strings
-        for key, value in props.items():
-            if isinstance(value, datetime):
-                props[key] = value.isoformat()
-            elif value is None:
-                # Remove None values
-                continue
-        
-        # Remove None values
-        props = {k: v for k, v in props.items() if v is not None}
-        
-        return props
+        return self._sanitize_properties(props)
     
     def _infer_label_from_id(self, node_id: str) -> str:
         """

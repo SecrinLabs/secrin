@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from uuid import uuid4
+import json
 from packages.database.graph.graph import neo4j_client
 from packages.ingest.edges import Edge
 
@@ -10,11 +11,14 @@ class Memory:
 
         node_id = str(uuid4())
 
+        # Convert metadata dict to JSON string for Neo4j storage
+        metadata_json = json.dumps(metadata) if metadata else "{}"
+
         query = f"""
           CREATE (n:{type} {{
               id: $id,
               content: $content,
-              metadata: $metadata,
+              metadata: $metadata_json,
               created_at: datetime()
           }})
           RETURN n.id AS id
@@ -23,7 +27,7 @@ class Memory:
         result = neo4j_client.run_query(query, {
             "id": node_id,
             "content": content,
-            "metadata": metadata
+            "metadata_json": metadata_json
         })
 
         return node_id
@@ -33,7 +37,7 @@ class Memory:
           MATCH (n)
           WHERE
               toString(n.content) CONTAINS $q OR
-              any(k IN keys(n.metadata) WHERE toString(n.metadata[k]) CONTAINS $q)
+              toString(n.metadata) CONTAINS $q
           RETURN n
           """
 
@@ -42,9 +46,12 @@ class Memory:
         return [r["n"] for r in result]
     
     def link(self, src_id: str, relation: Edge, dst_id: str):
+        # Extract the value from the enum
+        relation_type = relation.value if hasattr(relation, 'value') else relation
+        
         query = f"""
           MATCH (a {{id: $src}}), (b {{id: $dst}})
-          MERGE (a)-[r:{relation}]->(b)
+          MERGE (a)-[r:{relation_type}]->(b)
           RETURN type(r) AS relation
           """
 
