@@ -3,6 +3,8 @@ from apps.api.utils import APIResponse
 from apps.api.routes.v1.schemas.connect import (
     GitHubRepoConnect
 )
+from packages.ingest.commit_decisions import process_repository
+
 
 router = APIRouter(prefix="/connect", tags=["Connect"])
 
@@ -18,7 +20,11 @@ async def connect_github_repo(repo_data: GitHubRepoConnect):
     else:
         owner = "unknown"
         repo = "unknown"
-    
+
+    summary = process_repository(
+        repo_data.repo_url,
+    )
+        
     return APIResponse.success(
         data={
             "connection_id": "gh_conn_123456",

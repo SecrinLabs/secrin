@@ -23,6 +23,7 @@ packages = [{ include = "packages" }]
 
 [tool.poetry.scripts]
 migrate = "packages.database.graph.migrations.run_migrations:run_migrations"
+ingest-commits = "packages.ingest.commit_cli:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

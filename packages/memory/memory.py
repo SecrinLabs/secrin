@@ -61,3 +61,20 @@ class Memory:
         })
 
         return True
+
+    def upsert_node(self, label: str, match_props: Dict[str, Any], set_props: Dict[str, Any]) -> str:
+        if "id" not in set_props:
+            raise ValueError("set_props must include a stable 'id'")
+
+        # Build MERGE pattern map parameters
+        merge_keys = ", ".join([f"{k}: $m_{k}" for k in match_props.keys()])
+        query = f"""
+          MERGE (n:{label} {{{merge_keys}}})
+          ON CREATE SET n.created_at = datetime()
+          SET n += $props
+          RETURN n.id AS id
+        """
+
+        params = {**{f"m_{k}": v for k, v in match_props.items()}, "props": set_props}
+        result = neo4j_client.run_query(query, params)
+        return result[0]["id"] if result else set_props["id"]
