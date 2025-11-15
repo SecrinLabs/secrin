@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     NEO4J_PASS: str = ""
     NEO4J_DB: str = ""
 
+    # ---- API ----
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
+    API_VERSION: str = "v1"
+
     # ---- Misc ----
     LOG_LEVEL: str = "INFO"
     ENVIRONMENT: str = "development"
