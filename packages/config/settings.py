@@ -19,6 +19,15 @@ class Settings(BaseSettings):
     NEO4J_PASS: str = ""
     NEO4J_DB: str = ""
 
+    # ---- Embeddings ----
+    OPENAI_API_KEY: str = ""
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_EMBEDDING_MODEL: str = "mxbai-embed-large"
+    SENTENCE_TRANSFORMER_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_PROVIDER: str = "ollama"  # "openai", "ollama", or "sentence_transformer"
+    EMBEDDING_DIMENSION: int = 1024  # 1536 for OpenAI, 1024 for mxbai-embed-large, 384 for MiniLM
+
     # ---- API ----
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000

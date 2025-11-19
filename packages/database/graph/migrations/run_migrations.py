@@ -38,10 +38,25 @@ def run_migrations():
             print(f"🚀 Applying {filename}...")
             cypher = file_path.read_text()
 
+            # Split by semicolon and filter out comments and empty lines
             for statement in cypher.split(";"):
                 stmt = statement.strip()
-                if stmt:
-                    session.run(cast(LiteralString, stmt))
+                # Skip empty statements and comments
+                if not stmt or stmt.startswith("--"):
+                    continue
+                # Remove inline comments
+                lines = []
+                for line in stmt.split("\n"):
+                    # Remove comment part from each line
+                    if "--" in line:
+                        line = line[:line.index("--")]
+                    line = line.strip()
+                    if line:
+                        lines.append(line)
+                
+                clean_stmt = "\n".join(lines)
+                if clean_stmt:
+                    session.run(cast(LiteralString, clean_stmt))
             
             mark_migration_applied(session, filename)
             print(f"✅ Applied {filename}")
