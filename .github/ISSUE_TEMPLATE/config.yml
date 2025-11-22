@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Community Support
+    url: https://github.com/SecrinLabs/secrin/discussions
+    about: Ask questions and discuss ideas with the community
