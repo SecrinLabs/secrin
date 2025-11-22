@@ -1,11 +1,14 @@
 from typing import List, Optional
 import numpy as np
+import logging
 from packages.memory.models.embedding_provider import EmbeddingProvider
 from packages.memory.strategies.base_embedding_strategy import BaseEmbeddingStrategy
 from packages.memory.factories.embedding_factory import EmbeddingStrategyFactory
 from packages.config.settings import Settings
+from packages.config.feature_flags import is_feature_enabled, FeatureFlag
 
 settings = Settings()
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
@@ -41,7 +44,14 @@ class EmbeddingService:
             
         Returns:
             List of floats representing the embedding vector
+            
+        Raises:
+            RuntimeError: If embeddings feature is disabled
         """
+        if not is_feature_enabled(FeatureFlag.ENABLE_EMBEDDINGS):
+            raise RuntimeError("Embedding generation is disabled via feature flag")
+        
+        logger.debug(f"Generating embedding for text (length={len(text)})")
         return self._strategy.embed_text(text)
     
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
@@ -53,7 +63,14 @@ class EmbeddingService:
             
         Returns:
             List of embedding vectors
+            
+        Raises:
+            RuntimeError: If batch embeddings feature is disabled
         """
+        if not is_feature_enabled(FeatureFlag.ENABLE_BATCH_EMBEDDINGS):
+            raise RuntimeError("Batch embedding generation is disabled via feature flag")
+        
+        logger.debug(f"Generating embeddings for {len(texts)} texts")
         return self._strategy.embed_texts(texts)
     
     def get_dimension(self) -> int:

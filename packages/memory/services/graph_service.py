@@ -1,8 +1,14 @@
 from typing import List, Optional, Dict, Any
+import logging
 from packages.database.graph.graph import Neo4jClient
 from packages.memory.services.embedding_service import EmbeddingService, get_embedding_service
 from packages.memory.models.embedding_provider import EmbeddingProvider
 from packages.memory.models.search_result import SearchResult, VectorSearchResult
+from packages.config.settings import Settings
+from packages.config.feature_flags import is_feature_enabled, FeatureFlag
+
+settings = Settings()
+logger = logging.getLogger(__name__)
 
 
 class GraphService:
@@ -73,7 +79,18 @@ class GraphService:
             
         Returns:
             List of VectorSearchResult objects
+            
+        Raises:
+            RuntimeError: If vector search feature is disabled
         """
+        if not is_feature_enabled(FeatureFlag.ENABLE_VECTOR_SEARCH):
+            raise RuntimeError("Vector search is disabled via feature flag")
+        
+        # Apply configured limits
+        limit = min(limit, settings.VECTOR_SEARCH_MAX_LIMIT)
+        
+        logger.info(f"Vector search: query='{query_text[:50]}...', node_type={node_type}, limit={limit}")
+        
         # Generate embedding for query
         query_vector = self.embedding_service.embed_text(query_text)
         
@@ -133,7 +150,19 @@ class GraphService:
             
         Returns:
             List of SearchResult objects
+            
+        Raises:
+            RuntimeError: If hybrid search feature is disabled
         """
+        if not is_feature_enabled(FeatureFlag.ENABLE_HYBRID_SEARCH):
+            raise RuntimeError("Hybrid search is disabled via feature flag")
+        
+        # Apply configured limits and weights
+        limit = min(limit, settings.VECTOR_SEARCH_MAX_LIMIT)
+        vector_weight = vector_weight if vector_weight is not None else settings.HYBRID_SEARCH_VECTOR_WEIGHT
+        
+        logger.info(f"Hybrid search: query='{query_text[:50]}...', node_type={node_type}, limit={limit}, weight={vector_weight}")
+        
         # Generate embedding for query
         query_vector = self.embedding_service.embed_text(query_text)
         index_name = f"{node_type.lower()}_embedding_index"

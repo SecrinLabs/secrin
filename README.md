@@ -19,38 +19,38 @@ Secrin is a personal intelligence layer for engineering teams. It stitches toget
 ## Quickstart
 
 Prerequisites:
-- Python 3.13
+- Python 3.13+
 - Poetry
+- Neo4j database
 
 Setup:
-1. Clone the repo and create your env file
-	 - Copy `.env.example` to `.env` and fill values (see Configuration)
-2. Install dependencies
-
 ```bash
+# 1. Clone and install
+git clone https://github.com/SecrinLabs/secrin.git
+cd secrin
 poetry install
-```
 
-Run the API:
+# 2. Configure (see CONFIGURATION.md)
+cp .env.example .env
+# Edit .env with your Neo4j details
 
-```bash
+# 3. Validate setup
+python -m packages.config.cli validate
+
+# 4. Run API
 poetry run python run_api.py
 ```
 
-Check it works:
-
+Verify:
 ```bash
-# Welcome
-curl http://localhost:8000/
-
-# Health
+# Health check
 curl http://localhost:8000/v1/health
 
-# Connect a GitHub repo (sample)
-curl -X POST http://localhost:8000/v1/connect/github \
-	-H "Content-Type: application/json" \
-	-d '{"repo_url": "https://github.com/facebook/react"}'
+# Config summary
+python -m packages.config.cli summary
 ```
+
+📖 **Configuration:** See [CONFIGURATION.md](CONFIGURATION.md) for setup details.
 
 ## Community & Support
 
