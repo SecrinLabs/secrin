@@ -149,6 +149,39 @@ class Settings(BaseSettings):
     )
     
     # ============================================================================
+    # LLM Configuration (for QA/Chat)
+    # ============================================================================
+    
+    LLM_PROVIDER: str = Field(
+        default="ollama",
+        description="LLM provider (currently only 'ollama' supported)"
+    )
+    
+    LLM_MODEL_OLLAMA: str = Field(
+        default="llama3.2",
+        description="Ollama model for LLM responses"
+    )
+    
+    LLM_TIMEOUT: int = Field(
+        default=120,
+        description="LLM request timeout in seconds"
+    )
+    
+    LLM_MAX_TOKENS: int = Field(
+        default=1000,
+        ge=100,
+        le=4000,
+        description="Maximum tokens for LLM responses"
+    )
+    
+    LLM_TEMPERATURE: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=2.0,
+        description="LLM temperature for response generation"
+    )
+    
+    # ============================================================================
     # Vector Search Configuration
     # ============================================================================
     
