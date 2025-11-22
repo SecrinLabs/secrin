@@ -3,8 +3,7 @@ Example script demonstrating vector search capabilities in the knowledge graph.
 """
 
 from typing import Literal
-from packages.memory.graph import GraphQuery
-from packages.memory.embeddings import EmbeddingProvider
+from packages.memory.graph import graph_service
 from pprint import pprint
 
 
@@ -14,21 +13,18 @@ def example_semantic_search():
     print("Example 1: Semantic Search for Functions")
     print("=" * 70)
     
-    graph = GraphQuery()
-    
     # Search for functions related to authentication
-    results = graph.vector_search(
+    results = graph_service.vector_search(
         query_text="authenticate user login credentials",
-        node_label="Function",
-        top_k=5,
-        provider=EmbeddingProvider.OLLAMA
+        node_type="Function",
+        limit=5,
     )
     
     print("\n🔍 Query: 'authenticate user login credentials'\n")
     
     for i, result in enumerate(results, 1):
-        node = result["node"]
-        score = result["score"]
+        node = result.node
+        score = result.score
         print(f"{i}. Function: {node.get('name', 'Unknown')}")
         print(f"   Similarity Score: {score:.4f}")
         print(f"   Signature: {node.get('signature', 'N/A')}")
@@ -42,28 +38,23 @@ def example_hybrid_search():
     print("Example 2: Hybrid Search (Vector + Keyword)")
     print("=" * 70)
     
-    graph = GraphQuery()
-    
     # Hybrid search for classes
-    results = graph.hybrid_search(
+    results = graph_service.hybrid_search(
         query_text="data validation and schema",
-        node_label="Class",
-        top_k=5,
+        node_type="Class",
+        limit=5,
         vector_weight=0.7,  # 70% vector, 30% keyword
-        provider=EmbeddingProvider.OLLAMA
     )
     
     print("\n🔍 Query: 'data validation and schema'\n")
     
     for i, result in enumerate(results, 1):
-        node = result["node"]
-        combined_score = result["score"]
-        vector_score = result["vector_score"]
-        keyword_score = result["keyword_score"]
+        node = result.node
+        combined_score = (result.metadata or {}).get("score", 0.0)
         
         print(f"{i}. Class: {node.get('name', 'Unknown')}")
         print(f"   Combined Score: {combined_score:.4f}")
-        print(f"   Vector Score: {vector_score:.4f} | Keyword Score: {keyword_score:.4f}")
+        # Simplified output: only combined score shown
         print(f"   File: {node.get('source_path', 'N/A')}")
         print()
 
@@ -74,30 +65,24 @@ def example_find_similar_code():
     print("Example 3: Find Similar Functions")
     print("=" * 70)
     
-    graph = GraphQuery()
-    
     # First, get a specific function (you'll need to replace with an actual ID)
-    # For demo purposes, we'll search for a function first
-    search_results = graph.search("run_query", node_label="Function")
+    search_results = graph_service.search("run_query", node_type="Function", search_type="vector", limit=5)
     
     if not search_results:
         print("\n⚠️  No function found. Please ingest some code first.")
         return
     
-    target_node = search_results[0]
+    target_node = search_results[0].node
     node_id = target_node.get("id")
     
     print(f"\n📍 Finding functions similar to: {target_node.get('name', 'Unknown')}\n")
     
     # Find similar functions
-    similar_results = graph.find_similar_nodes(
-        node_id=node_id,
-        top_k=5
-    )
+    similar_results = graph_service.find_similar_nodes(node_id=node_id, node_type="Function", limit=5)
     
     for i, result in enumerate(similar_results, 1):
-        node = result["node"]
-        score = result["score"]
+        node = result.node
+        score = result.score
         print(f"{i}. Function: {node.get('name', 'Unknown')}")
         print(f"   Similarity Score: {score:.4f}")
         print(f"   Signature: {node.get('signature', 'N/A')}")
@@ -111,21 +96,18 @@ def example_search_documentation():
     print("Example 4: Search Documentation")
     print("=" * 70)
     
-    graph = GraphQuery()
-    
     # Search for documentation about specific topics
-    results = graph.vector_search(
+    results = graph_service.vector_search(
         query_text="how to setup and configure the database connection",
-        node_label="Doc",
-        top_k=3,
-        provider=EmbeddingProvider.OLLAMA
+        node_type="Doc",
+        limit=3,
     )
     
     print("\n🔍 Query: 'how to setup and configure the database connection'\n")
     
     for i, result in enumerate(results, 1):
-        node = result["node"]
-        score = result["score"]
+        node = result.node
+        score = result.score
         doc_text = node.get('text', '')
         
         print(f"{i}. Document Type: {node.get('type', 'Unknown')}")
@@ -141,21 +123,18 @@ def example_search_commits():
     print("Example 5: Search Commit History")
     print("=" * 70)
     
-    graph = GraphQuery()
-    
     # Search for commits about specific features
-    results = graph.vector_search(
+    results = graph_service.vector_search(
         query_text="added authentication and security features",
-        node_label="Commit",
-        top_k=5,
-        provider=EmbeddingProvider.OLLAMA
+        node_type="Commit",
+        limit=5,
     )
     
     print("\n🔍 Query: 'added authentication and security features'\n")
     
     for i, result in enumerate(results, 1):
-        node = result["node"]
-        score = result["score"]
+        node = result.node
+        score = result.score
         print(f"{i}. Commit: {node.get('hash', 'Unknown')[:8]}")
         print(f"   Similarity Score: {score:.4f}")
         print(f"   Author: {node.get('author', 'Unknown')}")
@@ -169,7 +148,6 @@ def example_multi_type_search():
     print("Example 6: Multi-Type Search")
     print("=" * 70)
     
-    graph = GraphQuery()
     query = "graph database operations and queries"
     
     print(f"\n🔍 Query: '{query}'\n")
@@ -178,16 +156,15 @@ def example_multi_type_search():
     
     for node_type in node_types:
         print(f"\n--- {node_type}s ---")
-        results = graph.vector_search(
+        results = graph_service.vector_search(
             query_text=query,
-            node_label=node_type,
-            top_k=2,
-            provider=EmbeddingProvider.OLLAMA
+            node_type=node_type,
+            limit=2,
         )
         
         for result in results:
-            node = result["node"]
-            score = result["score"]
+            node = result.node
+            score = result.score
             print(f"  • {node.get('name', node.get('path', 'Unknown'))} (score: {score:.4f})")
 
 
