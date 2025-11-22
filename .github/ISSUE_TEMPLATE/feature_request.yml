@@ -1,0 +1,48 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for Secrin
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! Please fill out the sections below to help us understand your request.
+  
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Short description of the feature
+      description: Provide a brief summary of the feature you'd like to see
+      placeholder: A clear and concise description of the feature
+    validations:
+      required: true
+  
+  - type: textarea
+    id: user-problem
+    attributes:
+      label: What is the user problem this solves?
+      description: Explain the problem or pain point that this feature would address
+      placeholder: Describe the problem from the user's perspective
+    validations:
+      required: true
+  
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria (what does "done" look like?)
+      description: Define what success looks like for this feature
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+  
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context/screenshots (optional)
+      description: Add any other context, mockups, or screenshots about the feature request here
+      placeholder: Any additional information that might be helpful
+    validations:
+      required: false

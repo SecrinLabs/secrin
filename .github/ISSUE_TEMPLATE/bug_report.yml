@@ -1,0 +1,71 @@
+name: Bug Report
+description: Report a bug or issue with Secrin
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below to help us understand and fix the issue.
+  
+  - type: input
+    id: summary
+    attributes:
+      label: Summary/Title
+      description: A brief summary of the bug
+      placeholder: Brief description of the issue
+    validations:
+      required: true
+  
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Clear steps to reproduce the behavior
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+  
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+      placeholder: A clear description of what you expected to happen
+    validations:
+      required: true
+  
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happened
+      placeholder: A clear description of what actually happened
+    validations:
+      required: true
+  
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment (optional)
+      description: Information about your environment
+      placeholder: |
+        - Branch: main
+        - OS: Ubuntu 22.04
+        - Browser: Chrome 120
+        - Python version: 3.13
+    validations:
+      required: false
+  
+  - type: textarea
+    id: screenshots-logs
+    attributes:
+      label: Screenshots/logs (optional)
+      description: Add screenshots or logs to help explain the problem
+      placeholder: Paste screenshots or relevant logs here
+    validations:
+      required: false
