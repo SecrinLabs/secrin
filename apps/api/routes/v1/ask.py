@@ -1,5 +1,6 @@
 import logging
 from typing import Any
+
 from fastapi import APIRouter, HTTPException, status
 
 from apps.api.routes.v1.schemas.qa import (
@@ -7,6 +8,7 @@ from apps.api.routes.v1.schemas.qa import (
     QAResponse,
     ContextItem,
 )
+from apps.api.utils import APIResponse
 from packages.memory.qa_service import QAService
 from packages.memory.services.graph_service import GraphService
 from packages.database.graph.graph import neo4j_client
@@ -23,7 +25,6 @@ qa_service = QAService(graph_service)
 
 @router.post(
     "",
-    response_model=QAResponse,
     summary="Ask a question about the codebase",
     description=(
         "Submit a natural language question about the codebase. The system "
@@ -31,7 +32,7 @@ qa_service = QAService(graph_service)
         "to generate an answer."
     ),
 )
-async def question_answer(request: QARequest) -> QAResponse:
+async def question_answer(request: QARequest):
     """Return an AI-generated answer with supporting context.
 
     Process:
@@ -49,16 +50,19 @@ async def question_answer(request: QARequest) -> QAResponse:
             context_limit=request.context_limit,
         )
 
-        return QAResponse(
-            answer=result["answer"],
-            question=result["question"],
-            context=[ContextItem(**item) for item in result["context"]],
-            context_count=result["context_count"],
-            search_type=result["search_type"],
-            node_type=result.get("node_type"),
-            node_types=result.get("node_types"),
-            model=result["model"],
-            provider=result["provider"],
+        return APIResponse.success(
+            data={
+                "answer": result["answer"],
+                "question": result["question"],
+                "context": [ContextItem(**item) for item in result["context"]],
+                "context_count": result["context_count"],
+                "search_type": result["search_type"],
+                "node_type": result.get("node_type"),
+                "node_types": result.get("node_types"),
+                "model": result["model"],
+                "provider": result["provider"],
+            },
+            message="Successfully answered the question."
         )
 
     except ValueError as e:
