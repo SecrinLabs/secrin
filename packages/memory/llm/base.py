@@ -118,10 +118,23 @@ Answer:"""
         
         formatted = []
         for idx, item in enumerate(context_items, 1):
-            # Extract common fields
-            node_type = getattr(item, 'type', 'Unknown')
-            name = getattr(item, 'name', 'Unnamed')
-            content = getattr(item, 'content', '')
+            # Extract node data from SearchResult objects
+            node = getattr(item, 'node', item) if hasattr(item, 'node') else item
+            
+            # Get node properties
+            if isinstance(node, dict):
+                node_type = node.get('labels', ['Unknown'])[0] if node.get('labels') else 'Unknown'
+                # For commits, use short SHA as name; otherwise use name field
+                if node_type == 'Commit':
+                    name = node.get('sha', 'Unknown')[:8]
+                else:
+                    name = node.get('name', 'Unnamed')
+                content = node.get('content', '')
+            else:
+                node_type = 'Unknown'
+                name = 'Unnamed'
+                content = ''
+            
             score = getattr(item, 'score', None)
             
             # Build context entry

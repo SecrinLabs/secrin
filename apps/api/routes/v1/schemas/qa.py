@@ -24,8 +24,8 @@ class QARequest(BaseModel):
     )
     
     node_type: str = Field(
-        default="Function",
-        description="Type of code nodes to search (Function, Class, File, etc.)"
+        default="Commit",  # Changed from "Function" to "Commit" to match available data
+        description="Type of code nodes to search (Function, Class, File, Commit, etc.)"
     )
     
     context_limit: int = Field(

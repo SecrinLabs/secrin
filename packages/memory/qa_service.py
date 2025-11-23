@@ -211,10 +211,23 @@ class QAService:
         """
         context_summary = []
         for item in context_items:
+            # Extract node data (SearchResult objects have a 'node' attribute)
+            node = getattr(item, 'node', item) if hasattr(item, 'node') else item
+            
+            # Get node properties
+            if isinstance(node, dict):
+                node_type = node.get('labels', ['Unknown'])[0] if node.get('labels') else 'Unknown'
+                name = node.get('name') or node.get('sha', 'N/A')[:8] if node.get('sha') else 'N/A'
+                content = node.get('content', '')
+            else:
+                node_type = 'Unknown'
+                name = 'N/A'
+                content = ''
+            
             summary = {
-                "type": getattr(item, 'type', 'Unknown'),
-                "name": getattr(item, 'name', 'N/A'),
-                "content": getattr(item, 'content', '')[:500],  # Truncate for response
+                "type": node_type,
+                "name": name,
+                "content": content[:500],  # Truncate for response
                 "score": getattr(item, 'score', None)
             }
             context_summary.append(summary)

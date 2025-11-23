@@ -167,19 +167,35 @@ class GraphService:
         query_vector = self.embedding_service.embed_text(query_text)
         index_name = f"{node_type.lower()}_embedding_index"
         
+        # Build text search scoring based on node type
+        if node_type == "Commit":
+            # For commits, search in content (commit message), author_name, and files_changed
+            # Don't filter, just boost score if text matches
+            text_score_case = """
+                CASE 
+                    WHEN toLower(coalesce(node.content, '')) CONTAINS toLower($query_text) THEN 1.0
+                    WHEN toLower(coalesce(node.author_name, '')) CONTAINS toLower($query_text) THEN 0.9
+                    WHEN any(file IN coalesce(node.files_changed, []) WHERE toLower(file) CONTAINS toLower($query_text)) THEN 0.8
+                    ELSE 0.0
+                END
+            """
+        else:
+            # For code nodes (Function, Class, etc.), search in name and signature
+            text_score_case = """
+                CASE 
+                    WHEN toLower(coalesce(node.name, '')) CONTAINS toLower($query_text) THEN 1.0
+                    WHEN toLower(coalesce(node.signature, '')) CONTAINS toLower($query_text) THEN 0.8
+                    ELSE 0.0
+                END
+            """
+        
         # Perform hybrid search with both vector and text matching
-        cypher_query = """
+        # Note: Removed WHERE clause to allow pure vector results when text doesn't match
+        cypher_query = f"""
         CALL db.index.vector.queryNodes($index_name, $limit * 2, $query_vector)
         YIELD node, score as vector_score
-        WITH node, vector_score
-        WHERE toLower(node.name) CONTAINS toLower($query_text)
-           OR toLower(node.signature) CONTAINS toLower($query_text)
         WITH node, vector_score,
-             CASE 
-                WHEN toLower(node.name) CONTAINS toLower($query_text) THEN 1.0
-                WHEN toLower(node.signature) CONTAINS toLower($query_text) THEN 0.8
-                ELSE 0.0
-             END as text_score
+             {text_score_case} as text_score
         WITH node,
              ($vector_weight * vector_score + (1 - $vector_weight) * text_score) as hybrid_score
         RETURN node, hybrid_score
