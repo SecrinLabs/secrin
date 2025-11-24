@@ -12,6 +12,12 @@ from .nodes import (
     DocNode,
     IssueNode,
     PackageNode,
+    ImportNode,
+    ExportNode,
+    TypeNode,
+    InterfaceNode,
+    CommentNode,
+    PRNode,
 )
 from .relationships import Relationship
 
@@ -27,6 +33,12 @@ NodeUnion = Union[
     DocNode,
     IssueNode,
     PackageNode,
+    ImportNode,
+    ExportNode,
+    TypeNode,
+    InterfaceNode,
+    CommentNode,
+    PRNode,
 ]
 
 
