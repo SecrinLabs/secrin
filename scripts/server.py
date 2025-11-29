@@ -10,7 +10,7 @@ def main():
         "apps.api.main:app",
         host=settings.API_HOST,
         port=settings.API_PORT,
-        reload=True if settings.ENVIRONMENT == "development" else False
+        reload=settings.ENVIRONMENT == "development"
     )
 
 if __name__ == "__main__":
