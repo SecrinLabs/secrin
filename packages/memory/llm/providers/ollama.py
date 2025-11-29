@@ -74,19 +74,36 @@ class OllamaProvider(BaseLLMProvider):
             Exception: If generation fails
         """
         prompt = self._build_prompt(question, context_items, search_type)
+        return self.generate_text(prompt)
+
+    def generate_text(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        """
+        Generate text using Ollama.
         
+        Args:
+            prompt: The prompt to send
+            system_prompt: Optional system prompt
+            
+        Returns:
+            Generated text
+        """
         try:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": self.temperature,
+                    "num_predict": self.max_tokens
+                }
+            }
+            
+            if system_prompt:
+                payload["system"] = system_prompt
+                
             response = requests.post(
                 f"{self.base_url}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": self.temperature,
-                        "num_predict": self.max_tokens
-                    }
-                },
+                json=payload,
                 timeout=self.timeout
             )
             response.raise_for_status()

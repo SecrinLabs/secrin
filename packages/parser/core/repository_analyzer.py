@@ -99,6 +99,14 @@ class RepositoryAnalyzer:
         # Get repository metadata
         repo_context = self._get_repo_context(repo_path)
         
+        # Override name if we have original input URL
+        if is_git_url(original_input):
+            repo_info = extract_repo_info(original_input)
+            if repo_info.get('name') and repo_info.get('name') != 'unknown':
+                repo_context['name'] = repo_info['name']
+                repo_context['full_name'] = repo_info.get('full_name')
+                repo_context['owner'] = repo_info.get('owner')
+        
         # Create Repo node
         repo_node = self._create_repo_node(repo_path, repo_context)
         graph_data.add_node(repo_node)
