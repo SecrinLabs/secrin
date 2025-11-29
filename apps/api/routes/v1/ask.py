@@ -5,12 +5,14 @@ from fastapi import APIRouter, HTTPException, status
 
 from apps.api.routes.v1.schemas.qa import (
     QARequest,
-    QAResponse,
     ContextItem,
+    IssueRequest,
+    IssueContextItem,
 )
 from apps.api.utils import APIResponse
 from packages.memory.qa_service import QAService
 from packages.memory.services.graph_service import GraphService
+from packages.memory.services.issue_analysis import IssueAnalyzer
 from packages.database.graph.graph import neo4j_client
 from packages.config import Settings
 
@@ -21,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Initialize services once per module import
 graph_service = GraphService(neo4j_client)
 qa_service = QAService(graph_service)
+issue_analyzer = IssueAnalyzer(graph_service)
 
 
 @router.post(
@@ -82,4 +85,49 @@ async def question_answer(request: QARequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while processing your question",
+        )
+
+
+@router.post(
+    "/issue",
+    summary="Analyze a GitHub issue",
+    description=(
+        "Analyze a GitHub issue to identify causes and solutions based on the Knowledge Graph. "
+        "Returns a detailed report and the context used."
+    ),
+)
+async def analyze_issue(request: IssueRequest):
+    """Analyze an issue and return a report.
+
+    Process:
+    1. Search for relevant code and commit history using hybrid search.
+    2. Use LLM to generate a root cause analysis and suggested fix.
+    3. Return the report and context.
+    """
+    try:
+        logger.info(f"Analyzing issue: {request.title}")
+
+        result = issue_analyzer.analyze_issue(request.title, request.body)
+
+        if "error" in result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=result["error"],
+            )
+
+        return APIResponse.success(
+            data={
+                "report": result["report"],
+                "context_used": [IssueContextItem(**item) for item in result["context_used"]],
+            },
+            message="Successfully analyzed the issue."
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error in analyze_issue endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred: {str(e)}",
         )

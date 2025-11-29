@@ -4,7 +4,7 @@ Defines the interface that all LLM implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class BaseLLMProvider(ABC):
@@ -43,6 +43,20 @@ class BaseLLMProvider(ABC):
         
         Raises:
             Exception: If generation fails
+        """
+        pass
+    
+    @abstractmethod
+    def generate_text(self, prompt: str, system_prompt: Optional[str] = None) -> str:
+        """
+        Generate text from a raw prompt.
+        
+        Args:
+            prompt: The prompt to send to the LLM
+            system_prompt: Optional system prompt
+            
+        Returns:
+            Generated text
         """
         pass
     

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 from git import Repo
 
@@ -59,19 +59,22 @@ def _decision_doc(repo_url: str, info: CommitInfo) -> str:
     )
 
 
-def _upsert_repo(memory: Memory, repo_url: str) -> str:
+def _upsert_repo(memory: Memory, repo_url: str) -> Tuple[str, str]:
     info = extract_repo_info(repo_url)
-    repo_id = f"repo:{info['full_name']}"
+    repo_name = info.get("name", "unknown")
+    repo_id = f"repo:{repo_name}"
+    
     match = {"url": info["url"]}
     props = {
         "id": repo_id,
         "url": info["url"],
         "owner": info.get("owner", "unknown"),
-        "name": info.get("name", "unknown"),
+        "name": repo_name,
         "full_name": info.get("full_name", "unknown"),
         "content": info.get("full_name", "unknown"),
     }
-    return memory.upsert_node("Repository", match, props)
+    node_id = memory.upsert_node("Repository", match, props)
+    return node_id, repo_name
 
 
 def _upsert_person(memory: Memory, name: str, email: str) -> str:
@@ -87,8 +90,9 @@ def _upsert_person(memory: Memory, name: str, email: str) -> str:
     return memory.upsert_node("Person", match, props)
 
 
-def _upsert_commit(memory: Memory, repo_url: str, info: CommitInfo, content: str) -> str:
-    cid = f"commit:{info.sha}"
+def _upsert_commit(memory: Memory, repo_name: str, repo_url: str, info: CommitInfo, content: str) -> str:
+    # ID format: {repo_name}:commit:{sha}
+    cid = f"{repo_name}:commit:{info.sha}"
     match = {"sha": info.sha}
     props = {
         "id": cid,
@@ -105,13 +109,28 @@ def _upsert_commit(memory: Memory, repo_url: str, info: CommitInfo, content: str
     return memory.upsert_node("Commit", match, props)
 
 
+def _upsert_file(memory: Memory, repo_name: str, file_path: str) -> str:
+    # ID format: {repo_name}:{file_path}:file
+    fid = f"{repo_name}:{file_path}:file"
+    match = {"path": file_path, "repo_name": repo_name}
+    props = {
+        "id": fid,
+        "path": file_path,
+        "name": Path(file_path).name,
+        "repo_name": repo_name,
+    }
+    # We use MERGE so if it exists (from Parser) we just update/match it
+    return memory.upsert_node("File", match, props)
+
+
 def process_repository(repo_url: str, branch: Optional[str] = None, max_commits: Optional[int] = None) -> Dict[str, Any]:
     memory = Memory()
     commit_nodes: List[str] = []
     author_nodes: List[str] = []
+    file_nodes: List[str] = []
 
     # Create/merge repository node once
-    repo_node_id = _upsert_repo(memory, repo_url)
+    repo_node_id, repo_name = _upsert_repo(memory, repo_url)
 
     # Support local path or remote URL
     path: Optional[Path] = None
@@ -148,7 +167,7 @@ def process_repository(repo_url: str, branch: Optional[str] = None, max_commits:
             info = _summarize_commit(c)
             doc = _decision_doc(repo_url, info)
 
-            commit_id = _upsert_commit(memory, repo_url, info, doc)
+            commit_id = _upsert_commit(memory, repo_name, repo_url, info, doc)
             print(f"[commit_ingest] created commit node sha={info.sha} node_id={commit_id}")
             commit_nodes.append(commit_id)
 
@@ -159,17 +178,29 @@ def process_repository(repo_url: str, branch: Optional[str] = None, max_commits:
             # Link commit to repo & author
             memory.link(commit_id, Edge.BELONGS_TO, repo_node_id)
             memory.link(commit_id, Edge.AUTHORED_BY, author_id)
-            print(f"[commit_ingest] linked commit -> repo ({Edge.BELONGS_TO.value}), commit -> author ({Edge.AUTHORED_BY.value})")
+            
+            # Process files
+            for file_path in info.files_changed:
+                file_id = _upsert_file(memory, repo_name, file_path)
+                file_nodes.append(file_id)
+                
+                # Link Commit -> TOUCHED -> File
+                memory.link(commit_id, Edge.TOUCHED, file_id)
+                
+                # Link File -> BELONGS_TO -> Repo (if not already linked)
+                memory.link(file_id, Edge.BELONGS_TO, repo_node_id)
 
-            # (File nodes intentionally omitted per current requirements)
+            print(f"[commit_ingest] linked commit -> repo, author, and {len(info.files_changed)} files")
 
         return {
             "repo_node": repo_node_id,
             "commit_nodes": commit_nodes,
             "author_nodes": list(set(author_nodes)),
+            "file_nodes": list(set(file_nodes)),
             "counts": {
                 "commits": len(commit_nodes),
                 "authors": len(set(author_nodes)),
+                "files": len(set(file_nodes)),
             },
         }
     finally:

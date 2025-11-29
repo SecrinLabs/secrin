@@ -21,11 +21,12 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{ include = "packages" }]
+packages = [{ include = "packages" }, { include = "scripts" }]
 
 [tool.poetry.scripts]
 migrate = "packages.database.graph.migrations.run_migrations:run_migrations"
-ingest-commits = "packages.ingest.commit_cli:main"
+server = "scripts.server:main"
+setup = "scripts.setup:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
