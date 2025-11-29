@@ -1,5 +1,4 @@
 import argparse
-from pathlib import Path
 from typing import Optional
 from packages.parser.core.repository_analyzer import RepositoryAnalyzer
 from packages.ingest.commit_decisions import process_repository
