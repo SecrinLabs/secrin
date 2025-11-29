@@ -1,57 +1,84 @@
 # Secrin
 
-Secrin is a personal intelligence layer for engineering teams. It stitches together context scattered across GitHub, issues, docs, and chat into answers you can use right now.
+![Secrin Banner](/public/brand_banner.png)
 
-> Developers don’t lack information, they lack a way to recombine it fast. Secrin reduces context fragmentation by capturing signals (code, PRs, commits, comments, docs), indexing them, and making them queryable in real time.
+<p align="center">
+<strong>Don't waste time on Q&A. Search less. Build more.</strong><br>
+Your engineering knowledge deserves better than scattered repos, Slack threads, and tribal memory.
+</p>
 
-## What it does
+<p align="center">
+  <a href="https://secrinlabs.com"><strong>Website</strong></a> ·
+  <a href="https://github.com/secrinlabs/secrin">GitHub</a>
+</p>
 
-- Acts like a memory extension for your team ask about code, decisions, and history, get precise context back
-- Local‑first, developer‑first RAG engine with a knowledge graph backbone
-- Pluggable connectors (starting with GitHub) that turn repos and activity into queryable context
+<p align="center">
+  <img src="https://img.shields.io/badge/AI%20Native-Knowledge%20Graph-blue" />
+  <img src="https://img.shields.io/github/stars/secrinlabs/secrin" />
+  <img src="https://img.shields.io/github/license/secrinlabs/secrin" />
+  <img src="https://img.shields.io/github/commit-activity/m/secrinlabs/secrin" />
+</p>
 
-## How it works (at a glance)
+---
 
-- Ingests repositories and activity, parses structure with Tree‑sitter, and stores relationships in Neo4j
-- A FastAPI backend exposes versioned routes (v1) and simple connectors (e.g., GitHub)
-- Designed to grow into a living knowledge graph across your engineering tools
+## 🔍 What is Secrin?
 
-## Quickstart
+Searching through code shouldn’t feel like archaeology.
 
-Prerequisites:
-- Python 3.13+
-- Poetry
-- Neo4j database
+Engineers lose hours every week answering the same questions:
 
-Setup:
-```bash
-# 1. Clone and install
-git clone https://github.com/SecrinLabs/secrin.git
-cd secrin
-poetry install
+* Who wrote this piece of code?
+* Why was this logic changed?
+* Where is the design doc for this feature?
+* What issue or decision led to this refactor?
 
-# 2. Configure (see CONFIGURATION.md)
-cp .env.example .env
-# Edit .env with your Neo4j details
+Secrin reduces that friction by building a **live knowledge graph** from your repos, commits, Jira issues, documentation.
+Ask questions in natural language. Get answers with references instantly.
 
-# 3. Validate setup
-python -m packages.config.cli validate
+Think of it as **the memory layer for your engineering organization.**
 
-# 4. Run API
-poetry run python run_api.py
-```
+---
 
-Verify:
-```bash
-# Health check
-curl http://localhost:8000/v1/health
+## 🧠 Why it Matters
 
-# Config summary
-python -m packages.config.cli summary
-```
+> Teams don't slow down because they forget how to code.
+> They slow down because they forget *why* the code exists.
 
-📖 **Configuration:** See [CONFIGURATION.md](CONFIGURATION.md) for setup details.
+Knowledge lives everywhere:
+repositories → issues → architecture docs → Slack → human heads
 
-## Community & Support
+Secrin stitches them together into one searchable intelligence layer.
+So your team can **search less and build more.**
 
-Questions, ideas, or feedback? Please open an issue in this repository.
+---
+
+## ✨ Key Features
+
+* 🔗 Connect GitHub, Jira, docs & knowledge sources
+* 🧬 Full knowledge graph with vector embeddings
+* ⚡ Real-time RAG answering with context + source references
+* 💬 Mention bot in GitHub or Slack and get answers instantly
+* 🏗️ Capture design decisions, architecture reasoning, code history
+* 🔒 Self-host or deploy in cloud environments
+
+---
+
+## 🚀 How Secrin Works
+
+1. Connect repositories and knowledge sources
+2. Secrin parses commits, issues, and documents
+3. Data is embedded, indexed, and linked via knowledge graph
+4. Query from chat interface, GitHub comment, or Slack mention
+5. Get direct answers with code lines, commits, authors, and reasons
+
+No more digging through threads, files, PRs, or tribal memory.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome.
+Open an issue, propose a feature, or jump into the codebase.
+
+> The goal isn’t just to index code.
+> The goal is to remember as a team.
