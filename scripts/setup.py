@@ -6,7 +6,6 @@ Helps with initial configuration and validation.
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 # Add project root to path
 project_root = Path(__file__).resolve().parent.parent
