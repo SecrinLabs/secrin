@@ -1,5 +1,3 @@
-# Secrin
-
 ![Secrin Banner](/public/brand_banner.png)
 
 <p align="center">
