@@ -4,7 +4,7 @@ Defines the interface that all LLM implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import List, Any, Optional
 
 
 class BaseLLMProvider(ABC):
