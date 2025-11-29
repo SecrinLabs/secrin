@@ -63,10 +63,18 @@ class QAResponse(BaseModel):
 
 class IssueRequest(BaseModel):
     """Request model for issue analysis."""
-    title: str = Field(..., description="Title of the issue")
-    body: str = Field(..., description="Body/Description of the issue")
-
-
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Title of the issue"
+    )
+    body: str = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description="Body/Description of the issue"
+    )
 class IssueContextItem(BaseModel):
     """Context item for issue analysis."""
     type: str
