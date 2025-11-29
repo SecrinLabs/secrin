@@ -1,5 +1,4 @@
 import argparse
-import sys
 from pathlib import Path
 from typing import Optional
 from packages.parser.core.repository_analyzer import RepositoryAnalyzer
