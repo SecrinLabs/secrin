@@ -12,7 +12,12 @@ try:
 except ImportError:
     tree_sitter_javascript = None  # type: ignore[assignment]
 
-# Add more as needed: tree_sitter_typescript, tree_sitter_java, etc.
+try:
+    import tree_sitter_typescript  # type: ignore[import-untyped]
+except ImportError:
+    tree_sitter_typescript = None  # type: ignore[assignment]
+
+# Add more as needed: tree_sitter_java, etc.
 
 
 class LanguageRegistry:
@@ -39,6 +44,17 @@ class LanguageRegistry:
                 print(f"Warning: Could not load JavaScript language: {e}")
         else:
             print("Warning: tree_sitter_javascript not installed. Install with: pip install tree-sitter-javascript")
+        
+        if tree_sitter_typescript is not None:
+            try:
+                # Load TypeScript language
+                self._languages["typescript"] = Language(tree_sitter_typescript.language_typescript())  # type: ignore[attr-defined]
+                # We could also load TSX if needed, maybe as "tsx" language
+                # self._languages["tsx"] = Language(tree_sitter_typescript.language_tsx())
+            except Exception as e:
+                print(f"Warning: Could not load TypeScript language: {e}")
+        else:
+            print("Warning: tree_sitter_typescript not installed. Install with: pip install tree-sitter-typescript")
         
         # Add more languages here as needed
         # self._languages["typescript"] = Language(tree_sitter_typescript.language_typescript())
