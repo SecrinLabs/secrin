@@ -5,7 +5,7 @@ import subprocess
 
 from packages.parser.models import GraphData, RepoNode
 from packages.parser.core import BaseLanguageParser
-from packages.parser.languages import PythonParser, JavaScriptParser
+from packages.parser.languages import PythonParser, JavaScriptParser, TypeScriptParser
 from packages.parser.utils import (
     detect_language,
     is_code_file,
@@ -42,8 +42,13 @@ class RepositoryAnalyzer:
         if js_lang:
             self.parsers["javascript"] = JavaScriptParser(js_lang)
         
+        # TypeScript
+        ts_lang = language_registry.get_language("typescript")
+        if ts_lang:
+            self.parsers["typescript"] = TypeScriptParser(ts_lang)
+        
         # Add more parsers as they become available
-        # TypeScript, Java, Go, etc.
+        # Java, Go, etc.
     
     def analyze_repository(self, repo_path: str | Path, cleanup_after: bool = True) -> GraphData:
         """
