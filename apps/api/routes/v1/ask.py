@@ -1,7 +1,9 @@
 import logging
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from apps.api.routes.v1.schemas.qa import (
     QARequest,
@@ -15,6 +17,7 @@ from packages.memory.services.graph_service import GraphService
 from packages.memory.services.issue_analysis import IssueAnalyzer
 from packages.database.graph.graph import neo4j_client
 from packages.config import Settings
+from packages.config.feature_flags import is_feature_enabled, FeatureFlag
 
 router = APIRouter(prefix="/ask", tags=["Question Answering"])
 settings = Settings()
@@ -107,6 +110,12 @@ async def analyze_issue(request: IssueRequest):
     try:
         logger.info(f"Analyzing issue: {request.title}")
 
+        if is_feature_enabled(FeatureFlag.ENABLE_TOKEN_STREAMING):
+            return StreamingResponse(
+                _stream_issue_analysis(request.title, request.body),
+                media_type="text/event-stream"
+            )
+
         result = issue_analyzer.analyze_issue(request.title, request.body)
 
         if "error" in result:
@@ -131,3 +140,16 @@ async def analyze_issue(request: IssueRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred. Please try again later.",
         )
+
+
+def _stream_issue_analysis(title: str, body: str):
+    """Generator for streaming issue analysis."""
+    try:
+        for chunk in issue_analyzer.analyze_issue_stream(title, body):
+            yield f"data: {json.dumps(chunk)}\n\n"
+    except Exception as e:
+        logger.exception("Error during streaming issue analysis")
+        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    finally:
+        yield "data: [DONE]\n\n"
+ 

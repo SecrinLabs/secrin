@@ -3,7 +3,8 @@ Ollama LLM provider implementation.
 """
 
 import requests
-from typing import List, Any, Optional
+import json
+from typing import List, Any, Optional, Iterator
 from packages.memory.llm.base import BaseLLMProvider
 from packages.config.settings import Settings
 
@@ -110,6 +111,58 @@ class OllamaProvider(BaseLLMProvider):
             
             result = response.json()
             return result.get("response", "").strip()
+            
+        except requests.exceptions.Timeout:
+            raise TimeoutError(
+                f"Ollama request timed out after {self.timeout}s. "
+                "Try increasing LLM_TIMEOUT or reducing context size."
+            )
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Ollama API error: {e}")
+
+    def stream_text(self, prompt: str, system_prompt: Optional[str] = None) -> Iterator[str]:
+        """
+        Stream text using Ollama.
+        
+        Args:
+            prompt: The prompt to send
+            system_prompt: Optional system prompt
+            
+        Returns:
+            Iterator yielding generated text chunks
+        """
+        try:
+            payload = {
+                "model": self.model,
+                "prompt": prompt,
+                "stream": True,
+                "options": {
+                    "temperature": self.temperature,
+                    "num_predict": self.max_tokens
+                }
+            }
+            
+            if system_prompt:
+                payload["system"] = system_prompt
+                
+            response = requests.post(
+                f"{self.base_url}/api/generate",
+                json=payload,
+                timeout=self.timeout,
+                stream=True
+            )
+            response.raise_for_status()
+            
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        json_response = json.loads(line)
+                        if "response" in json_response:
+                            yield json_response["response"]
+                        if json_response.get("done", False):
+                            break
+                    except json.JSONDecodeError:
+                        continue
             
         except requests.exceptions.Timeout:
             raise TimeoutError(

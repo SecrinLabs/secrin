@@ -40,6 +40,7 @@ class FeatureFlag(str, Enum):
     ENABLE_AUTO_INDEXING = "enable_auto_indexing"
     ENABLE_SMART_RETRY = "enable_smart_retry"
     ENABLE_MULTIMODAL_EMBEDDINGS = "enable_multimodal_embeddings"
+    ENABLE_TOKEN_STREAMING = "enable_token_streaming"
 
 
 class FeatureFlagConfig(BaseModel):
@@ -149,6 +150,10 @@ class FeatureFlagManager:
             FeatureFlag.ENABLE_MULTIMODAL_EMBEDDINGS: FeatureFlagConfig(
                 enabled=False,
                 environments=["development"]
+            ),
+            FeatureFlag.ENABLE_TOKEN_STREAMING: FeatureFlagConfig(
+                enabled=False,
+                environments=["development", "staging", "production"]
             ),
         }
     
