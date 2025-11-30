@@ -4,7 +4,7 @@ Defines the interface that all LLM implementations must follow.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Iterator
 
 
 class BaseLLMProvider(ABC):
@@ -45,6 +45,26 @@ class BaseLLMProvider(ABC):
             Exception: If generation fails
         """
         pass
+
+    def stream_answer(
+        self,
+        question: str,
+        context_items: List[Any],
+        search_type: str
+    ) -> Iterator[str]:
+        """
+        Stream an answer to the question using provided context.
+        
+        Args:
+            question: User's question
+            context_items: List of search results to use as context
+            search_type: Type of search performed (vector/hybrid)
+        
+        Returns:
+            Iterator yielding generated answer chunks
+        """
+        prompt = self._build_prompt(question, context_items, search_type)
+        return self.stream_text(prompt)
     
     @abstractmethod
     def generate_text(self, prompt: str, system_prompt: Optional[str] = None) -> str:
@@ -57,6 +77,20 @@ class BaseLLMProvider(ABC):
             
         Returns:
             Generated text
+        """
+        pass
+
+    @abstractmethod
+    def stream_text(self, prompt: str, system_prompt: Optional[str] = None) -> Iterator[str]:
+        """
+        Stream text from a raw prompt.
+        
+        Args:
+            prompt: The prompt to send to the LLM
+            system_prompt: Optional system prompt
+            
+        Returns:
+            Iterator yielding generated text chunks
         """
         pass
     

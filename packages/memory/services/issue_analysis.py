@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Iterator
 import logging
 from packages.memory.services.graph_service import GraphService
 from packages.memory.llm import BaseLLMProvider
@@ -103,6 +103,85 @@ class IssueAnalyzer:
             "report": response,
             "context_used": [self._format_item_summary(item) for item in all_context]
         }
+
+    def analyze_issue_stream(self, title: str, body: str) -> Iterator[Dict[str, Any]]:
+        """
+        Analyze an issue and stream the report.
+        
+        Args:
+            title: Issue title
+            body: Issue body/description
+            
+        Returns:
+            Iterator yielding chunks of the report or context info
+        """
+        issue_text = f"{title}\n\n{body}"
+        logger.info(f"Analyzing issue (streaming): {title}")
+        
+        # 1. Search for relevant code (Functions, Classes, Files)
+        code_context = self.graph_service.hybrid_search(
+            query_text=issue_text,
+            node_type="Function",
+            limit=5
+        )
+        
+        # Also search for Files directly
+        file_context = self.graph_service.hybrid_search(
+            query_text=issue_text,
+            node_type="File",
+            limit=3
+        )
+        
+        # 2. Search for relevant history (Commits)
+        commit_context = self.graph_service.hybrid_search(
+            query_text=issue_text,
+            node_type="Commit",
+            limit=5
+        )
+        
+        # Combine context
+        all_context = code_context + file_context + commit_context
+        
+        if not all_context:
+            yield {"error": "No relevant context found in the knowledge graph."}
+            return
+            
+        # Yield context info first
+        yield {
+            "context_used": [self._format_item_summary(item) for item in all_context]
+        }
+            
+        # 3. Generate Report using LLM
+        system_prompt = """
+        You are an expert software engineer and debugger. 
+        You are given a GitHub issue description and a set of relevant code snippets and commit history from the project's Knowledge Graph.
+        
+        Your task is to analyze the issue and provide a detailed report containing:
+        1. **Root Cause Analysis**: What is likely causing the issue based on the code and history?
+        2. **Affected Areas**: Which files, classes, or functions are involved?
+        3. **Suggested Fix**: How can this be fixed? Provide code snippets if possible.
+        4. **Relevant History**: Are there recent commits that might have introduced this?
+        
+        Be specific. Reference the filenames and function names provided in the context.
+        """
+        
+        # Format context for LLM
+        context_str = self._format_context(all_context)
+        
+        prompt = f"""
+        ISSUE TITLE: {title}
+        
+        ISSUE BODY:
+        {body}
+        
+        RELEVANT CONTEXT FROM KNOWLEDGE GRAPH:
+        {context_str}
+        
+        Please provide your analysis report.
+        """
+        
+        for chunk in self.llm_provider.stream_text(prompt=prompt, system_prompt=system_prompt):
+            yield {"chunk": chunk}
 
     def _format_context(self, items: List[Any]) -> str:
         output = []
