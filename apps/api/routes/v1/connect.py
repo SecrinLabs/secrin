@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from apps.api.utils import APIResponse
 from apps.api.routes.v1.schemas.connect import (
     GitHubRepoConnect
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/connect", tags=["Connect"])
 
 
 @router.post("/github")
-async def connect_github_repo(repo_data: GitHubRepoConnect):
+async def connect_github_repo(repo_data: GitHubRepoConnect, background_tasks: BackgroundTasks):
     repo_path = repo_data.repo_url.replace("https://github.com/", "").replace("http://github.com/", "").strip("/")
     parts = repo_path.split("/")
     
@@ -21,9 +21,7 @@ async def connect_github_repo(repo_data: GitHubRepoConnect):
         owner = "unknown"
         repo = "unknown"
 
-    summary = process_repository(
-        repo_data.repo_url,
-    )
+    background_tasks.add_task(process_repository, repo_data.repo_url)
         
     return APIResponse.success(
         data={
