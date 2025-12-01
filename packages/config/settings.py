@@ -307,6 +307,11 @@ class Settings(BaseSettings):
         default=None,
         description="API authentication key"
     )
+
+    GITHUB_WEBHOOK_SECRET: Optional[str] = Field(
+        default=None,
+        description="GitHub Webhook Secret for verifying payloads"
+    )
     
     ALLOWED_HOSTS: list[str] = Field(
         default_factory=lambda: ["*"],
