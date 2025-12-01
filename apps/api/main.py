@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from packages.config.settings import Settings
 from apps.api.utils import APIResponse, APIException
 from apps.api.routes import api_router
@@ -10,6 +11,15 @@ app = FastAPI(
     title="Secrin API",
     description="Secrin Backend API",
     version="0.1.0"
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.API_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
