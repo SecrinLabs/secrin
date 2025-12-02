@@ -227,8 +227,29 @@ class GraphIngestionService:
         """
         
         self.client.run_query(query, {"repo_name": repo_name})
-        print(f"Cleared data for repository: {repo_name}")
     
+    def delete_file_data(self, repo_name: str, file_path: str):
+        """
+        Delete all data associated with a specific file
+        
+        Args:
+            repo_name: Name of the repository
+            file_path: Relative path of the file
+        """
+        query = """
+        MATCH (f:File {repo_name: $repo_name, path: $file_path})
+        OPTIONAL MATCH (f)-[:CONTAINS_CLASS]->(c:Class)
+        OPTIONAL MATCH (f)-[:CONTAINS_FUNCTION]->(fn:Function)
+        OPTIONAL MATCH (f)-[:HAS_TEST]->(t:Test)
+        OPTIONAL MATCH (f)-[:HAS_DOC]->(d:Doc)
+        DETACH DELETE f, c, fn, t, d
+        """
+        
+        self.client.run_query(query, {
+            "repo_name": repo_name,
+            "file_path": file_path
+        })
+
     def get_repository_stats(self, repo_name: str) -> Dict[str, int]:
         """
         Get comprehensive statistics for a repository in the graph
