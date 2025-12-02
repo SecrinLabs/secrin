@@ -1,6 +1,6 @@
 import logging
 from typing import Dict, Any, Optional
-from packages.ingest.full_ingest import full_ingest
+from packages.ingest.incremental_ingest import incremental_ingest
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +40,7 @@ def handle_pull_request(payload: Dict[str, Any]):
         if repo_url and base_branch:
             logger.info(f"Triggering ingestion for merged PR in {repo_url} on branch {base_branch}")
             
-            # TODO: Trigger ingestion
-            
-            # Let's define a function that CAN be run in background.
+            # Trigger ingestion via background task
             return {
                 "status": "triggered",
                 "task": "ingest",
@@ -76,11 +74,11 @@ def handle_push(payload: Dict[str, Any]):
 
 def run_ingestion(repo_url: str, branch: Optional[str]):
     """
-    Wrapper to run full_ingest, suitable for BackgroundTasks.
+    Wrapper to run incremental_ingest, suitable for BackgroundTasks.
     """
     try:
         logger.info(f"Starting background ingestion for {repo_url} branch {branch}")
-        full_ingest(repo_url, branch=branch)
+        incremental_ingest(repo_url, branch=branch)
         logger.info(f"Finished background ingestion for {repo_url} branch {branch}")
     except Exception as e:
         logger.error(f"Error during background ingestion: {e}", exc_info=True)

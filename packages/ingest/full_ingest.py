@@ -1,6 +1,7 @@
 import argparse
 from typing import Optional
 from packages.parser.core.repository_analyzer import RepositoryAnalyzer
+from packages.parser.core.graph_ingestion import graph_ingestion_service
 from packages.ingest.commit_decisions import process_repository
 from packages.ingest.add_embeddings import add_embeddings_to_all_nodes
 from packages.memory.embeddings import EmbeddingProvider

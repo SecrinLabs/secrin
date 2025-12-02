@@ -112,7 +112,8 @@ def _upsert_commit(memory: Memory, repo_name: str, repo_url: str, info: CommitIn
 def _upsert_file(memory: Memory, repo_name: str, file_path: str) -> str:
     # ID format: {repo_name}:{file_path}:file
     fid = f"{repo_name}:{file_path}:file"
-    match = {"path": file_path, "repo_name": repo_name}
+    # Match on id directly to avoid constraint conflicts
+    match = {"id": fid}
     props = {
         "id": fid,
         "path": file_path,

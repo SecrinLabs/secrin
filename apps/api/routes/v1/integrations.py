@@ -22,12 +22,18 @@ async def github_webhook(
     if not x_github_event:
         raise BadRequestException(message="Missing X-GitHub-Event header")
 
-    # Always verify signature in production
-    try:
-        await verify_github_signature(request, settings.GITHUB_WEBHOOK_SECRET)
-    except SignatureVerificationError as e:
-        logger.warning(f"GitHub signature verification failed: {str(e)}")
-        raise UnauthorizedException(message=str(e))
+    # Verify signature (skip in development if secret not configured)
+    if settings.GITHUB_WEBHOOK_SECRET:
+        try:
+            await verify_github_signature(request, settings.GITHUB_WEBHOOK_SECRET)
+        except SignatureVerificationError as e:
+            logger.warning(f"GitHub signature verification failed: {str(e)}")
+            raise UnauthorizedException(message=str(e))
+    elif settings.is_production():
+        logger.error("GITHUB_WEBHOOK_SECRET not configured in production!")
+        raise UnauthorizedException(message="Webhook secret not configured")
+    else:
+        logger.warning("Skipping GitHub signature verification (no secret configured in development)")
     
     payload = await request.json()
     

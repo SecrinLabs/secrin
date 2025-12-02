@@ -50,6 +50,82 @@ class RepositoryAnalyzer:
         # Add more parsers as they become available
         # Java, Go, etc.
     
+    def analyze_files(self, repo_path: Path, file_paths: list[str], repo_context: Optional[dict] = None) -> GraphData:
+        """
+        Analyze specific files in the repository.
+        
+        Args:
+            repo_path: Path to the repository root
+            file_paths: List of relative file paths to analyze
+            repo_context: Optional repository context (if already computed)
+            
+        Returns:
+            GraphData containing nodes and relationships for the specified files
+        """
+        repo_path = Path(repo_path).resolve()
+        
+        if repo_context is None:
+            repo_context = self._get_repo_context(repo_path)
+            
+        graph_data = GraphData()
+        
+        # Create Repo node (needed for linking)
+        repo_node = self._create_repo_node(repo_path, repo_context)
+        graph_data.add_node(repo_node)
+        
+        files_parsed = 0
+        
+        for rel_path in file_paths:
+            file_path = repo_path / rel_path
+            
+            if not file_path.exists() or not is_code_file(file_path):
+                continue
+                
+            try:
+                # Detect language
+                language = detect_language(file_path)
+                
+                if language is None:
+                    continue
+                
+                # Check if we have a parser for this language
+                parser = self.parsers.get(language)
+                
+                if parser is None:
+                    continue
+                
+                # Read file content
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                
+                # Parse the file
+                file_graph_data = parser.parse_file(Path(rel_path), content, repo_context)
+                
+                # Merge into main graph data
+                for node in file_graph_data.nodes:
+                    graph_data.add_node(node)
+                
+                for rel in file_graph_data.relationships:
+                    graph_data.add_relationship(rel)
+                
+                # Add Repo -> File relationship
+                file_nodes = [n for n in file_graph_data.nodes if hasattr(n, 'path')]
+                for file_node in file_nodes:
+                    from packages.parser.models import Relationship, RelationshipType
+                    graph_data.add_relationship(Relationship(
+                        source_id=repo_node.id,
+                        target_id=file_node.id,
+                        type=RelationshipType.HAS_FILE
+                    ))
+                
+                files_parsed += 1
+                
+            except Exception as e:
+                print(f"Error parsing {file_path}: {e}")
+                continue
+                
+        return graph_data
+
     def analyze_repository(self, repo_path: str | Path, cleanup_after: bool = True) -> GraphData:
         """
         Analyze an entire repository and extract graph data
