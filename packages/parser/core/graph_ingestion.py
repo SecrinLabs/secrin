@@ -16,6 +16,7 @@ from packages.parser.models import (
     ModuleNode,
     TestNode,
     IssueNode,
+    PullRequestNode,
     Relationship,
 )
 
@@ -64,6 +65,7 @@ class GraphIngestionService:
             "CREATE CONSTRAINT IF NOT EXISTS FOR (m:Module) REQUIRE m.id IS UNIQUE",
             "CREATE CONSTRAINT IF NOT EXISTS FOR (t:Test) REQUIRE t.id IS UNIQUE",
             "CREATE CONSTRAINT IF NOT EXISTS FOR (i:Issue) REQUIRE i.id IS UNIQUE",
+            "CREATE CONSTRAINT IF NOT EXISTS FOR (pr:PullRequest) REQUIRE pr.id IS UNIQUE",
         ]
         
         for constraint in constraints:
@@ -209,6 +211,8 @@ class GraphIngestionService:
             return "Test"
         elif ":issue:" in node_id:
             return "Issue"
+        elif ":pr:" in node_id:
+            return "PullRequest"
         else:
             # Default fallback
             return "Node"
@@ -269,6 +273,7 @@ class GraphIngestionService:
         OPTIONAL MATCH (f)-[:HAS_DOC]->(d:Doc)
         OPTIONAL MATCH (commit:Commit)-[:TOUCHED]->(f)
         OPTIONAL MATCH (f)-[:IMPORTS]->(p:Package)
+        OPTIONAL MATCH (pr:PullRequest)-[:BELONGS_TO]->(r)
         RETURN 
             count(DISTINCT f) as files,
             count(DISTINCT c) as classes,
@@ -276,7 +281,8 @@ class GraphIngestionService:
             count(DISTINCT t) as tests,
             count(DISTINCT d) as docs,
             count(DISTINCT commit) as commits,
-            count(DISTINCT p) as packages
+            count(DISTINCT p) as packages,
+            count(DISTINCT pr) as pull_requests
         """
         
         result = self.client.run_query(query, {"repo_name": repo_name})
@@ -291,6 +297,7 @@ class GraphIngestionService:
                 "docs": record["docs"],
                 "commits": record["commits"],
                 "packages": record["packages"],
+                "pull_requests": record["pull_requests"],
             }
         
         return {
@@ -301,6 +308,7 @@ class GraphIngestionService:
             "docs": 0,
             "commits": 0,
             "packages": 0,
+            "pull_requests": 0,
         }
 
 

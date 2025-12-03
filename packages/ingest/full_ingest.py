@@ -44,7 +44,7 @@ def full_ingest(repo_path: str, branch: Optional[str] = None, max_commits: int =
     # We need to ensure vector indexes exist first (usually handled by migrations, but let's assume they exist)
     # add_embeddings_to_all_nodes handles all node types
     add_embeddings_to_all_nodes(
-        node_types=["Function", "Class", "File", "Doc", "Module", "Commit"],
+        node_types=["Function", "Class", "File", "Doc", "Module", "Commit", "PullRequest"],
         provider=EmbeddingProvider(settings.EMBEDDING_PROVIDER)
     )
     

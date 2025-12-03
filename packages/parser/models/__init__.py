@@ -9,6 +9,7 @@ from .nodes import (
     TestNode,
     DocNode,
     IssueNode,
+    PullRequestNode,
     PackageNode,
 )
 from .relationships import (
@@ -28,6 +29,7 @@ __all__ = [
     "TestNode",
     "DocNode",
     "IssueNode",
+    "PullRequestNode",
     "PackageNode",
     "Relationship",
     "RelationshipType",

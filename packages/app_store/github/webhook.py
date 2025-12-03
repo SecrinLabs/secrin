@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Any, Optional
 from packages.ingest.incremental_ingest import incremental_ingest
+from packages.ingest.pr_metadata import ingest_pull_request_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,15 @@ def handle_pull_request(payload: Dict[str, Any]):
     
     logger.info(f"Processing PR action: {action}, merged: {merged}")
 
+    # First, ingest PR metadata for any PR action
+    repo_info = payload.get("repository", {})
+    try:
+        pr_data = ingest_pull_request_metadata(pull_request, repo_info)
+        logger.info(f"Ingested PR metadata: {pr_data}")
+    except Exception as e:
+        logger.error(f"Failed to ingest PR metadata: {e}", exc_info=True)
+
+    # Then handle merged PR actions
     if action == "closed" and merged:
         # PR was merged
         repo_info = payload.get("repository", {})
@@ -48,7 +58,7 @@ def handle_pull_request(payload: Dict[str, Any]):
                 "branch": base_branch
             }
             
-    return {"status": "ignored", "reason": "Not a merged PR"}
+    return {"status": "processed", "reason": "PR metadata ingested"}
 
 def handle_push(payload: Dict[str, Any]):
     """

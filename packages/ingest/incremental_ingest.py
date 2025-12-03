@@ -110,7 +110,7 @@ def incremental_ingest(repo_url: str, branch: Optional[str] = None):
         # 5. Update Embeddings
         print("Updating embeddings...")
         add_embeddings_to_all_nodes(
-            node_types=["Function", "Class", "File", "Doc", "Module", "Commit"],
+            node_types=["Function", "Class", "File", "Doc", "Module", "Commit", "PullRequest"],
             provider=EmbeddingProvider(settings.EMBEDDING_PROVIDER)
         )
         
