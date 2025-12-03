@@ -15,6 +15,7 @@ class NodeType(str, Enum):
     TEST = "Test"
     DOC = "Doc"
     ISSUE = "Issue"
+    PULL_REQUEST = "PullRequest"
     PACKAGE = "Package"
 
 
@@ -100,6 +101,19 @@ class IssueNode(BaseNode):
     body: str
     labels: list[str] = Field(default_factory=list)
     state: str  # e.g., 'open', 'closed'
+
+
+class PullRequestNode(BaseNode):
+    pr_number: int
+    title: str
+    body: str
+    author: str
+    repo_url: str
+    state: str  # e.g., 'open', 'closed', 'merged'
+    merged: bool = False
+    merged_at: Optional[datetime] = None
+    base_branch: Optional[str] = None
+    head_branch: Optional[str] = None
 
 
 class PackageNode(BaseNode):

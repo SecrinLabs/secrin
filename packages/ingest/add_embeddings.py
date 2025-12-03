@@ -102,7 +102,7 @@ def add_embeddings_to_all_nodes(
         provider: Embedding provider to use
     """
     if node_types is None:
-        node_types = ["Function", "Class", "File", "Doc", "Module", "Commit"]
+        node_types = ["Function", "Class", "File", "Doc", "Module", "Commit", "PullRequest"]
     
     print(f"Using {provider.value} embeddings")
     print(f"Embedding dimension: {settings.EMBEDDING_DIMENSION}")
@@ -158,7 +158,7 @@ def main():
     parser.add_argument(
         "--node-types",
         nargs="+",
-        choices=["Function", "Class", "File", "Doc", "Module", "Commit"],
+        choices=["Function", "Class", "File", "Doc", "Module", "Commit", "PullRequest"],
         help="Node types to process (default: all)"
     )
     parser.add_argument(

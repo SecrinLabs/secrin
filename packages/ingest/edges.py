@@ -20,3 +20,6 @@ class Edge(Enum):
     # Issues / PRs / context
     REFERENCES = "REFERENCES"
     RELATED_TO = "RELATED_TO"
+    CREATED_BY = "CREATED_BY"
+    MERGED_TO = "MERGED_TO"
+    INCLUDES = "INCLUDES"
