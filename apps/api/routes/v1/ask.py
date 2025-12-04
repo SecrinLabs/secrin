@@ -5,19 +5,13 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 
-from apps.api.routes.v1.schemas.qa import (
-    QARequest,
-    ContextItem,
-    IssueRequest,
-    IssueContextItem,
-)
+from apps.api.routes.v1.schemas.qa import QARequest, ContextItem
 from apps.api.utils import APIResponse
 from packages.memory.qa_service import QAService
 from packages.memory.services.graph_service import GraphService
-from packages.memory.services.issue_analysis import IssueAnalyzer
 from packages.database.graph.graph import neo4j_client
 from packages.config import Settings
-from packages.config.feature_flags import is_feature_enabled, FeatureFlag
+
 
 router = APIRouter(prefix="/ask", tags=["Question Answering"])
 settings = Settings()
@@ -26,33 +20,37 @@ logger = logging.getLogger(__name__)
 # Initialize services once per module import
 graph_service = GraphService(neo4j_client)
 qa_service = QAService(graph_service)
-issue_analyzer = IssueAnalyzer(graph_service)
 
 
 @router.post(
     "",
     summary="Ask a question about the codebase",
     description=(
-        "Submit a natural language question about the codebase. The system "
-        "retrieves relevant code context (hybrid or vector search) and uses an LLM "
-        "to generate an answer."
+        "Submit a question about the codebase with different agent types. "
+        "Supports streaming responses and specialized agents: "
+        "pathfinder (code structure), chronicle (history), diagnostician (debugging), "
+        "blueprint (architecture), sentinel (code review)."
     ),
 )
-async def question_answer(request: QARequest):
-    """Return an AI-generated answer with supporting context.
-
-    Process:
-    1. Retrieve relevant code elements using the selected search strategy.
-    2. Provide context snippets to the configured LLM provider.
-    3. Return an answer plus the context used.
-    """
+async def ask(request: QARequest):
+    """Ask a question using different agent types."""
     try:
-        logger.info(f"Processing question: {request.question[:50]}...")
+        logger.info(
+            f"Processing question with {request.agent_type.value} agent: {request.question[:50]}..."
+        )
 
+        # If streaming is requested, return streaming response
+        if request.stream:
+            return StreamingResponse(
+                _stream_answer(request),
+                media_type="text/event-stream"
+            )
+
+        # Non-streaming response
         result: dict[str, Any] = qa_service.ask(
             question=request.question,
+            agent_type=request.agent_type.value,
             search_type=request.search_type,
-            node_type=request.node_type,
             context_limit=request.context_limit,
         )
 
@@ -60,10 +58,10 @@ async def question_answer(request: QARequest):
             data={
                 "answer": result["answer"],
                 "question": result["question"],
+                "agent_type": result["agent_type"],
                 "context": [ContextItem(**item) for item in result["context"]],
                 "context_count": result["context_count"],
                 "search_type": result["search_type"],
-                "node_type": result.get("node_type"),
                 "node_types": result.get("node_types"),
                 "model": result["model"],
                 "provider": result["provider"],
@@ -84,72 +82,25 @@ async def question_answer(request: QARequest):
             detail=f"Service error: {str(e)}",
         )
     except Exception as e:  # noqa: BLE001
-        logger.exception("Unexpected error in question_answer endpoint")
+        logger.exception("Unexpected error in ask endpoint")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while processing your question",
         )
 
 
-@router.post(
-    "/issue",
-    summary="Analyze a GitHub issue",
-    description=(
-        "Analyze a GitHub issue to identify causes and solutions based on the Knowledge Graph. "
-        "Returns a detailed report and the context used."
-    ),
-)
-async def analyze_issue(request: IssueRequest):
-    """Analyze an issue and return a report.
-
-    Process:
-    1. Search for relevant code and commit history using hybrid search.
-    2. Use LLM to generate a root cause analysis and suggested fix.
-    3. Return the report and context.
-    """
+def _stream_answer(request: QARequest):
+    """Generator for streaming answers."""
     try:
-        logger.info(f"Analyzing issue: {request.title}")
-
-        if is_feature_enabled(FeatureFlag.ENABLE_TOKEN_STREAMING):
-            return StreamingResponse(
-                _stream_issue_analysis(request.title, request.body),
-                media_type="text/event-stream"
-            )
-
-        result = issue_analyzer.analyze_issue(request.title, request.body)
-
-        if "error" in result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=result["error"],
-            )
-
-        return APIResponse.success(
-            data={
-                "report": result["report"],
-                "context_used": [IssueContextItem(**item) for item in result["context_used"]],
-            },
-            message="Successfully analyzed the issue."
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception("Unexpected error in analyze_issue endpoint")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred. Please try again later.",
-        )
-
-
-def _stream_issue_analysis(title: str, body: str):
-    """Generator for streaming issue analysis."""
-    try:
-        for chunk in issue_analyzer.analyze_issue_stream(title, body):
+        for chunk in qa_service.ask_stream(
+            question=request.question,
+            agent_type=request.agent_type.value,
+            search_type=request.search_type,
+            context_limit=request.context_limit,
+        ):
             yield f"data: {json.dumps(chunk)}\n\n"
     except Exception as e:
-        logger.exception("Error during streaming issue analysis")
+        logger.exception("Error during streaming")
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
     finally:
         yield "data: [DONE]\n\n"
- 
