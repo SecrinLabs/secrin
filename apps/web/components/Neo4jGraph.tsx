@@ -92,11 +92,17 @@ export default function Neo4jGraph({
       // Dynamic import of neo4j-driver for client-side only
       const neo4j = (await import("neo4j-driver")).default;
 
+      // FIX: Check if the URL implies a secure connection (Cloud/Aura)
+      const isSecure = neo4jUrl.includes('+s');
+
       const driver = neo4j.driver(
         neo4jUrl,
         neo4j.auth.basic(username, password),
-        { encrypted: false }
+        // If it's a secure URL, don't pass any config (let the URL handle it).
+        // If it's local, explicitly turn off encryption.
+        isSecure ? {} : { encrypted: "ENCRYPTION_OFF" }
       );
+      
       const session = driver.session({ database });
 
       const start = Date.now();

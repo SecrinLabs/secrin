@@ -100,6 +100,9 @@ class Settings(BaseSettings):
         description="Embedding cache TTL in seconds (if caching enabled)"
     )
     
+    # Google Api Configuration
+    GOOGLE_API_KEY: Optional[str] = None
+
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(
         default="",

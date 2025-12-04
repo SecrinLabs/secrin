@@ -6,6 +6,8 @@ Uses configuration to determine which provider to instantiate.
 from typing import Optional
 from packages.memory.llm.base import BaseLLMProvider
 from packages.memory.llm.providers.ollama import OllamaProvider
+# --- ADDED: Import Gemini ---
+from packages.memory.llm.providers.gemini import GeminiProvider
 from packages.config import Settings
 
 
@@ -47,10 +49,16 @@ class LLMProviderFactory:
                 temperature=temperature,
                 max_tokens=max_tokens
             )
+        elif provider.lower() == "gemini":
+            return GeminiProvider(
+                model=model,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
         else:
             raise ValueError(
                 f"Unsupported LLM provider: {provider}. "
-                f"Currently supported: ['ollama']"
+                f"Currently supported: ['ollama', 'gemini']"
             )
     
     @classmethod
