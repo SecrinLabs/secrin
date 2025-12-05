@@ -29,10 +29,10 @@ class GeminiProvider(BaseLLMProvider):
         super().__init__(model=model, temperature=temperature, max_tokens=max_tokens)
 
         # 2. Auth: Try settings first, then fallback to OS environment
-        self.api_key = api_key or getattr(settings, "GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY")
+        self.api_key = api_key or getattr(settings, "GEMINI_API_KEY", None) or os.getenv("GEMINI_API_KEY")
         
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY is missing. Please add it to your .env file.")
+            raise ValueError("GEMINI_API_KEY is missing. Please add it to your .env file.")
 
     def get_provider_name(self) -> str:
         return "gemini"
