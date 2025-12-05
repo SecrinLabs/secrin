@@ -93,8 +93,12 @@ export default function Neo4jGraph({
       const neo4j = (await import("neo4j-driver")).default;
 
       // FIX: Check if the URL implies a secure connection (Cloud/Aura)
-      const isSecure = neo4jUrl.includes('+s');
-
+      const isSecure =
+         neo4jUrl.startsWith('neo4j+s://') ||
+         neo4jUrl.startsWith('neo4j+ssc://') ||
+         neo4jUrl.startsWith('bolt+s://') ||
+         neo4jUrl.startsWith('bolt+ssc://');
+      
       const driver = neo4j.driver(
         neo4jUrl,
         neo4j.auth.basic(username, password),
