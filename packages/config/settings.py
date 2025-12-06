@@ -101,7 +101,10 @@ class Settings(BaseSettings):
     )
     
     # Google Gemini Api Configuration
-    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: str = Field(
+        default="",
+        description="Gemini API key"
+    )
 
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(
