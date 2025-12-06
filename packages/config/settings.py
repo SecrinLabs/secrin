@@ -100,6 +100,12 @@ class Settings(BaseSettings):
         description="Embedding cache TTL in seconds (if caching enabled)"
     )
     
+    # Google Gemini Api Configuration
+    GEMINI_API_KEY: str = Field(
+        default="",
+        description="Gemini API key"
+    )
+
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(
         default="",
