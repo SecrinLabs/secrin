@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class TreeSitterJSAnalyzer:
-    def __init__(self, file_path: str, content: str, repo_path: str = None):
+    def __init__(self, file_path: str, content: str, repo_path: Optional[str] = None):
         self.file_path = Path(file_path)
         self.content = content
         self.repo_path = repo_path or ""
@@ -91,7 +91,7 @@ class TreeSitterJSAnalyzer:
         else:
             return str(self.file_path)
 
-    def _get_component_id(self, name: str, class_name: str = None, is_method: bool = False) -> str:
+    def _get_component_id(self, name: str, class_name: Optional[str] = None, is_method: bool = False) -> str:
         module_path = self._get_module_path()
         
         if is_method and class_name:
@@ -683,7 +683,7 @@ class TreeSitterJSAnalyzer:
         return None
 
 def analyze_javascript_file_treesitter(
-    file_path: str, content: str, repo_path: str = None
+    file_path: str, content: str, repo_path: Optional[str] = None
 ) -> Tuple[List[Node], List[CallRelationship]]:
     """Analyze a JavaScript file using tree-sitter."""
     try:

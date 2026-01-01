@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import logging
 import tiktoken
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 # ---------------------- Complexity Check --------------------
 # ------------------------------------------------------------
 
-def is_complex_module(components: dict[str, any], core_component_ids: list[str]) -> bool:
+def is_complex_module(components: dict[str, Any], core_component_ids: list[str]) -> bool:
     files = set()
     for component_id in core_component_ids:
         if component_id in components:

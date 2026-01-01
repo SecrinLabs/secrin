@@ -11,7 +11,7 @@ from dependency_analyzer.models.core import Node, CallRelationship
 logger = logging.getLogger(__name__)
 
 class TreeSitterCppAnalyzer:
-	def __init__(self, file_path: str, content: str, repo_path: str = None):
+	def __init__(self, file_path: str, content: str, repo_path: Optional[str] = None):
 		self.file_path = Path(file_path)
 		self.content = content
 		self.repo_path = repo_path or ""
@@ -43,7 +43,7 @@ class TreeSitterCppAnalyzer:
 		else:
 			return str(self.file_path)
 	
-	def _get_component_id(self, name: str, parent_class: str = None) -> str:
+	def _get_component_id(self, name: str, parent_class: Optional[str] = None) -> str:
 		module_path = self._get_module_path()
 		if parent_class:
 			return f"{module_path}.{parent_class}.{name}" if module_path else f"{parent_class}.{name}"
@@ -69,6 +69,7 @@ class TreeSitterCppAnalyzer:
 		"""Recursively extract top-level nodes (classes, functions, global variables)."""
 		node_type = None
 		node_name = None
+		containing_class = None
 		
 		if node.type == "class_specifier":
 			# "class" + type_identifier + { ... }
@@ -93,6 +94,7 @@ class TreeSitterCppAnalyzer:
 				node_type = "method"
 			else:
 				node_type = "function"
+				containing_class = None
 			
 			declarator = next((c for c in node.children if c.type == "function_declarator"), None)
 			if declarator:
@@ -224,16 +226,14 @@ class TreeSitterCppAnalyzer:
 						self.call_relationships.append(CallRelationship(
 							caller=containing_function_id,
 							callee=target_class_id,
-							call_line=node.start_point[0]+1,
-							relationship_type="calls"
+							call_line=node.start_point[0]+1
 						))
 					elif called_function in top_level_nodes:
 						called_function_id = self._get_component_id(called_function)
 						self.call_relationships.append(CallRelationship(
 							caller=containing_function_id,
 							callee=called_function_id,
-							call_line=node.start_point[0]+1,
-							relationship_type="calls"
+							call_line=node.start_point[0]+1
 						))
 		
 		elif node.type == "base_class_clause":
@@ -248,8 +248,7 @@ class TreeSitterCppAnalyzer:
 						self.call_relationships.append(CallRelationship(
 							caller=containing_class_id,
 							callee=base_class,
-							call_line=node.start_point[0]+1,
-							relationship_type="inherits"
+							call_line=node.start_point[0]+1
 						))
 		
 		elif node.type == "new_expression":
@@ -266,8 +265,7 @@ class TreeSitterCppAnalyzer:
 							self.call_relationships.append(CallRelationship(
 								caller=containing_function_id,
 								callee=class_id,
-								call_line=node.start_point[0]+1,
-								relationship_type="creates"
+									call_line=node.start_point[0]+1
 							))
 						break
 		
@@ -282,8 +280,7 @@ class TreeSitterCppAnalyzer:
 						self.call_relationships.append(CallRelationship(
 							caller=containing_function_id,
 							callee=var_name,
-							call_line=node.start_point[0]+1,
-							relationship_type="uses"
+							call_line=node.start_point[0]+1
 						))
 		
 		# Recursively process children
@@ -363,6 +360,6 @@ class TreeSitterCppAnalyzer:
 				return True
 		return False
 
-def analyze_cpp_file(file_path: str, content: str, repo_path: str = None) -> Tuple[List[Node], List[CallRelationship]]:
+def analyze_cpp_file(file_path: str, content: str, repo_path: Optional[str] = None) -> Tuple[List[Node], List[CallRelationship]]:
 	analyzer = TreeSitterCppAnalyzer(file_path, content, repo_path)
 	return analyzer.nodes, analyzer.call_relationships

@@ -331,7 +331,7 @@ def get_leaf_nodes(graph: Dict[str, Set[str]], components: Dict[str, Node]) -> L
                 # logger.debug(f"Leaf node {leaf_node} not found in components, removing it")
                 pass
 
-        return keep_leaf_nodes
+        return set(keep_leaf_nodes)
 
     concise_leaf_nodes = concise_node(leaf_nodes)
     if len(concise_leaf_nodes) >= 400:
@@ -347,4 +347,4 @@ def get_leaf_nodes(graph: Dict[str, Set[str]], components: Dict[str, Node]) -> L
         logger.warning("No leaf nodes found in the graph")
         return []
     
-    return concise_leaf_nodes 
+    return list(concise_leaf_nodes)

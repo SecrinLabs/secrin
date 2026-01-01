@@ -524,7 +524,7 @@ def has_high_connectivity_potential(filename: str, filepath: str) -> bool:
     return False
 
 
-def is_critical_function(func_name: str, code_snippet: str = None) -> bool:
+def is_critical_function(func_name: str, code_snippet: str | None = None) -> bool:
     """
     Check if a function is critical based on name and code patterns.
 

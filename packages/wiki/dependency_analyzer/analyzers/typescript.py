@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class TreeSitterTSAnalyzer:
 
-    def __init__(self, file_path: str, content: str, repo_path: str = None):
+    def __init__(self, file_path: str, content: str, repo_path: Optional[str] = None):
         self.file_path = Path(file_path)
         self.content = content
         self.repo_path = repo_path or ""
@@ -197,7 +197,8 @@ class TreeSitterTSAnalyzer:
             if node.parent.parent and node.parent.parent.type in ["module", "ambient_declaration"]:
                 return "module_block"
             return "statement_block"
-    def _extract_function_entity(self, node, func_type: str, depth: int) -> dict:
+        return "unknown"
+    def _extract_function_entity(self, node, func_type: str, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "identifier")
         if not name_node:
             return None
@@ -221,7 +222,7 @@ class TreeSitterTSAnalyzer:
             'is_async': is_async
         }
     
-    def _extract_arrow_function_entity(self, node, depth: int) -> dict:
+    def _extract_arrow_function_entity(self, node, depth: int) -> Optional[dict]:
         """Extract arrow function"""
         parent = node.parent
         if parent and parent.type == "variable_declarator":
@@ -247,7 +248,7 @@ class TreeSitterTSAnalyzer:
                 }
         return None
     
-    def _extract_method_entity(self, node, depth: int) -> dict:
+    def _extract_method_entity(self, node, depth: int) -> Optional[dict]:
         """Extract method entity (at any depth)."""
         name_node = self._find_child_by_type(node, "property_identifier")
         if not name_node:
@@ -275,7 +276,7 @@ class TreeSitterTSAnalyzer:
             'is_static': is_static
         }
     
-    def _extract_class_entity(self, node, class_type: str, depth: int) -> dict:
+    def _extract_class_entity(self, node, class_type: str, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "type_identifier") or self._find_child_by_type(node, "identifier")
         if not name_node:
             return None
@@ -299,7 +300,7 @@ class TreeSitterTSAnalyzer:
             'end_line': node.end_point[0] + 1
         }
     
-    def _extract_interface_entity(self, node, depth: int) -> dict:
+    def _extract_interface_entity(self, node, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "type_identifier")
         if not name_node:
             return None
@@ -323,7 +324,7 @@ class TreeSitterTSAnalyzer:
             'end_line': node.end_point[0] + 1
         }
     
-    def _extract_type_alias_entity(self, node, depth: int) -> dict:
+    def _extract_type_alias_entity(self, node, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "type_identifier")
         if not name_node:
             return None
@@ -341,7 +342,7 @@ class TreeSitterTSAnalyzer:
             'end_line': node.end_point[0] + 1
         }
     
-    def _extract_enum_entity(self, node, depth: int) -> dict:
+    def _extract_enum_entity(self, node, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "identifier")
         if not name_node:
             return None
@@ -359,7 +360,7 @@ class TreeSitterTSAnalyzer:
             'end_line': node.end_point[0] + 1
         }
     
-    def _extract_variable_entity(self, node, depth: int) -> dict:
+    def _extract_variable_entity(self, node, depth: int) -> Optional[dict]:
         name_node = self._find_child_by_type(node, "identifier")
         if not name_node:
             return None
@@ -380,7 +381,7 @@ class TreeSitterTSAnalyzer:
             'has_function': bool(has_function)
         }
     
-    def _extract_export_statement_entity(self, node, depth: int) -> dict:
+    def _extract_export_statement_entity(self, node, depth: int) -> Optional[dict]:
         code_snippet = self._get_node_text(node)
         
         func_decl = self._find_child_by_type(node, "function_declaration")
@@ -478,7 +479,7 @@ class TreeSitterTSAnalyzer:
         
         return None 
     
-    def _extract_lexical_declaration_entity(self, node, depth: int) -> dict:
+    def _extract_lexical_declaration_entity(self, node, depth: int) -> Optional[dict]:
         """Extract lexical declaration entity (const/let)."""
         # Find the variable declarator
         var_declarator = self._find_child_by_type(node, "variable_declarator")
@@ -510,7 +511,7 @@ class TreeSitterTSAnalyzer:
             'declaration_type': decl_type
         }
     
-    def _extract_variable_declaration_entity(self, node, depth: int) -> dict:
+    def _extract_variable_declaration_entity(self, node, depth: int) -> Optional[dict]:
         var_declarator = self._find_child_by_type(node, "variable_declarator")
         if not var_declarator:
             return None
@@ -616,7 +617,7 @@ class TreeSitterTSAnalyzer:
                                     is_resolved=False
                                 )
                                 
-                                self._add_relationship(relationship)
+                                self.call_relationships.append(relationship)
         except Exception as e:
             logger.debug(f"Error extracting parameter dependencies: {e}")
 
@@ -682,9 +683,9 @@ class TreeSitterTSAnalyzer:
         return parameters
 
     def _extract_all_relationships(self, node, all_entities: dict) -> None:
-        self._traverse_for_relationships(node, all_entities, current_top_level=None)
+        self._traverse_for_relationships(node, all_entities)
 
-    def _traverse_for_relationships(self, node, all_entities: dict, current_top_level: str = None) -> None:
+    def _traverse_for_relationships(self, node, all_entities: dict, current_top_level: Optional[str] = None) -> None:
         if current_top_level is None or self._is_new_top_level(node):
             new_top_level = self._get_top_level_name(node)
             if new_top_level and new_top_level in self.top_level_nodes:
@@ -965,7 +966,7 @@ class TreeSitterTSAnalyzer:
 
 
 def analyze_typescript_file_treesitter(
-    file_path: str, content: str, repo_path: str = None
+    file_path: str, content: str, repo_path: Optional[str] = None
 ) -> Tuple[List[Node], List[CallRelationship]]:
     try:
         logger.debug(f"Tree-sitter TS analysis for {file_path}")

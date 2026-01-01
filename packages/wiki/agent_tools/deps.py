@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 from dependency_analyzer.models.core import Node
 from packages.config import WikiConfig
 
@@ -10,7 +11,7 @@ class CodeWikiDeps:
     components: dict[str, Node]
     path_to_current_module: list[str]
     current_module_name: str
-    module_tree: dict[str, any]
+    module_tree: dict[str, Any]
     max_depth: int
     current_depth: int
     config: WikiConfig  # LLM configuration

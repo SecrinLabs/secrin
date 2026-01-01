@@ -8,13 +8,10 @@ from utils import is_complex_module, count_tokens
 from cluster_modules import format_potential_core_components
 from packages.config import Settings
 
-# Get settings for constants
 _settings = Settings()
 
 import logging
 logger = logging.getLogger(__name__)
-
-
 
 async def generate_sub_module_documentation(
     ctx: RunContext[CodeWikiDeps],

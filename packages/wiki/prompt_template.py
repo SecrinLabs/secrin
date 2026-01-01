@@ -208,7 +208,7 @@ Please shortlist the files, folders representing the core functionality and igno
 Reasoning at first, then return the list of relative paths in JSON format.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from packages.config import file_manager
 
 EXTENSION_TO_LANGUAGE = {
@@ -236,7 +236,7 @@ EXTENSION_TO_LANGUAGE = {
 }
 
 
-def format_user_prompt(module_name: str, core_component_ids: list[str], components: Dict[str, Any], module_tree: dict[str, any]) -> str:
+def format_user_prompt(module_name: str, core_component_ids: list[str], components: Dict[str, Any], module_tree: Dict[str, Any]) -> str:
     """
     Format the user prompt with module name and organized core component codes.
     
@@ -252,7 +252,7 @@ def format_user_prompt(module_name: str, core_component_ids: list[str], componen
     # format module tree
     lines = []
     
-    def _format_module_tree(module_tree: dict[str, any], indent: int = 0):
+    def _format_module_tree(module_tree: Dict[str, Any], indent: int = 0):
         for key, value in module_tree.items():
             if key == module_name:
                 lines.append(f"{'  ' * indent}{key} (current module)")
@@ -302,7 +302,7 @@ def format_user_prompt(module_name: str, core_component_ids: list[str], componen
 
 
 
-def format_cluster_prompt(potential_core_components: str, module_tree: dict[str, any] = {}, module_name: str = None) -> str:
+def format_cluster_prompt(potential_core_components: str, module_tree: Dict[str, Any] = {}, module_name: Optional[str] = None) -> str:
     """
     Format the cluster prompt with potential core components and module tree.
     """
@@ -312,7 +312,7 @@ def format_cluster_prompt(potential_core_components: str, module_tree: dict[str,
 
     # print(f"Module tree:\n{json.dumps(module_tree, indent=2)}")
     
-    def _format_module_tree(module_tree: dict[str, any], indent: int = 0):
+    def _format_module_tree(module_tree: Dict[str, Any], indent: int = 0):
         for key, value in module_tree.items():
             if key == module_name:
                 lines.append(f"{'  ' * indent}{key} (current module)")

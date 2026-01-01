@@ -473,6 +473,8 @@ class EditTool:
             return
 
         file_content = self.read_file(path)
+        if file_content is None:
+            return
         if view_range:
             if len(view_range) != 2 or not all(isinstance(i, int) for i in view_range):
                 self.logs.append("Invalid `view_range`. It should be a list of two integers.")
@@ -532,7 +534,10 @@ class EditTool:
     def str_replace(self, path: Path, old_str: str, new_str: Optional[str]):
         """Implement the str_replace command, which replaces old_str with new_str in the file content"""
         # Read the file content
-        file_content = self.read_file(path).expandtabs()
+        file_content = self.read_file(path)
+        if file_content is None:
+            return
+        file_content = file_content.expandtabs()
         old_str = old_str.expandtabs()
         new_str = new_str.expandtabs() if new_str is not None else ""
 
@@ -611,7 +616,10 @@ class EditTool:
 
     def insert(self, path: Path, insert_line: int, new_str: str):
         """Implement the insert command, which inserts new_str at the specified line in the file content."""
-        file_text = self.read_file(path).expandtabs()
+        file_text = self.read_file(path)
+        if file_text is None:
+            return
+        file_text = file_text.expandtabs()
         new_str = new_str.expandtabs()
         file_text_lines = file_text.split("\n")
         n_lines_file = len(file_text_lines)

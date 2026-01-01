@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ def cluster_modules(
     components: Dict[str, Node],
     config: WikiConfig,
     current_module_tree: dict[str, Any] = {},
-    current_module_name: str = None,
+    current_module_name: Optional[str] = None,
     current_module_path: List[str] = []
 ) -> Dict[str, Any]:
     """
@@ -60,7 +60,7 @@ def cluster_modules(
         logger.debug(f"Skipping clustering for {current_module_name} because the potential core components are too few: {count_tokens(potential_core_components_with_code)} tokens")
         return {}
 
-    prompt = format_cluster_prompt(potential_core_components, current_module_tree, current_module_name)
+    prompt = format_cluster_prompt(potential_core_components, current_module_tree, current_module_name or "")
     response = call_llm(prompt, config, model=config.cluster_model)
 
     #parse the response

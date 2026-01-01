@@ -93,7 +93,15 @@ class RepoAnalyzer:
             # Other types (sockets, devices, etc.)
             return None
 
-        return build_tree(Path(repo_dir), Path(repo_dir))
+        result = build_tree(Path(repo_dir), Path(repo_dir))
+        if result is None:
+            return {
+                "type": "directory",
+                "name": Path(repo_dir).name,
+                "path": ".",
+                "children": [],
+            }
+        return result
 
     def _should_exclude_path(self, path: str, filename: str) -> bool:
         for pattern in self.exclude_patterns:

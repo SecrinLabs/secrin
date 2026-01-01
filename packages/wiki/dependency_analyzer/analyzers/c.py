@@ -11,7 +11,7 @@ from dependency_analyzer.models.core import Node, CallRelationship
 logger = logging.getLogger(__name__)
 
 class TreeSitterCAnalyzer:
-	def __init__(self, file_path: str, content: str, repo_path: str = None):
+	def __init__(self, file_path: str, content: str, repo_path: Optional[str] = None):
 		self.file_path = Path(file_path)
 		self.content = content
 		self.repo_path = repo_path or ""
@@ -217,6 +217,6 @@ class TreeSitterCAnalyzer:
 		}
 		return func_name in system_functions
 
-def analyze_c_file(file_path: str, content: str, repo_path: str = None) -> Tuple[List[Node], List[CallRelationship]]:
+def analyze_c_file(file_path: str, content: str, repo_path: Optional[str] = None) -> Tuple[List[Node], List[CallRelationship]]:
 	analyzer = TreeSitterCAnalyzer(file_path, content, repo_path)
 	return analyzer.nodes, analyzer.call_relationships

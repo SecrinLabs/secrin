@@ -15,7 +15,9 @@ async def read_code_components(ctx: RunContext[CodeWikiDeps], component_ids: lis
         if component_id not in ctx.deps.components:
             results.append(f"# Component {component_id} not found")
         else:
-            results.append(f"# Component {component_id}:\n{ctx.deps.components[component_id].source_code.strip()}\n\n")
+            source_code = ctx.deps.components[component_id].source_code
+            code = source_code.strip() if source_code else ""
+            results.append(f"# Component {component_id}:\n{code}\n\n")
 
     return "\n".join(results)
 

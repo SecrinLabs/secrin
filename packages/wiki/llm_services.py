@@ -1,6 +1,8 @@
 """
 LLM service factory for creating configured LLM clients.
 """
+from typing import Optional
+
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.models.openai import OpenAIModelSettings
@@ -58,7 +60,7 @@ def create_openai_client(config: WikiConfig) -> OpenAI:
 def call_llm(
     prompt: str,
     config: WikiConfig,
-    model: str = None,
+    model: Optional[str] = None,
     temperature: float = 0.0
 ) -> str:
     """
@@ -83,4 +85,4 @@ def call_llm(
         temperature=temperature,
         max_tokens=32768
     )
-    return response.choices[0].message.content
+    return response.choices[0].message.content or ""

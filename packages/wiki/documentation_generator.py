@@ -1,7 +1,7 @@
 import logging
 import os
 import json
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from copy import deepcopy
 import traceback
 
@@ -26,7 +26,7 @@ _settings = Settings()
 class DocumentationGenerator:
     """Main documentation generation orchestrator."""
     
-    def __init__(self, config: WikiConfig, commit_id: str = None):
+    def __init__(self, config: WikiConfig, commit_id: Optional[str] = None):
         self.config = config
         self.commit_id = commit_id
         self.graph_builder = DependencyGraphBuilder(config)
@@ -113,7 +113,7 @@ class DocumentationGenerator:
             if os.path.exists(os.path.join(working_dir, f"{child_name}.md")):
                 child_info["docs"] = file_manager.load_text(os.path.join(working_dir, f"{child_name}.md"))
             else:
-                logger.warning(f"Module docs not found at {os.path.join(working_dir, f"{child_name}.md")}")
+                logger.warning(f"Module docs not found at {os.path.join(working_dir, f'{child_name}.md')}")
                 child_info["docs"] = ""
 
         return processed_module_tree
@@ -126,8 +126,8 @@ class DocumentationGenerator:
 
         module_tree_path = os.path.join(working_dir, _settings.WIKI_MODULE_TREE_FILENAME)
         first_module_tree_path = os.path.join(working_dir, _settings.WIKI_FIRST_MODULE_TREE_FILENAME)
-        module_tree = file_manager.load_json(module_tree_path)
-        first_module_tree = file_manager.load_json(first_module_tree_path)
+        module_tree = file_manager.load_json(module_tree_path) or {}
+        first_module_tree = file_manager.load_json(first_module_tree_path) or {}
         
         # Get processing order (leaf modules first)
         processing_order = self.get_processing_order(first_module_tree)
@@ -139,24 +139,26 @@ class DocumentationGenerator:
 
         if len(module_tree) > 0:
             for module_path, module_name in processing_order:
+                module_key = "/".join(module_path)
                 try:
                     # Get the module info from the tree
                     module_info = module_tree
                     for path_part in module_path:
+                        if module_info is None:
+                            break
                         module_info = module_info[path_part]
                         if path_part != module_path[-1]:  # Not the last part
                             module_info = module_info.get("children", {})
                     
-                    # Skip if already processed
-                    module_key = "/".join(module_path)
-                    if module_key in processed_modules:
+                    # Skip if already processed or if module_info is None
+                    if module_key in processed_modules or module_info is None:
                         continue
                     
                     # Process the module
                     if self.is_leaf_module(module_info):
                         logger.info(f"📄 Processing leaf module: {module_key}")
                         final_module_tree = await self.agent_orchestrator.process_module(
-                            module_name, components, module_info["components"], module_path, working_dir
+                            module_name, components, module_info.get("components", []), module_path, working_dir
                         )
                     else:
                         logger.info(f"📁 Processing parent module: {module_key}")
@@ -201,7 +203,7 @@ class DocumentationGenerator:
         
         # Load module tree
         module_tree_path = os.path.join(working_dir, _settings.WIKI_MODULE_TREE_FILENAME)
-        module_tree = file_manager.load_json(module_tree_path)
+        module_tree = file_manager.load_json(module_tree_path) or {}
 
         # check if overview docs already exists
         overview_docs_path = os.path.join(working_dir, _settings.WIKI_OVERVIEW_FILENAME)
@@ -260,7 +262,7 @@ class DocumentationGenerator:
             # Check if module tree exists
             if os.path.exists(first_module_tree_path):
                 logger.debug(f"Module tree found at {first_module_tree_path}")
-                module_tree = file_manager.load_json(first_module_tree_path)
+                module_tree = file_manager.load_json(first_module_tree_path) or {}
             else:
                 logger.debug(f"Module tree not found at {module_tree_path}, clustering modules")
                 module_tree = cluster_modules(leaf_nodes, components, self.config)

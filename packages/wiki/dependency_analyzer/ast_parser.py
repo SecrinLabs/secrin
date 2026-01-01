@@ -25,7 +25,7 @@ class DependencyParser:
         
         self.analysis_service = AnalysisService()
 
-    def parse_repository(self, filtered_folders: List[str] = None) -> Dict[str, Node]:
+    def parse_repository(self, filtered_folders: Optional[List[str]] = None) -> Dict[str, Node]:
         logger.debug(f"Parsing repository at {self.repo_path}")
         
         structure_result = self.analysis_service._analyze_structure(

@@ -162,9 +162,11 @@ class AnalysisService:
 
         except Exception as e:
             logger.error(f"Analysis failed: {str(e)}", exc_info=True)
-            if "temp_dir" in locals() and Path(temp_dir).exists():
+            if temp_dir is not None and Path(temp_dir).exists():
                 self._cleanup_repository(temp_dir)
             raise RuntimeError(f"Repository analysis failed: {str(e)}")
+        
+       
 
     def analyze_repository_structure_only(
         self,

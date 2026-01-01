@@ -2,7 +2,7 @@ from pydantic_ai import Agent
 # import logfire
 import logging
 import os
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 # Configure logging and monitoring
 
@@ -36,7 +36,7 @@ class AgentOrchestrator:
         self.fallback_models = create_fallback_models(config)
     
     def create_agent(self, module_name: str, components: Dict[str, Any], 
-                    core_component_ids: List[str]) -> Agent:
+                    core_component_ids: List[str]) -> Agent[CodeWikiDeps, str]:
         """Create an appropriate agent based on module complexity."""
         if is_complex_module(components, core_component_ids):
             return Agent(
@@ -66,7 +66,7 @@ class AgentOrchestrator:
         
         # Load or create module tree
         module_tree_path = os.path.join(working_dir, _settings.WIKI_MODULE_TREE_FILENAME)
-        module_tree = file_manager.load_json(module_tree_path)
+        module_tree = file_manager.load_json(module_tree_path) or {}
         
         # Create agent
         agent = self.create_agent(module_name, components, core_component_ids)
