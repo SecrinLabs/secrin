@@ -1,11 +1,11 @@
 from pydantic_ai import RunContext, Tool, Agent
-from agent_tools.deps import CodeWikiDeps
-from agent_tools.read_code_components import read_code_components_tool
-from agent_tools.str_replace_editor import str_replace_editor_tool
-from llm_services import create_fallback_models
-from prompt_template import SYSTEM_PROMPT, LEAF_SYSTEM_PROMPT, format_user_prompt
-from utils import is_complex_module, count_tokens
-from cluster_modules import format_potential_core_components
+from packages.wiki.agent_tools.deps import CodeWikiDeps
+from packages.wiki.agent_tools.read_code_components import read_code_components_tool
+from packages.wiki.agent_tools.str_replace_editor import str_replace_editor_tool
+from packages.wiki.llm_services import create_fallback_models
+from packages.wiki.prompt_template import SYSTEM_PROMPT, LEAF_SYSTEM_PROMPT, format_user_prompt
+from packages.wiki.utils import is_complex_module, count_tokens
+from packages.wiki.cluster_modules import format_potential_core_components
 from packages.config import Settings
 
 _settings = Settings()

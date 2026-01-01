@@ -9,7 +9,7 @@ from traceback import print_exc
 from tree_sitter import Parser, Language
 import tree_sitter_typescript
 
-from dependency_analyzer.models.core import Node, CallRelationship
+from packages.wiki.dependency_analyzer.models.core import Node, CallRelationship
 
 logger = logging.getLogger(__name__)
 

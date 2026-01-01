@@ -1,8 +1,8 @@
 from typing import Dict, List, Any
 import os
 from packages.config import WikiConfig, file_manager
-from dependency_analyzer.ast_parser import DependencyParser
-from dependency_analyzer.topo_sort import build_graph_from_components, get_leaf_nodes
+from packages.wiki.dependency_analyzer.ast_parser import DependencyParser
+from packages.wiki.dependency_analyzer.topo_sort import build_graph_from_components, get_leaf_nodes
 
 import logging
 logger = logging.getLogger(__name__)

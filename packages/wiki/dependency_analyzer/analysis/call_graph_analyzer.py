@@ -9,9 +9,9 @@ across different programming languages in a repository.
 from typing import Dict, List
 import logging
 from pathlib import Path
-from dependency_analyzer.models.core import Node, CallRelationship
-from dependency_analyzer.utils.patterns import CODE_EXTENSIONS
-from dependency_analyzer.utils.security import safe_open_text
+from packages.wiki.dependency_analyzer.models.core import Node, CallRelationship
+from packages.wiki.dependency_analyzer.utils.patterns import CODE_EXTENSIONS
+from packages.wiki.dependency_analyzer.utils.security import safe_open_text
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ class CallGraphAnalyzer:
             content: File content string
             base_dir: Repository base directory path
         """
-        from dependency_analyzer.analyzers.python import analyze_python_file
+        from packages.wiki.dependency_analyzer.analyzers.python import analyze_python_file
 
         try:
             functions, relationships = analyze_python_file(
@@ -174,7 +174,7 @@ class CallGraphAnalyzer:
         """
         try:
 
-            from dependency_analyzer.analyzers.javascript import analyze_javascript_file_treesitter
+            from packages.wiki.dependency_analyzer.analyzers.javascript import analyze_javascript_file_treesitter
 
             functions, relationships = analyze_javascript_file_treesitter(
                 file_path, content, repo_path=repo_dir
@@ -199,7 +199,7 @@ class CallGraphAnalyzer:
         """
         try:
 
-            from dependency_analyzer.analyzers.typescript import analyze_typescript_file_treesitter
+            from packages.wiki.dependency_analyzer.analyzers.typescript import analyze_typescript_file_treesitter
 
             functions, relationships = analyze_typescript_file_treesitter(
                 file_path, content, repo_path=repo_dir
@@ -225,7 +225,7 @@ class CallGraphAnalyzer:
             content: File content string
             repo_dir: Repository base directory
         """
-        from dependency_analyzer.analyzers.c import analyze_c_file
+        from packages.wiki.dependency_analyzer.analyzers.c import analyze_c_file
 
         functions, relationships = analyze_c_file(file_path, content, repo_path=repo_dir)
 
@@ -243,7 +243,7 @@ class CallGraphAnalyzer:
             file_path: Relative path to the C++ file
             content: File content string
         """
-        from dependency_analyzer.analyzers.cpp import analyze_cpp_file
+        from packages.wiki.dependency_analyzer.analyzers.cpp import analyze_cpp_file
 
         functions, relationships = analyze_cpp_file(
             file_path, content, repo_path=repo_dir
@@ -264,7 +264,7 @@ class CallGraphAnalyzer:
             content: File content string
             repo_dir: Repository base directory
         """
-        from dependency_analyzer.analyzers.java import analyze_java_file
+        from packages.wiki.dependency_analyzer.analyzers.java import analyze_java_file
 
         try:
             functions, relationships = analyze_java_file(file_path, content, repo_path=repo_dir)
@@ -285,7 +285,7 @@ class CallGraphAnalyzer:
             content: File content string
             repo_dir: Repository base directory
         """
-        from dependency_analyzer.analyzers.csharp import analyze_csharp_file
+        from packages.wiki.dependency_analyzer.analyzers.csharp import analyze_csharp_file
 
         try:
             functions, relationships = analyze_csharp_file(file_path, content, repo_path=repo_dir)

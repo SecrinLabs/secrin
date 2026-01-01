@@ -7,8 +7,8 @@ from typing import Dict, List, Set, Tuple, Optional, Any, Union
 from pathlib import Path
 import re
 
-from dependency_analyzer.analysis.analysis_service import AnalysisService
-from dependency_analyzer.models.core import Node
+from packages.wiki.dependency_analyzer.analysis.analysis_service import AnalysisService
+from packages.wiki.dependency_analyzer.models.core import Node
 
 
 logger = logging.getLogger(__name__)

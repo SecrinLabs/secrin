@@ -37,6 +37,7 @@ migrate = "packages.database.graph.migrations.run_migrations:run_migrations"
 server = "scripts.server:main"
 setup = "scripts.setup:main"
 ingest = "packages.ingest.full_ingest:main"
+wiki = "packages.wiki.main:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

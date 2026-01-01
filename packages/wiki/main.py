@@ -13,7 +13,7 @@ import argparse
 import asyncio
 
 # Configure logging and monitoring
-from dependency_analyzer.utils.logging_config import setup_logging
+from packages.wiki.dependency_analyzer.utils.logging_config import setup_logging
 
 # Initialize colored logging
 setup_logging(level=logging.INFO)
@@ -21,7 +21,7 @@ setup_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Local imports
-from documentation_generator import DocumentationGenerator
+from packages.wiki.documentation_generator import DocumentationGenerator
 from packages.config import WikiConfig
 
 
@@ -40,7 +40,7 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-async def main() -> None:
+async def async_main() -> None:
     """Main entry point for the documentation generation process."""
     try:
         # Parse arguments and create configuration
@@ -58,5 +58,10 @@ async def main() -> None:
         raise
 
 
+def main() -> None:
+    """Synchronous wrapper for poetry script entry point."""
+    asyncio.run(async_main())
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

@@ -10,7 +10,7 @@ import fnmatch
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Union
-from dependency_analyzer.utils.patterns import DEFAULT_IGNORE_PATTERNS, DEFAULT_INCLUDE_PATTERNS
+from packages.wiki.dependency_analyzer.utils.patterns import DEFAULT_IGNORE_PATTERNS, DEFAULT_INCLUDE_PATTERNS
 
 
 class RepoAnalyzer:

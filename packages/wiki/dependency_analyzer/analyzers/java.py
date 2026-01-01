@@ -6,7 +6,7 @@ import os
 
 from tree_sitter import Parser, Language
 import tree_sitter_java
-from dependency_analyzer.models.core import Node, CallRelationship
+from packages.wiki.dependency_analyzer.models.core import Node, CallRelationship
 
 logger = logging.getLogger(__name__)
 

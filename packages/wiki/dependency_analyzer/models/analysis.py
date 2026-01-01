@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
-from dependency_analyzer.models.core import Node, CallRelationship, Repository
+from packages.wiki.dependency_analyzer.models.core import Node, CallRelationship, Repository
 
 
 class AnalysisResult(BaseModel):

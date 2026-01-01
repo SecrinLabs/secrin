@@ -1,13 +1,15 @@
 from typing import List, Dict, Any, Optional
 from collections import defaultdict
 import logging
+import json
+import re
 logger = logging.getLogger(__name__)
 
-from dependency_analyzer.models.core import Node
-from llm_services import call_llm
-from utils import count_tokens
+from packages.wiki.dependency_analyzer.models.core import Node
+from packages.wiki.llm_services import call_llm
+from packages.wiki.utils import count_tokens
 from packages.config import Settings, WikiConfig
-from prompt_template import format_cluster_prompt
+from packages.wiki.prompt_template import format_cluster_prompt
 
 # Get settings for constants
 _settings = Settings()
@@ -69,8 +71,21 @@ def cluster_modules(
             logger.error(f"Invalid LLM response format - missing component tags: {response[:200]}...")
             return {}
         
-        response_content = response.split("<GROUPED_COMPONENTS>")[1].split("</GROUPED_COMPONENTS>")[0]
-        module_tree = eval(response_content)
+        response_content = response.split("<GROUPED_COMPONENTS>")[1].split("</GROUPED_COMPONENTS>")[0].strip()
+        
+        # Try JSON parsing first (preferred)
+        try:
+            module_tree = json.loads(response_content)
+        except json.JSONDecodeError:
+            # If JSON fails, try to fix common issues and retry
+            # Fix unquoted keys/values that look like paths
+            fixed_content = re.sub(r':\s*([a-zA-Z_][a-zA-Z0-9_/\-\.]*)\s*([,\}])', r': "\1"\2', response_content)
+            fixed_content = re.sub(r':\s*([a-zA-Z_][a-zA-Z0-9_/\-\.]*)\s*$', r': "\1"', fixed_content, flags=re.MULTILINE)
+            try:
+                module_tree = json.loads(fixed_content)
+            except json.JSONDecodeError:
+                # Fall back to eval as last resort
+                module_tree = eval(response_content)
         
         if not isinstance(module_tree, dict):
             logger.error(f"Invalid module tree format - expected dict, got {type(module_tree)}")

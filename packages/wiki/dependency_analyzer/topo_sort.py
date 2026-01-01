@@ -10,7 +10,7 @@ import logging
 from typing import Dict, List, Set, Any
 from collections import deque
 
-from dependency_analyzer.models.core import Node
+from packages.wiki.dependency_analyzer.models.core import Node
 
 logger = logging.getLogger(__name__)
 

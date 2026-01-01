@@ -7,7 +7,7 @@ import sys
 import os
 
 
-from dependency_analyzer.models.core import Node, CallRelationship
+from packages.wiki.dependency_analyzer.models.core import Node, CallRelationship
 
 logger = logging.getLogger(__name__)
 

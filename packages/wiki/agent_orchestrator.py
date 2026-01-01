@@ -9,19 +9,19 @@ from typing import Dict, List, Any, Optional
 logger = logging.getLogger(__name__)
 
 # Local imports
-from agent_tools.deps import CodeWikiDeps
-from agent_tools.read_code_components import read_code_components_tool
-from agent_tools.str_replace_editor import str_replace_editor_tool
-from agent_tools.generate_sub_module_documentations import generate_sub_module_documentation_tool
-from llm_services import create_fallback_models
-from prompt_template import (
+from packages.wiki.agent_tools.deps import CodeWikiDeps
+from packages.wiki.agent_tools.read_code_components import read_code_components_tool
+from packages.wiki.agent_tools.str_replace_editor import str_replace_editor_tool
+from packages.wiki.agent_tools.generate_sub_module_documentations import generate_sub_module_documentation_tool
+from packages.wiki.llm_services import create_fallback_models
+from packages.wiki.prompt_template import (
     SYSTEM_PROMPT,
     LEAF_SYSTEM_PROMPT,
     format_user_prompt,
 )
-from dependency_analyzer.models.core import Node
+from packages.wiki.dependency_analyzer.models.core import Node
 
-from utils import is_complex_module
+from packages.wiki.utils import is_complex_module
 from packages.config import Settings, WikiConfig, file_manager
 
 # Get settings for constants

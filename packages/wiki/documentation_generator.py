@@ -9,15 +9,15 @@ import traceback
 logger = logging.getLogger(__name__)
 
 # Local imports
-from dependency_analyzer import DependencyGraphBuilder
-from llm_services import call_llm
-from prompt_template import (
+from packages.wiki.dependency_analyzer import DependencyGraphBuilder
+from packages.wiki.llm_services import call_llm
+from packages.wiki.prompt_template import (
     REPO_OVERVIEW_PROMPT,
     MODULE_OVERVIEW_PROMPT,
 )
-from cluster_modules import cluster_modules
+from packages.wiki.cluster_modules import cluster_modules
 from packages.config import Settings, WikiConfig, file_manager
-from agent_orchestrator import AgentOrchestrator
+from packages.wiki.agent_orchestrator import AgentOrchestrator
 
 # Get settings for constants
 _settings = Settings()

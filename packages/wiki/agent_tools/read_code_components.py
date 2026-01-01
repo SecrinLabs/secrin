@@ -1,5 +1,5 @@
 from pydantic_ai import RunContext, Tool
-from agent_tools.deps import CodeWikiDeps
+from packages.wiki.agent_tools.deps import CodeWikiDeps
 
 
 async def read_code_components(ctx: RunContext[CodeWikiDeps], component_ids: list[str]) -> str:

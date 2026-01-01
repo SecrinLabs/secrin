@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
-from dependency_analyzer.models.core import Node
+from packages.wiki.dependency_analyzer.models.core import Node
 from packages.config import WikiConfig
 
 @dataclass

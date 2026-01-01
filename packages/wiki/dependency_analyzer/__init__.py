@@ -4,10 +4,10 @@ Dependency analyzer module for building and processing import dependency graphs
 between Python code components.
 """
 
-from dependency_analyzer.models.core import Node
-from dependency_analyzer.ast_parser import DependencyParser
-from dependency_analyzer.topo_sort import topological_sort, resolve_cycles, build_graph_from_components, dependency_first_dfs, get_leaf_nodes
-from dependency_analyzer.dependency_graphs_builder import DependencyGraphBuilder
+from packages.wiki.dependency_analyzer.models.core import Node
+from packages.wiki.dependency_analyzer.ast_parser import DependencyParser
+from packages.wiki.dependency_analyzer.topo_sort import topological_sort, resolve_cycles, build_graph_from_components, dependency_first_dfs, get_leaf_nodes
+from packages.wiki.dependency_analyzer.dependency_graphs_builder import DependencyGraphBuilder
 
 __all__ = [
     'Node', 
