@@ -3,9 +3,194 @@ Configuration utilities and helpers.
 """
 
 import os
+import argparse
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 from pathlib import Path
 import json
+
+
+# ============================================================================
+# CLI Context Management
+# ============================================================================
+
+_CLI_CONTEXT = False
+
+
+def set_cli_context(enabled: bool = True) -> None:
+    """
+    Set whether we're running in CLI context (vs web app).
+    
+    Args:
+        enabled: True for CLI context, False for web app context
+    """
+    global _CLI_CONTEXT
+    _CLI_CONTEXT = enabled
+
+
+def is_cli_context() -> bool:
+    """
+    Check if running in CLI context.
+    
+    Returns:
+        True if running in CLI context, False otherwise
+    """
+    return _CLI_CONTEXT
+
+
+# ============================================================================
+# WikiConfig Dataclass
+# ============================================================================
+
+@dataclass
+class WikiConfig:
+    """
+    Configuration dataclass for Wiki/Documentation generation.
+    
+    This class provides a structured way to pass configuration through
+    the wiki generation pipeline, supporting both CLI and web app contexts.
+    """
+    repo_path: str
+    output_dir: str
+    dependency_graph_dir: str
+    docs_dir: str
+    max_depth: int
+    # LLM configuration
+    llm_base_url: str
+    llm_api_key: str
+    main_model: str
+    cluster_model: str
+    fallback_model: str = "glm-4p5"
+    
+    @classmethod
+    def from_args(cls, args: argparse.Namespace) -> 'WikiConfig':
+        """
+        Create configuration from parsed arguments.
+        
+        Args:
+            args: Parsed command line arguments with repo_path attribute
+            
+        Returns:
+            WikiConfig instance configured from arguments
+        """
+        from packages.config.settings import Settings
+        
+        settings = Settings()
+        repo_name = os.path.basename(os.path.normpath(args.repo_path))
+        sanitized_repo_name = ''.join(c if c.isalnum() else '_' for c in repo_name)
+        
+        return cls(
+            repo_path=args.repo_path,
+            output_dir=settings.WIKI_OUTPUT_BASE_DIR,
+            dependency_graph_dir=os.path.join(
+                settings.WIKI_OUTPUT_BASE_DIR, 
+                settings.WIKI_DEPENDENCY_GRAPHS_DIR
+            ),
+            docs_dir=os.path.join(
+                settings.WIKI_OUTPUT_BASE_DIR, 
+                settings.WIKI_DOCS_DIR, 
+                f"{sanitized_repo_name}-docs"
+            ),
+            max_depth=settings.WIKI_MAX_DEPTH,
+            llm_base_url=settings.WIKI_LLM_BASE_URL,
+            llm_api_key=settings.WIKI_LLM_API_KEY,
+            main_model=settings.WIKI_MAIN_MODEL,
+            cluster_model=settings.get_wiki_cluster_model(),
+            fallback_model=settings.WIKI_FALLBACK_MODEL
+        )
+    
+    @classmethod
+    def from_cli(
+        cls,
+        repo_path: str,
+        output_dir: str,
+        llm_base_url: str,
+        llm_api_key: str,
+        main_model: str,
+        cluster_model: str,
+        fallback_model: Optional[str] = None
+    ) -> 'WikiConfig':
+        """
+        Create configuration for CLI context.
+        
+        In CLI mode, configuration is loaded from ~/.codewiki/config.json + keyring.
+        
+        Args:
+            repo_path: Repository path to generate documentation for
+            output_dir: Output directory for generated docs
+            llm_base_url: LLM API base URL
+            llm_api_key: LLM API key
+            main_model: Primary model for generation
+            cluster_model: Model for clustering operations
+            fallback_model: Fallback model (optional)
+            
+        Returns:
+            WikiConfig instance configured for CLI usage
+        """
+        from packages.config.settings import Settings
+        
+        settings = Settings()
+        base_output_dir = os.path.join(output_dir, "temp")
+        
+        return cls(
+            repo_path=repo_path,
+            output_dir=base_output_dir,
+            dependency_graph_dir=os.path.join(
+                base_output_dir, 
+                settings.WIKI_DEPENDENCY_GRAPHS_DIR
+            ),
+            docs_dir=output_dir,
+            max_depth=settings.WIKI_MAX_DEPTH,
+            llm_base_url=llm_base_url,
+            llm_api_key=llm_api_key,
+            main_model=main_model,
+            cluster_model=cluster_model,
+            fallback_model=fallback_model or settings.WIKI_FALLBACK_MODEL
+        )
+    
+    @classmethod
+    def from_settings(cls, repo_path: str, settings: Optional[Any] = None) -> 'WikiConfig':
+        """
+        Create configuration from Settings (for web app context).
+        
+        Args:
+            repo_path: Repository path to generate documentation for
+            settings: Settings instance (creates new one if not provided)
+            
+        Returns:
+            WikiConfig instance configured from settings
+        """
+        if settings is None:
+            from packages.config.settings import Settings
+            settings = Settings()
+        
+        repo_name = os.path.basename(os.path.normpath(repo_path))
+        sanitized_repo_name = ''.join(c if c.isalnum() else '_' for c in repo_name)
+        
+        return cls(
+            repo_path=repo_path,
+            output_dir=settings.WIKI_OUTPUT_BASE_DIR,
+            dependency_graph_dir=os.path.join(
+                settings.WIKI_OUTPUT_BASE_DIR, 
+                settings.WIKI_DEPENDENCY_GRAPHS_DIR
+            ),
+            docs_dir=os.path.join(
+                settings.WIKI_OUTPUT_BASE_DIR, 
+                settings.WIKI_DOCS_DIR, 
+                f"{sanitized_repo_name}-docs"
+            ),
+            max_depth=settings.WIKI_MAX_DEPTH,
+            llm_base_url=settings.WIKI_LLM_BASE_URL,
+            llm_api_key=settings.WIKI_LLM_API_KEY,
+            main_model=settings.WIKI_MAIN_MODEL,
+            cluster_model=settings.get_wiki_cluster_model(),
+            fallback_model=settings.WIKI_FALLBACK_MODEL
+        )
+
+
+# ============================================================================
+# Configuration File Utilities
+# ============================================================================
 
 
 def get_config_path(filename: str = ".env") -> Path:
@@ -189,6 +374,50 @@ def print_config_summary() -> None:
         print(f"{flag}: {status}")
     
     print("\n" + "=" * 80)
+
+
+# ============================================================================
+# File Manager
+# ============================================================================
+
+class FileManager:
+    """Handles file I/O operations."""
+    
+    @staticmethod
+    def ensure_directory(path: str) -> None:
+        """Create directory if it doesn't exist."""
+        os.makedirs(path, exist_ok=True)
+    
+    @staticmethod
+    def save_json(data: Any, filepath: str) -> None:
+        """Save data as JSON to file."""
+        with open(filepath, 'w') as f:
+            json.dump(data, f, indent=4)
+    
+    @staticmethod
+    def load_json(filepath: str) -> Optional[Dict[str, Any]]:
+        """Load JSON from file, return None if file doesn't exist."""
+        if not os.path.exists(filepath):
+            return None
+        
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    
+    @staticmethod
+    def save_text(content: str, filepath: str) -> None:
+        """Save text content to file."""
+        with open(filepath, 'w') as f:
+            f.write(content)
+    
+    @staticmethod
+    def load_text(filepath: str) -> str:
+        """Load text content from file."""
+        with open(filepath, 'r') as f:
+            return f.read()
+
+
+# Singleton instance for convenience
+file_manager = FileManager()
 
 
 if __name__ == "__main__":

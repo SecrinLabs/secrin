@@ -325,6 +325,84 @@ class Settings(BaseSettings):
     )
     
     # ============================================================================
+    # Wiki/Documentation Generation Configuration
+    # ============================================================================
+    
+    WIKI_OUTPUT_BASE_DIR: str = Field(
+        default="output",
+        description="Base directory for wiki generation output"
+    )
+    
+    WIKI_DEPENDENCY_GRAPHS_DIR: str = Field(
+        default="dependency_graphs",
+        description="Directory name for dependency graphs"
+    )
+    
+    WIKI_DOCS_DIR: str = Field(
+        default="docs",
+        description="Directory name for generated documentation"
+    )
+    
+    WIKI_FIRST_MODULE_TREE_FILENAME: str = Field(
+        default="first_module_tree.json",
+        description="Filename for the first module tree JSON"
+    )
+    
+    WIKI_MODULE_TREE_FILENAME: str = Field(
+        default="module_tree.json",
+        description="Filename for the module tree JSON"
+    )
+    
+    WIKI_OVERVIEW_FILENAME: str = Field(
+        default="overview.md",
+        description="Filename for the overview markdown"
+    )
+    
+    WIKI_MAX_DEPTH: int = Field(
+        default=2,
+        ge=1,
+        le=10,
+        description="Maximum depth for module tree traversal"
+    )
+    
+    WIKI_MAX_TOKEN_PER_MODULE: int = Field(
+        default=36369,
+        ge=1000,
+        description="Maximum tokens per module for documentation generation"
+    )
+    
+    WIKI_MAX_TOKEN_PER_LEAF_MODULE: int = Field(
+        default=16000,
+        ge=1000,
+        description="Maximum tokens per leaf module"
+    )
+    
+    WIKI_MAIN_MODEL: str = Field(
+        default="claude-sonnet-4",
+        description="Primary LLM model for documentation generation"
+    )
+    
+    WIKI_FALLBACK_MODEL: str = Field(
+        default="glm-4p5",
+        description="Fallback LLM model when primary fails"
+    )
+    
+    WIKI_CLUSTER_MODEL: Optional[str] = Field(
+        default=None,
+        description="Model for clustering (defaults to main model if not set)"
+    )
+    
+    WIKI_LLM_BASE_URL: str = Field(
+        default="http://0.0.0.0:4000/",
+        description="Base URL for LLM API"
+    )
+    
+    WIKI_LLM_API_KEY: str = Field(
+        default="sk-1234",
+        description="API key for LLM service"
+    )
+    
+    # ============================================================================
     # Feature Flags (Environment-level overrides)
     # ============================================================================
     
@@ -384,3 +462,7 @@ class Settings(BaseSettings):
             "max_connection_pool_size": self.NEO4J_MAX_CONNECTION_POOL_SIZE,
             "connection_timeout": self.NEO4J_CONNECTION_TIMEOUT,
         }
+    
+    def get_wiki_cluster_model(self) -> str:
+        """Get the cluster model, falling back to main model if not set."""
+        return self.WIKI_CLUSTER_MODEL or self.WIKI_MAIN_MODEL

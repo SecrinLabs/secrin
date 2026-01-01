@@ -14,6 +14,13 @@ from packages.config.utils import (
     validate_required_settings,
     get_effective_config,
     print_config_summary,
+    # Wiki utilities
+    set_cli_context,
+    is_cli_context,
+    WikiConfig,
+    # File utilities
+    FileManager,
+    file_manager,
 )
 
 __all__ = [
@@ -31,4 +38,13 @@ __all__ = [
     "validate_required_settings",
     "get_effective_config",
     "print_config_summary",
+    
+    # Wiki utilities
+    "set_cli_context",
+    "is_cli_context",
+    "WikiConfig",
+    
+    # File utilities
+    "FileManager",
+    "file_manager",
 ]
