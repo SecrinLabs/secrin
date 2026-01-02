@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 # Local imports
 from packages.wiki.documentation_generator import DocumentationGenerator
-from packages.config import WikiConfig
+from packages.wiki.fumadocs_generator import FumadocsGenerator
+from packages.config import WikiConfig, Settings
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -26,6 +27,18 @@ def parse_arguments() -> argparse.Namespace:
         required=True,
         help='Path to the repository'
     )
+    parser.add_argument(
+        '--no-fumadocs',
+        action='store_true',
+        default=False,
+        help='Skip Fumadocs static site generation'
+    )
+    parser.add_argument(
+        '--fumadocs-only',
+        action='store_true',
+        default=False,
+        help='Only generate Fumadocs site from existing docs (skip doc generation)'
+    )
     
     return parser.parse_args()
 
@@ -36,9 +49,25 @@ async def async_main() -> None:
         # Parse arguments and create configuration
         args = parse_arguments()
         config = WikiConfig.from_args(args)
+        settings = Settings()
+        
+        # Handle fumadocs-only mode
+        if args.fumadocs_only:
+            import os
+            docs_dir = os.path.join(
+                settings.WIKI_OUTPUT_BASE_DIR,
+                os.path.basename(os.path.normpath(config.repo_path)),
+                settings.WIKI_DOCS_DIR
+            )
+            logger.info(f"📚 Generating Fumadocs site from existing docs at: {docs_dir}")
+            fumadocs_generator = FumadocsGenerator(docs_dir)
+            site_dir = fumadocs_generator.generate()
+            logger.info(f"✅ Fumadocs site generated at: {site_dir}")
+            return
         
         # Create and run documentation generator
         doc_generator = DocumentationGenerator(config)
+        doc_generator.skip_fumadocs = getattr(args, 'no_fumadocs', False)
         await doc_generator.run()
         
     except KeyboardInterrupt:

@@ -18,6 +18,7 @@ from packages.wiki.prompt_template import (
 from packages.wiki.cluster_modules import cluster_modules
 from packages.config import Settings, WikiConfig, file_manager
 from packages.wiki.agent_orchestrator import AgentOrchestrator
+from packages.wiki.fumadocs_generator import FumadocsGenerator
 
 # Get settings for constants
 _settings = Settings()
@@ -31,6 +32,7 @@ class DocumentationGenerator:
         self.commit_id = commit_id
         self.graph_builder = DependencyGraphBuilder(config)
         self.agent_orchestrator = AgentOrchestrator(config)
+        self.skip_fumadocs = False  # Can be set externally to skip Fumadocs generation
     
     def create_documentation_metadata(self, working_dir: str, components: Dict[str, Any], num_leaf_nodes: int):
         """Create a metadata file with documentation generation information."""
@@ -278,6 +280,14 @@ class DocumentationGenerator:
             
             # Create documentation metadata
             self.create_documentation_metadata(working_dir, components, len(leaf_nodes))
+            
+            # Generate Fumadocs static site (unless skipped)
+            if not self.skip_fumadocs:
+                fumadocs_generator = FumadocsGenerator(working_dir)
+                site_dir = fumadocs_generator.generate()
+                logger.info(f"📚 Fumadocs site generated at: {site_dir}")
+            else:
+                logger.info("⏭️  Skipping Fumadocs site generation (--no-fumadocs)")
             
             logger.debug(f"Documentation generation completed successfully using dynamic programming!")
             logger.debug(f"Processing order: leaf modules → parent modules → repository overview")
