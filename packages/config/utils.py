@@ -112,9 +112,7 @@ class WikiConfig:
     ) -> 'WikiConfig':
         """
         Create configuration for CLI context.
-        
-        In CLI mode, configuration is loaded from ~/.codewiki/config.json + keyring.
-        
+                
         Args:
             repo_path: Repository path to generate documentation for
             output_dir: Output directory for generated docs

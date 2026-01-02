@@ -1,13 +1,3 @@
-"""
-CodeWiki - A tool for generating comprehensive documentation from Python codebases.
-
-This module orchestrates the documentation generation process by:
-1. Analyzing code dependencies
-2. Clustering related modules
-3. Generating documentation using AI agents
-4. Creating overview documentation
-"""
-
 import logging
 import argparse
 import asyncio
