@@ -1,6 +1,10 @@
 import logging
 import argparse
 import asyncio
+import os
+import tempfile
+import shutil
+from urllib.parse import urlparse
 
 # Configure logging and monitoring
 from packages.wiki.dependency_analyzer.utils.logging_config import setup_logging
@@ -12,8 +16,54 @@ logger = logging.getLogger(__name__)
 
 # Local imports
 from packages.wiki.documentation_generator import DocumentationGenerator
-from packages.wiki.fumadocs_generator import FumadocsGenerator
 from packages.config import WikiConfig, Settings
+
+
+def is_git_url(path: str) -> bool:
+    """Check if the path is a git URL."""
+    if path.startswith(("http://", "https://", "git@", "ssh://")):
+        return True
+    if "github.com" in path or "gitlab.com" in path or "bitbucket.org" in path:
+        return True
+    return False
+
+
+def clone_repository(url: str, target_dir: str) -> str:
+    """
+    Clone a git repository to the target directory.
+    
+    Args:
+        url: Git repository URL
+        target_dir: Directory to clone into
+        
+    Returns:
+        Path to the cloned repository
+    """
+    import git
+    
+    # Extract repo name from URL
+    parsed = urlparse(url)
+    path_parts = parsed.path.rstrip("/").split("/")
+    repo_name = path_parts[-1].replace(".git", "") if path_parts else "repo"
+    
+    clone_path = os.path.join(target_dir, repo_name)
+    
+    # If already cloned, pull latest
+    if os.path.exists(clone_path):
+        logger.info(f"📂 Repository already exists at {clone_path}, pulling latest...")
+        try:
+            repo = git.Repo(clone_path)
+            repo.remotes.origin.pull()
+            logger.info("✅ Repository updated successfully")
+        except Exception as e:
+            logger.warning(f"Could not pull latest changes: {e}")
+        return clone_path
+    
+    logger.info(f"📥 Cloning repository from {url}...")
+    git.Repo.clone_from(url, clone_path, depth=1)  # Shallow clone for speed
+    logger.info(f"✅ Repository cloned to {clone_path}")
+    
+    return clone_path
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -25,19 +75,7 @@ def parse_arguments() -> argparse.Namespace:
         '--repo-path',
         type=str,
         required=True,
-        help='Path to the repository'
-    )
-    parser.add_argument(
-        '--no-fumadocs',
-        action='store_true',
-        default=False,
-        help='Skip Fumadocs static site generation'
-    )
-    parser.add_argument(
-        '--fumadocs-only',
-        action='store_true',
-        default=False,
-        help='Only generate Fumadocs site from existing docs (skip doc generation)'
+        help='Path to the repository (local path or git URL)'
     )
     
     return parser.parse_args()
@@ -48,26 +86,22 @@ async def async_main() -> None:
     try:
         # Parse arguments and create configuration
         args = parse_arguments()
-        config = WikiConfig.from_args(args)
         settings = Settings()
         
-        # Handle fumadocs-only mode
-        if args.fumadocs_only:
-            import os
-            docs_dir = os.path.join(
-                settings.WIKI_OUTPUT_BASE_DIR,
-                os.path.basename(os.path.normpath(config.repo_path)),
-                settings.WIKI_DOCS_DIR
-            )
-            logger.info(f"📚 Generating Fumadocs site from existing docs at: {docs_dir}")
-            fumadocs_generator = FumadocsGenerator(docs_dir)
-            site_dir = fumadocs_generator.generate()
-            logger.info(f"✅ Fumadocs site generated at: {site_dir}")
-            return
+        # Handle git URLs - clone to output directory
+        repo_path = args.repo_path
+        if is_git_url(repo_path):
+            # Clone to a repos subdirectory in the output base
+            repos_dir = os.path.join(settings.WIKI_OUTPUT_BASE_DIR, "repos")
+            os.makedirs(repos_dir, exist_ok=True)
+            repo_path = clone_repository(repo_path, repos_dir)
+            # Update args with the local path
+            args.repo_path = repo_path
+        
+        config = WikiConfig.from_args(args)
         
         # Create and run documentation generator
         doc_generator = DocumentationGenerator(config)
-        doc_generator.skip_fumadocs = getattr(args, 'no_fumadocs', False)
         await doc_generator.run()
         
     except KeyboardInterrupt:
