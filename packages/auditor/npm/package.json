@@ -1,0 +1,44 @@
+{
+  "name": "secrin-auditor",
+  "version": "0.1.0",
+  "description": "AI-powered documentation drift detection - Ensure your docs stay in sync with your code",
+  "keywords": [
+    "documentation",
+    "audit",
+    "drift-detection",
+    "ai",
+    "gemini",
+    "docs-as-code",
+    "developer-tools",
+    "cli"
+  ],
+  "author": "Secrin Labs <hello@secrinlabs.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SecrinLabs/secrin.git",
+    "directory": "packages/auditor"
+  },
+  "homepage": "https://github.com/SecrinLabs/secrin/tree/main/packages/auditor",
+  "bugs": {
+    "url": "https://github.com/SecrinLabs/secrin/issues"
+  },
+  "bin": {
+    "secrin-audit": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "postinstall": "node bin/postinstall.js"
+  },
+  "dependencies": {
+    "execa": "^8.0.0"
+  }
+}

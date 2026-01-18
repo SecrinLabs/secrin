@@ -1,0 +1,43 @@
+name: Documentation Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "*.md"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Secrin Auditor
+        run: pip install secrin-auditor
+
+      - name: Run Documentation Audit
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: secrin-audit ./docs .
+
+      - name: Comment on PR (if failed)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Documentation Audit Failed**\n\nSome documentation has drifted from the code. Please update the docs to match the current implementation.\n\nRun `secrin-audit ./docs .` locally to see details.'
+            })
