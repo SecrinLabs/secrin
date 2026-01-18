@@ -28,6 +28,8 @@ dependencies = [
     "pydantic-ai (>=1.39.0,<2.0.0)",
     "mermaid-parser-py (>=0.0.4,<0.0.5)",
     "google-genai (>=1.0.0,<2.0.0)",
+    "click (>=8.1.0,<9.0.0)",
+    "rich (>=14.0.0,<15.0.0)",
 ]
 
 [tool.poetry]
@@ -39,6 +41,7 @@ server = "scripts.server:main"
 setup = "scripts.setup:main"
 ingest = "packages.ingest.full_ingest:main"
 wiki = "packages.wiki.main:main"
+audit = "packages.auditor.audit:cli"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
