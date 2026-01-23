@@ -1,5 +1,5 @@
 {
-  "name": "secrin-auditor",
+  "name": "auditrin",
   "version": "0.1.0",
   "description": "AI-powered documentation drift detection - Ensure your docs stay in sync with your code",
   "keywords": [
@@ -24,7 +24,7 @@
     "url": "https://github.com/SecrinLabs/secrin/issues"
   },
   "bin": {
-    "secrin-audit": "./bin/cli.js"
+    "auditrin": "./bin/cli.js"
   },
   "files": [
     "bin",

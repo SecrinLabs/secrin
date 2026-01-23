@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "secrin-auditor"
+name = "auditrin"
 version = "0.1.0"
 description = "AI-powered documentation drift detection - Ensure your docs stay in sync with your code"
 readme = "README.md"
@@ -42,10 +42,10 @@ Repository = "https://github.com/SecrinLabs/secrin"
 Issues = "https://github.com/SecrinLabs/secrin/issues"
 
 [project.scripts]
-secrin-audit = "secrin_auditor.cli:main"
+auditrin = "auditrin.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/secrin_auditor"]
+packages = ["src/auditrin"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/README.md", "/LICENSE"]
