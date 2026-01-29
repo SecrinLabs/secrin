@@ -1,0 +1,76 @@
+// Prisma schema for Secrin
+// Only includes what's needed for projects and GitHub App integration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// GitHub App Installation - stores user's GitHub App installation
+model GitHubInstallation {
+  id             String  @id @default(cuid())
+  userId         String  @unique // Link to User model
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installationId Int     @unique
+  accountLogin   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Project model
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  repoName    String
+  repoUrl     String?
+  status      String  @default("active")
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// NextAuth Models
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+
+  // Custom fields
+  isNew Boolean @default(true)
+
+  // Relations
+  projects           Project[]
+  gitHubInstallation GitHubInstallation?
+}
