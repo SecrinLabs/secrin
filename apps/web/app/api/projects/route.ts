@@ -59,9 +59,11 @@ export async function POST(req: NextRequest) {
     const project = await prisma.project.create({
       data: {
         name,
+        slug: repoName, // URL-friendly unique identifier
         description,
         repoName: createdRepo.name,
         repoUrl: createdRepo.html_url,
+        githubOwner: createdRepo.owner.login, // GitHub username who owns the repo
         userId: session.user.id,
       },
     });

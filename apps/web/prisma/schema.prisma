@@ -26,9 +26,11 @@ model GitHubInstallation {
 model Project {
   id          String  @id @default(cuid())
   name        String
+  slug        String? @unique
   description String?
   repoName    String
   repoUrl     String?
+  githubOwner String?
   status      String  @default("active")
   userId      String
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
