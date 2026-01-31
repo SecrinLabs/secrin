@@ -15,6 +15,7 @@ model GitHubInstallation {
   userId         String  @unique // Link to User model
   user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   installationId Int     @unique
+  accessToken    String? @db.Text // User access token from OAuth exchange (ghu_*)
   accountLogin   String?
 
   createdAt DateTime @default(now())

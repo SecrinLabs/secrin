@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
 import { Octokit } from "octokit";
-import { createAppAuth } from "@octokit/auth-app";
 
 const sanitizeRepoName = (name: string) =>
   name
@@ -24,37 +23,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Project name is required" }, { status: 400 });
     }
 
+    // Get the user's GitHub installation
     const installation = await prisma.gitHubInstallation.findUnique({
       where: { userId: session.user.id },
     });
+    
     if (!installation) {
       return NextResponse.json({ error: "GitHub App not installed" }, { status: 400 });
     }
 
-    // 1. Authenticate
-    const appId = process.env.GITHUB_APP_ID!;
-    const privateKey = Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY!, "base64").toString("utf-8");
+    // Check if we have the user access token
+    if (!installation.accessToken) {
+      return NextResponse.json({ 
+        error: "GitHub access token not found. Please reinstall the GitHub App." 
+      }, { status: 400 });
+    }
 
-    const { token } = await createAppAuth({ appId, privateKey })({
-      type: "installation",
-      installationId: installation.installationId,
-    });
-    const octokit = new Octokit({ auth: token });
+    // Use the user access token (ghu_*) to authenticate
+    // This token was obtained via OAuth code exchange and can create repos on behalf of the user
+    const octokit = new Octokit({ auth: installation.accessToken });
 
-    // 2. DEBUG: Verify Token Permissions
-    const { headers } = await octokit.request("HEAD /");
-    console.log("Token Scopes:", headers["x-oauth-scopes"]);
-
-    // 3. Create Repo (Personal Account)
+    // Create Repo in user's account
     const repoName = sanitizeRepoName(name);
     const { data: createdRepo } = await octokit.request("POST /user/repos", {
       name: repoName,
       description: description || `Project: ${name}`,
       private: true,
       auto_init: true,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
     });
 
-    // 4. Save to DB
+    // Save to DB
     const project = await prisma.project.create({
       data: {
         name,
@@ -71,4 +72,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed to create repo" }, { status: 500 });
   }
 }
-

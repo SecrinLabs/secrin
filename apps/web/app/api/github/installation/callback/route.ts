@@ -21,26 +21,77 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // We only care about installation/update actions for now
-    // 'code' might be used for user-to-server token exchange if needed in future, 
-    // but for now we just verify we got the callback.
-    
-    // Save/Update the installation record
+    if (!code) {
+      return NextResponse.json(
+        { error: "Missing code parameter" },
+        { status: 400 }
+      );
+    }
+
+    // Exchange the code for a user access token
+    // This is the OAuth flow - code is one-time use and must be exchanged
+    const clientId = process.env.GITHUB_APP_CLIENTID;
+    const clientSecret = process.env.GITHUB_APP_SECRET;
+
+    if (!clientId || !clientSecret) {
+      console.error("Missing GITHUB_APP_CLIENTID or GITHUB_APP_SECRET");
+      return NextResponse.json(
+        { error: "GitHub App not configured" },
+        { status: 500 }
+      );
+    }
+
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      console.error("GitHub OAuth error:", tokenData);
+      return NextResponse.json(
+        { error: tokenData.error_description || "Failed to exchange code for token" },
+        { status: 400 }
+      );
+    }
+
+    const accessToken = tokenData.access_token; // This will be a ghu_* token
+
+    if (!accessToken) {
+      console.error("No access_token in response:", tokenData);
+      return NextResponse.json(
+        { error: "No access token received" },
+        { status: 500 }
+      );
+    }
+
+    // Save/Update the installation record with the REAL access token
     const installation = await prisma.gitHubInstallation.upsert({
       where: {
         userId: session.user.id,
       },
       update: {
         installationId: parseInt(installation_id),
-        accountLogin: null, // We might want to fetch this from GitHub API if we had the token, but optional for now
+        accessToken: accessToken,
+        accountLogin: null,
       },
       create: {
         userId: session.user.id,
         installationId: parseInt(installation_id),
+        accessToken: accessToken,
       },
     });
 
-    return NextResponse.json({ success: true, installation });
+    return NextResponse.json({ success: true, installation: { id: installation.id } });
   } catch (error) {
     console.error("Error saving GitHub installation:", error);
     return NextResponse.json(
