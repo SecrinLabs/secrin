@@ -1,0 +1,19 @@
+Generate a Mermaid flowchart diagram for this system architecture.
+
+SYSTEM: {system_name}
+MODULES:
+{modules}
+
+DEPENDENCIES:
+{dependencies}
+
+Generate a simple Mermaid flowchart. Output ONLY the mermaid code block, nothing else:
+
+```mermaid
+flowchart TB
+    subgraph System["{system_name}"]
+        ... components and relationships ...
+    end
+```
+
+Keep it simple with 3-7 nodes maximum. Use actual module names.
