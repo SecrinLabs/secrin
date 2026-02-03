@@ -2,12 +2,13 @@
 Codebase analysis using tree-sitter.
 
 Implements hierarchical decomposition inspired by CodeWiki.
+Supports Python, JavaScript, and TypeScript.
 """
 
 import logging
 import fnmatch
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict
 
 from ..models.config import Config
 from ..models.analysis import (
@@ -18,11 +19,28 @@ from ..models.analysis import (
     CodeStatistics,
     Dependency,
 )
+from ..parsers.base import BaseLanguageParser
 from ..parsers.python_parser import PythonParser
+from ..parsers.javascript_parser import JavaScriptParser
+from ..parsers.typescript_parser import TypeScriptParser
 from ..utils.git_utils import is_remote_url, clone_repository, cleanup_cloned_repo
 
 
 logger = logging.getLogger(__name__)
+
+
+# File extension to language mapping
+EXTENSION_TO_LANGUAGE = {
+    ".py": "python",
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".mts": "typescript",
+    ".cts": "typescript",
+}
 
 
 class CodebaseAnalyzer:
@@ -33,6 +51,11 @@ class CodebaseAnalyzer:
     1. Directory-based clustering
     2. LOC-based decomposition for large modules
     3. Dependency graph construction
+
+    Supports multiple languages:
+    - Python (.py)
+    - JavaScript (.js, .jsx, .mjs, .cjs)
+    - TypeScript (.ts, .tsx, .mts, .cts)
     """
 
     def __init__(self, config: Config):
@@ -43,8 +66,62 @@ class CodebaseAnalyzer:
             config: Configuration object
         """
         self.config = config
-        self.parser = PythonParser()
         self._statistics = CodeStatistics()
+        self._detected_language = None
+
+        # Initialize parsers for each supported language
+        self._parsers: Dict[str, BaseLanguageParser] = {
+            "python": PythonParser(),
+            "javascript": JavaScriptParser(),
+            "typescript": TypeScriptParser(tsx=False),
+            "typescript_tsx": TypeScriptParser(tsx=True),
+        }
+
+    def _get_parser_for_file(self, file_path: Path) -> Optional[BaseLanguageParser]:
+        """
+        Get the appropriate parser for a file based on its extension.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            Parser instance or None if unsupported
+        """
+        ext = file_path.suffix.lower()
+        language = EXTENSION_TO_LANGUAGE.get(ext)
+
+        if not language:
+            return None
+
+        # Handle TSX files specially
+        if ext == ".tsx":
+            return self._parsers.get("typescript_tsx")
+
+        return self._parsers.get(language)
+
+    def _detect_primary_language(self, files: List[Path]) -> str:
+        """
+        Detect the primary language of a repository based on file counts.
+
+        Args:
+            files: List of file paths
+
+        Returns:
+            Primary language name
+        """
+        language_counts: Dict[str, int] = {}
+
+        for file_path in files:
+            ext = file_path.suffix.lower()
+            language = EXTENSION_TO_LANGUAGE.get(ext)
+            if language:
+                language_counts[language] = language_counts.get(language, 0) + 1
+
+        if not language_counts:
+            return "python"  # Default fallback
+
+        # Return language with most files
+        return max(language_counts, key=language_counts.get)
 
     def analyze(self, repo_path: str) -> AnalysisResult:
         """
@@ -87,12 +164,23 @@ class CodebaseAnalyzer:
         Returns:
             AnalysisResult
         """
-
         # Reset statistics
         self._statistics = CodeStatistics()
 
+        # Get all matching files first for language detection
+        matching_files = self._get_matching_files(repo_path)
+        logger.debug(f"Found {len(matching_files)} matching files")
+
+        # Determine language
+        configured_language = self.config.repository.language
+        if configured_language == "auto" or not configured_language:
+            self._detected_language = self._detect_primary_language(matching_files)
+            logger.info(f"Auto-detected primary language: {self._detected_language}")
+        else:
+            self._detected_language = configured_language
+
         # Build module tree with hierarchical decomposition
-        root_module = self._decompose_repository(repo_path)
+        root_module = self._decompose_repository(repo_path, matching_files)
 
         # Build dependency graph
         dependency_graph = self._build_dependency_graph(root_module)
@@ -113,13 +201,15 @@ class CodebaseAnalyzer:
         return AnalysisResult(
             repo_name=repo_path.name,
             repo_path=str(repo_path),
-            language=self.config.repository.language or "python",
+            language=self._detected_language,
             module_tree=module_tree,
             dependency_graph=dependency_graph,
             statistics=self._statistics,
         )
 
-    def _decompose_repository(self, root_path: Path) -> Module:
+    def _decompose_repository(
+        self, root_path: Path, matching_files: Optional[List[Path]] = None
+    ) -> Module:
         """
         Hierarchical decomposition of repository.
 
@@ -127,6 +217,10 @@ class CodebaseAnalyzer:
         1. Start with directory structure as initial grouping
         2. For large directories, decompose into submodules
         3. Build dependency links between modules
+
+        Args:
+            root_path: Root path of the repository
+            matching_files: Pre-computed list of matching files (optional)
         """
         root_module = Module(
             name=root_path.name,
@@ -136,9 +230,10 @@ class CodebaseAnalyzer:
             size_loc=0,
         )
 
-        # Get all matching files
-        matching_files = self._get_matching_files(root_path)
-        logger.debug(f"Found {len(matching_files)} matching files")
+        # Get all matching files if not provided
+        if matching_files is None:
+            matching_files = self._get_matching_files(root_path)
+            logger.debug(f"Found {len(matching_files)} matching files")
 
         # Group files by top-level directory
         directory_groups = self._group_by_directory(root_path, matching_files)
@@ -280,7 +375,17 @@ class CodebaseAnalyzer:
         return dir_module
 
     def _analyze_file(self, file_path: Path) -> Optional[Module]:
-        """Analyze a single Python file."""
+        """
+        Analyze a single source file.
+
+        Supports Python, JavaScript, and TypeScript files.
+        """
+        # Get the appropriate parser
+        parser = self._get_parser_for_file(file_path)
+        if not parser:
+            logger.debug(f"No parser available for file: {file_path}")
+            return None
+
         try:
             source_code = file_path.read_text(encoding='utf-8')
         except Exception as e:
@@ -288,14 +393,18 @@ class CodebaseAnalyzer:
             return None
 
         # Parse the file
-        self.parser.parse(source_code)
+        try:
+            parser.parse(source_code)
+        except Exception as e:
+            logger.warning(f"Could not parse file {file_path}: {e}")
+            return None
 
         # Extract information
-        classes = self.parser.extract_classes()
-        functions = self.parser.extract_functions()
-        imports = self.parser.extract_imports()
-        docstring = self.parser.extract_docstring()
-        loc = self.parser.count_lines()
+        classes = parser.extract_classes()
+        functions = parser.extract_functions()
+        imports = parser.extract_imports()
+        docstring = parser.extract_docstring()
+        loc = parser.count_lines()
 
         # Update statistics
         self._statistics.total_files += 1

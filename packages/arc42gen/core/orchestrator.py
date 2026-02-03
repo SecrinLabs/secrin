@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from ..models.config import Config
+from ..utils.git_utils import is_remote_url
 from .analyzer import CodebaseAnalyzer
 from .generator import Arc42Generator
 from .formatter import OutputFormatter
@@ -24,6 +25,9 @@ class Orchestrator:
     2. Analyze codebase (CodebaseAnalyzer)
     3. Generate Section 5 (Arc42Generator)
     4. Format and save output (OutputFormatter)
+
+    Supports multiple LLM providers (Anthropic, Gemini) and
+    multiple languages (Python, JavaScript, TypeScript).
     """
 
     def __init__(self, config: Config):
@@ -35,10 +39,8 @@ class Orchestrator:
         """
         self.config = config
         self.analyzer = CodebaseAnalyzer(config)
-        self.generator = Arc42Generator(
-            api_key=config.llm.api_key,
-            model=config.llm.model
-        )
+        # Use the new config-based initialization for the generator
+        self.generator = Arc42Generator(config=config.llm)
         self.formatter = OutputFormatter(config)
 
     def run(
@@ -103,24 +105,31 @@ class Orchestrator:
         Validate input parameters.
 
         Args:
-            repo_path: Path to repository
+            repo_path: Path to repository (local path or remote URL)
 
         Raises:
-            FileNotFoundError: If repo path doesn't exist
+            FileNotFoundError: If local repo path doesn't exist
             ValueError: If configuration is invalid
         """
-        path = Path(repo_path)
+        # Skip path validation for remote URLs (will be cloned by analyzer)
+        if not is_remote_url(repo_path):
+            path = Path(repo_path)
 
-        # Check if local path exists
-        if not path.exists():
-            raise FileNotFoundError(f"Repository path not found: {repo_path}")
+            # Check if local path exists
+            if not path.exists():
+                raise FileNotFoundError(f"Repository path not found: {repo_path}")
 
-        if not path.is_dir():
-            raise ValueError(f"Repository path is not a directory: {repo_path}")
+            if not path.is_dir():
+                raise ValueError(f"Repository path is not a directory: {repo_path}")
 
-        # Validate API key
+        # Validate API key with provider-specific message
         if not self.config.llm.api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+            env_var = self.config.llm.get_api_key_env_var()
+            provider = self.config.llm.provider
+            raise ValueError(
+                f"API key not set for {provider} provider. "
+                f"Set the {env_var} environment variable."
+            )
 
         # Validate config
         errors = self.config.validate()

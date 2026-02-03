@@ -1,21 +1,24 @@
 """
-Arc42 documentation generation using Claude API.
+Arc42 documentation generation using LLM providers.
+
+Supports multiple LLM providers (Anthropic Claude, Google Gemini).
 """
 
 import logging
 import re
 from pathlib import Path
-from typing import List, Optional
-
-import anthropic
+from typing import List, Optional, Union
 
 from ..models.analysis import AnalysisResult, Module
+from ..models.config import LLMConfig
 from ..models.documentation import (
     Section5,
     Level1Whitebox,
     Level2Whitebox,
     ComponentDescription,
 )
+from ..providers.base import BaseLLMProvider
+from ..providers.factory import create_llm_provider
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +26,11 @@ logger = logging.getLogger(__name__)
 
 class Arc42Generator:
     """
-    Generates Arc42 Section 5 using Claude API.
+    Generates Arc42 Section 5 using LLM providers.
+
+    Supports multiple LLM backends:
+    - Anthropic (Claude)
+    - Google (Gemini)
 
     Workflow:
     1. Generate Level 1 Whitebox (system overview)
@@ -32,16 +39,42 @@ class Arc42Generator:
     4. Assemble complete Section 5
     """
 
-    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5-20250929"):
+    def __init__(
+        self,
+        config: Optional[LLMConfig] = None,
+        provider: Optional[BaseLLMProvider] = None,
+        # Legacy support for direct api_key/model args
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+    ):
         """
         Initialize the generator.
 
         Args:
-            api_key: Anthropic API key
-            model: Claude model to use
+            config: LLM configuration (preferred)
+            provider: Pre-configured LLM provider (for testing)
+            api_key: Legacy - API key (will use anthropic)
+            model: Legacy - Model name
         """
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model = model
+        if provider:
+            # Use provided provider (for testing or custom setup)
+            self.provider = provider
+        elif config:
+            # Create provider from config
+            self.provider = create_llm_provider(config)
+        elif api_key:
+            # Legacy support: create Anthropic provider
+            from ..providers.anthropic_provider import AnthropicProvider
+            self.provider = AnthropicProvider(
+                api_key=api_key,
+                model=model or "claude-sonnet-4-5-20250929"
+            )
+        else:
+            raise ValueError(
+                "Must provide either config, provider, or api_key"
+            )
+
+        logger.info(f"Arc42Generator initialized with {self.provider.provider_name} provider")
 
     def generate_section_5(self, analysis: AnalysisResult) -> Section5:
         """
@@ -87,7 +120,7 @@ class Arc42Generator:
         """Generate Level 1 Whitebox using Claude API."""
         prompt = self._build_level_1_prompt(analysis)
 
-        response = self._call_claude(prompt, max_tokens=4000)
+        response = self._call_llm(prompt, max_tokens=4000)
 
         # Parse response into structured format
         return self._parse_level_1_response(response, analysis)
@@ -244,7 +277,7 @@ REQUIREMENTS:
         """Generate Level 2 Whitebox for a specific module."""
         prompt = self._build_level_2_prompt(module)
 
-        response = self._call_claude(prompt, max_tokens=2000)
+        response = self._call_llm(prompt, max_tokens=2000)
 
         return self._parse_level_2_response(response, module)
 
@@ -332,7 +365,7 @@ DEPENDENCIES:
         """Generate Mermaid C4 diagram."""
         prompt = self._build_diagram_prompt(analysis)
 
-        response = self._call_claude(prompt, max_tokens=2000)
+        response = self._call_llm(prompt, max_tokens=2000)
 
         # Extract mermaid code block
         diagram_code = self._extract_mermaid_code(response)
@@ -398,18 +431,29 @@ Keep it simple with 3-7 nodes maximum. Use actual module names."""
 
         return "\n".join(lines)
 
-    def _call_claude(self, prompt: str, max_tokens: int = 4000) -> str:
-        """Call Claude API with retry logic."""
+    def _call_llm(self, prompt: str, max_tokens: int = 4000) -> str:
+        """
+        Call the LLM provider.
+
+        Args:
+            prompt: The prompt to send
+            max_tokens: Maximum tokens in response
+
+        Returns:
+            Generated text response
+        """
         try:
-            response = self.client.messages.create(
-                model=self.model,
+            response = self.provider.generate(
+                prompt=prompt,
                 max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}]
+                temperature=0.7,
             )
-            return response.content[0].text
-        except anthropic.APIError as e:
-            logger.error(f"Claude API error: {e}")
-            raise
+            return response.content
         except Exception as e:
-            logger.error(f"Unexpected error calling Claude: {e}")
+            logger.error(f"LLM API error ({self.provider.provider_name}): {e}")
             raise
+
+    # Backward compatibility alias
+    def _call_claude(self, prompt: str, max_tokens: int = 4000) -> str:
+        """Legacy method name for backward compatibility."""
+        return self._call_llm(prompt, max_tokens)

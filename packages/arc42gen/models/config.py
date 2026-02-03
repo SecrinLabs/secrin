@@ -13,18 +13,44 @@ import yaml
 @dataclass
 class LLMConfig:
     """LLM provider configuration."""
-    provider: str = "anthropic"
+    provider: str = "anthropic"  # 'anthropic' or 'gemini'
     model: str = "claude-sonnet-4-5-20250929"
     api_key: str = ""
     max_tokens: int = 16000
+
+    # Provider-specific default models
+    DEFAULT_MODELS = {
+        "anthropic": "claude-sonnet-4-5-20250929",
+        "gemini": "gemini-2.0-flash",
+    }
+
+    # Environment variable names for API keys
+    API_KEY_ENV_VARS = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+    }
+
+    def get_api_key_env_var(self) -> str:
+        """Get the environment variable name for this provider's API key."""
+        return self.API_KEY_ENV_VARS.get(self.provider, "LLM_API_KEY")
+
+    @classmethod
+    def get_default_model(cls, provider: str) -> str:
+        """Get the default model for a provider."""
+        return cls.DEFAULT_MODELS.get(provider, "")
 
 
 @dataclass
 class RepositoryConfig:
     """Repository analysis configuration."""
-    include: List[str] = field(default_factory=lambda: ["**/*.py"])
-    exclude: List[str] = field(default_factory=lambda: ["**/test/**", "**/__pycache__/**"])
-    language: Optional[str] = "python"
+    include: List[str] = field(default_factory=lambda: [
+        "**/*.py", "**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx"
+    ])
+    exclude: List[str] = field(default_factory=lambda: [
+        "**/test/**", "**/tests/**", "**/__pycache__/**",
+        "**/node_modules/**", "**/dist/**", "**/build/**"
+    ])
+    language: Optional[str] = "auto"  # python, javascript, typescript, auto
     focus_modules: List[str] = field(default_factory=list)
 
 
@@ -154,17 +180,18 @@ class Config:
 
         # Validate LLM config
         if not self.llm.api_key:
-            errors.append("LLM API key not set. Set ANTHROPIC_API_KEY environment variable.")
+            env_var = self.llm.get_api_key_env_var()
+            errors.append(f"LLM API key not set. Set {env_var} environment variable.")
 
-        if self.llm.provider not in ['anthropic']:
-            errors.append(f"Unsupported LLM provider: {self.llm.provider}")
+        if self.llm.provider not in ['anthropic', 'gemini']:
+            errors.append(f"Unsupported LLM provider: {self.llm.provider}. Supported: anthropic, gemini")
 
         # Validate repository config
         if not self.repository.include:
             errors.append("No include patterns specified for repository analysis.")
 
-        if self.repository.language not in ['python', 'javascript', 'typescript', None]:
-            errors.append(f"Unsupported language: {self.repository.language}")
+        if self.repository.language not in ['python', 'javascript', 'typescript', 'auto', None]:
+            errors.append(f"Unsupported language: {self.repository.language}. Supported: python, javascript, typescript, auto")
 
         # Validate Arc42 config
         if 5 not in self.arc42.sections:
@@ -185,20 +212,30 @@ DEFAULT_CONFIG_YAML = """# Arc42-Gen Configuration
 version: "1.0"
 
 # LLM Settings
+# Supported providers: "anthropic" (Claude), "gemini" (Google)
 llm:
-  provider: "anthropic"
-  model: "claude-sonnet-4-5-20250929"
-  api_key: "${ANTHROPIC_API_KEY}"  # Set via environment variable
+  provider: "gemini"  # Options: "anthropic" or "gemini"
+  model: "gemini-2.0-flash"  # For Gemini: gemini-2.0-flash, gemini-1.5-pro | For Anthropic: claude-sonnet-4-5-20250929
+  api_key: "${GEMINI_API_KEY}"  # Set via environment variable (GEMINI_API_KEY or ANTHROPIC_API_KEY)
   max_tokens: 16000
 
 # Repository Analysis
 repository:
   # Include patterns (glob)
+  # Supports Python, JavaScript, and TypeScript
   include:
     - "src/**/*.py"
     - "lib/**/*.py"
     - "app/**/*.py"
     - "**/*.py"
+    - "src/**/*.js"
+    - "src/**/*.ts"
+    - "src/**/*.jsx"
+    - "src/**/*.tsx"
+    - "lib/**/*.js"
+    - "lib/**/*.ts"
+    - "**/*.js"
+    - "**/*.ts"
 
   # Exclude patterns (glob)
   exclude:
@@ -208,10 +245,15 @@ repository:
     - "**/venv/**"
     - "**/.venv/**"
     - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/build/**"
     - "**/*.pyc"
+    - "**/*.min.js"
+    - "**/*.bundle.js"
 
   # Language (auto-detect if not specified)
-  language: "python"  # python, javascript, typescript
+  # Options: python, javascript, typescript, auto
+  language: "auto"  # Set to specific language or "auto" to detect
 
   # Focus on specific modules (optional)
   focus_modules: []

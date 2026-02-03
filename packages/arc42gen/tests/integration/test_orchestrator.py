@@ -4,12 +4,42 @@ Integration tests for Orchestrator.
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 
 import pytest
 
 from packages.arc42gen.core.orchestrator import Orchestrator
 from packages.arc42gen.models.config import Config
+from packages.arc42gen.providers.base import BaseLLMProvider, LLMResponse
+
+
+class MockProvider(BaseLLMProvider):
+    """Mock LLM provider for testing."""
+
+    def __init__(self, api_key="test", model="test"):
+        super().__init__(api_key, model)
+        self.responses = []
+        self.call_count = 0
+
+    @property
+    def provider_name(self):
+        return "mock"
+
+    def set_responses(self, responses):
+        """Set list of responses to return in order."""
+        self.responses = responses
+        self.call_count = 0
+
+    def generate(self, prompt, max_tokens=4000, temperature=0.7, system_prompt=None):
+        if self.call_count < len(self.responses):
+            content = self.responses[self.call_count]
+        else:
+            content = "Mock response"
+        self.call_count += 1
+        return LLMResponse(content=content, model=self.model)
+
+    def generate_chat(self, messages, max_tokens=4000, temperature=0.7, system_prompt=None):
+        return self.generate("", max_tokens, temperature, system_prompt)
 
 
 class TestOrchestrator:
@@ -20,6 +50,7 @@ class TestOrchestrator:
         """Create test configuration."""
         return Config.from_dict({
             'llm': {
+                'provider': 'anthropic',
                 'api_key': 'test_api_key',
                 'model': 'claude-sonnet-4-5-20250929',
             },
@@ -68,15 +99,12 @@ def helper():
         return tmp_path
 
     @pytest.fixture
-    def mock_claude(self):
-        """Mock Claude API responses."""
-        with patch('packages.arc42gen.core.generator.anthropic.Anthropic') as mock:
-            client = Mock()
-            mock.return_value = client
-
-            # Mock response for Level 1
-            level_1_response = Mock()
-            level_1_response.content = [Mock(text="""OVERVIEW:
+    def mock_provider(self):
+        """Create mock provider with responses."""
+        provider = MockProvider()
+        provider.set_responses([
+            # Level 1 response
+            """OVERVIEW:
 A simple application with utilities.
 
 COMPONENTS:
@@ -87,36 +115,32 @@ INTERFACES:
 Main calls utils for helper functions.
 
 RATIONALE:
-Simple modular structure.""")]
-
-            # Mock response for Level 2
-            level_2_response = Mock()
-            level_2_response.content = [Mock(text="""PURPOSE:
+Simple modular structure.""",
+            # Level 2 response
+            """PURPOSE:
 Main application module.
 
 INTERNAL_STRUCTURE:
 - Application: Main app class
 
 DEPENDENCIES:
-- utils""")]
-
-            # Mock response for diagram
-            diagram_response = Mock()
-            diagram_response.content = [Mock(text="""```mermaid
+- utils""",
+            # Diagram response
+            """```mermaid
 flowchart TB
     main --> utils
-```""")]
+```""",
+        ])
+        return provider
 
-            # Return different responses for each call
-            client.messages.create.side_effect = [
-                level_1_response,
-                level_2_response,
-                diagram_response,
-            ]
+    @pytest.fixture
+    def mock_provider_factory(self, mock_provider):
+        """Mock the provider factory to return our mock provider."""
+        with patch('packages.arc42gen.core.generator.create_llm_provider') as mock:
+            mock.return_value = mock_provider
+            yield mock_provider
 
-            yield client
-
-    def test_full_workflow(self, config, sample_repo, mock_claude, tmp_path):
+    def test_full_workflow(self, config, sample_repo, mock_provider_factory, tmp_path):
         """Test complete documentation generation workflow."""
         output_path = tmp_path / "output"
 
@@ -139,7 +163,7 @@ flowchart TB
         assert len(progress_values) > 0
         assert 100 in progress_values
 
-    def test_output_file_content(self, config, sample_repo, mock_claude, tmp_path):
+    def test_output_file_content(self, config, sample_repo, mock_provider_factory, tmp_path):
         """Test that output file has expected content."""
         output_path = tmp_path / "output"
 
@@ -157,7 +181,7 @@ flowchart TB
         assert "Overview" in md_content
         assert "mermaid" in md_content
 
-    def test_diagram_file_created(self, config, sample_repo, mock_claude, tmp_path):
+    def test_diagram_file_created(self, config, sample_repo, mock_provider_factory, tmp_path):
         """Test that diagram file is created."""
         output_path = tmp_path / "output"
 
@@ -203,7 +227,7 @@ flowchart TB
 
         assert success is False
 
-    def test_empty_repository(self, config, mock_claude, tmp_path):
+    def test_empty_repository(self, config, mock_provider_factory, tmp_path):
         """Test handling of empty repository."""
         empty_repo = tmp_path / "empty_repo"
         empty_repo.mkdir()

@@ -50,8 +50,10 @@ class TestRepositoryConfig:
         config = RepositoryConfig()
 
         assert "**/*.py" in config.include
+        assert "**/*.js" in config.include  # Now includes JS/TS
+        assert "**/*.ts" in config.include
         assert "**/test/**" in config.exclude
-        assert config.language == "python"
+        assert config.language == "auto"  # Changed from "python" to "auto"
         assert config.focus_modules == []
 
     def test_custom_patterns(self):
@@ -265,4 +267,5 @@ class TestDefaultConfig:
 
     def test_default_config_has_env_var_placeholder(self):
         """Test that default config uses environment variable."""
-        assert "${ANTHROPIC_API_KEY}" in DEFAULT_CONFIG_YAML
+        # Default now uses Gemini
+        assert "${GEMINI_API_KEY}" in DEFAULT_CONFIG_YAML

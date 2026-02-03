@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 import pytest
 
 from packages.arc42gen.core.generator import Arc42Generator
+from packages.arc42gen.providers.base import BaseLLMProvider, LLMResponse
 from packages.arc42gen.models.analysis import (
     AnalysisResult,
     Module,
@@ -22,21 +23,39 @@ from packages.arc42gen.models.documentation import (
 )
 
 
+class MockProvider(BaseLLMProvider):
+    """Mock LLM provider for testing."""
+
+    def __init__(self, api_key: str = "test", model: str = "test"):
+        super().__init__(api_key, model)
+        self.generate_response = "Mock response"
+        self.call_count = 0
+
+    @property
+    def provider_name(self) -> str:
+        return "mock"
+
+    def generate(self, prompt, max_tokens=4000, temperature=0.7, system_prompt=None):
+        self.call_count += 1
+        return LLMResponse(content=self.generate_response, model=self.model)
+
+    def generate_chat(self, messages, max_tokens=4000, temperature=0.7, system_prompt=None):
+        self.call_count += 1
+        return LLMResponse(content=self.generate_response, model=self.model)
+
+
 class TestArc42Generator:
     """Tests for Arc42Generator class."""
 
     @pytest.fixture
-    def mock_client(self):
-        """Create mock Anthropic client."""
-        with patch('packages.arc42gen.core.generator.anthropic.Anthropic') as mock:
-            client = Mock()
-            mock.return_value = client
-            yield client
+    def mock_provider(self):
+        """Create mock provider."""
+        return MockProvider()
 
     @pytest.fixture
-    def generator(self, mock_client):
-        """Create generator with mocked client."""
-        return Arc42Generator(api_key="test_key")
+    def generator(self, mock_provider):
+        """Create generator with mocked provider."""
+        return Arc42Generator(provider=mock_provider)
 
     @pytest.fixture
     def sample_analysis(self):
@@ -86,11 +105,10 @@ class TestArc42Generator:
             ),
         )
 
-    def test_generate_section_5_calls_claude(self, generator, mock_client, sample_analysis):
-        """Test that generate_section_5 calls Claude API."""
+    def test_generate_section_5_calls_provider(self, generator, mock_provider, sample_analysis):
+        """Test that generate_section_5 calls LLM provider."""
         # Setup mock response
-        mock_response = Mock()
-        mock_response.content = [Mock(text="""OVERVIEW:
+        mock_provider.generate_response = """OVERVIEW:
 This is a sample system.
 
 COMPONENTS:
@@ -101,19 +119,17 @@ INTERFACES:
 Components communicate via function calls.
 
 RATIONALE:
-Simple architecture for demo purposes.""")]
-        mock_client.messages.create.return_value = mock_response
+Simple architecture for demo purposes."""
 
         result = generator.generate_section_5(sample_analysis)
 
-        # Verify API was called
-        assert mock_client.messages.create.called
+        # Verify provider was called
+        assert mock_provider.call_count > 0
         assert isinstance(result, Section5)
 
-    def test_generate_section_5_returns_valid_structure(self, generator, mock_client, sample_analysis):
+    def test_generate_section_5_returns_valid_structure(self, generator, mock_provider, sample_analysis):
         """Test that generated Section5 has valid structure."""
-        mock_response = Mock()
-        mock_response.content = [Mock(text="""OVERVIEW:
+        mock_provider.generate_response = """OVERVIEW:
 A sample system for testing.
 
 COMPONENTS:
@@ -124,8 +140,7 @@ INTERFACES:
 Direct function calls between modules.
 
 RATIONALE:
-Modular design for maintainability.""")]
-        mock_client.messages.create.return_value = mock_response
+Modular design for maintainability."""
 
         result = generator.generate_section_5(sample_analysis)
 
@@ -134,10 +149,9 @@ Modular design for maintainability.""")]
         assert len(result.level_1.overview) > 0
         assert isinstance(result.statistics, dict)
 
-    def test_generate_section_5_includes_statistics(self, generator, mock_client, sample_analysis):
+    def test_generate_section_5_includes_statistics(self, generator, mock_provider, sample_analysis):
         """Test that generated Section5 includes statistics."""
-        mock_response = Mock()
-        mock_response.content = [Mock(text="""OVERVIEW:
+        mock_provider.generate_response = """OVERVIEW:
 Test system.
 
 COMPONENTS:
@@ -147,8 +161,7 @@ INTERFACES:
 None.
 
 RATIONALE:
-Simple.""")]
-        mock_client.messages.create.return_value = mock_response
+Simple."""
 
         result = generator.generate_section_5(sample_analysis)
 
@@ -156,18 +169,16 @@ Simple.""")]
         assert result.statistics["total_loc"] == 700
         assert result.statistics["total_classes"] == 5
 
-    def test_generate_diagram_produces_mermaid(self, generator, mock_client, sample_analysis):
+    def test_generate_diagram_produces_mermaid(self, generator, mock_provider, sample_analysis):
         """Test that diagram generation produces Mermaid code."""
-        mock_response = Mock()
-        mock_response.content = [Mock(text="""```mermaid
+        mock_provider.generate_response = """```mermaid
 flowchart TB
     subgraph System["sample_repo"]
         core["core"]
         utils["utils"]
         core --> utils
     end
-```""")]
-        mock_client.messages.create.return_value = mock_response
+```"""
 
         diagram = generator._generate_diagram(sample_analysis)
 
@@ -273,15 +284,15 @@ That's the diagram."""
 
         assert result is None
 
-    def test_api_error_handling(self, generator, mock_client, sample_analysis):
+    def test_api_error_handling(self, mock_provider, sample_analysis):
         """Test handling of API errors."""
-        import anthropic
+        # Create a provider that raises an error
+        class ErrorProvider(MockProvider):
+            def generate(self, *args, **kwargs):
+                raise RuntimeError("Test API error")
 
-        mock_client.messages.create.side_effect = anthropic.APIError(
-            message="Test error",
-            body=None,
-            request=Mock()
-        )
+        error_provider = ErrorProvider()
+        generator = Arc42Generator(provider=error_provider)
 
-        with pytest.raises(anthropic.APIError):
+        with pytest.raises(RuntimeError):
             generator.generate_section_5(sample_analysis)

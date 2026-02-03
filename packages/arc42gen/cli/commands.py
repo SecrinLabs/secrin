@@ -47,7 +47,9 @@ def config_init(output: str, force: bool) -> None:
         create_default_config(output, force=force)
         click.echo(f"Configuration file created: {output}")
         click.echo("  Next steps:")
-        click.echo("  1. Set your API key: export ANTHROPIC_API_KEY='your_key'")
+        click.echo("  1. Set your API key (default provider is Gemini):")
+        click.echo("     export GEMINI_API_KEY='your_key'")
+        click.echo("     OR for Anthropic: export ANTHROPIC_API_KEY='your_key'")
         click.echo("  2. Edit .arc42gen.yaml to customize settings")
         click.echo("  3. Run: arc42gen generate --repo /path/to/repo")
     except FileExistsError as e:
@@ -74,7 +76,9 @@ def config_validate(config_path: str) -> None:
             sys.exit(1)
 
         click.echo("Configuration is valid")
+        click.echo(f"  Provider: {cfg.llm.provider}")
         click.echo(f"  Model: {cfg.llm.model}")
+        click.echo(f"  API Key Env: {cfg.llm.get_api_key_env_var()}")
         click.echo(f"  Language: {cfg.repository.language or 'auto-detect'}")
         click.echo(f"  Sections: {cfg.arc42.sections}")
         click.echo(f"  Output: {cfg.output.path}")
@@ -112,8 +116,9 @@ def generate(repo: str, section: int, output: str, config_path: str) -> None:
 
         # Validate API key
         if not cfg.llm.api_key:
-            click.echo("ANTHROPIC_API_KEY not set", err=True)
-            click.echo("  Run: export ANTHROPIC_API_KEY='your_key'", err=True)
+            env_var = cfg.llm.get_api_key_env_var()
+            click.echo(f"{env_var} not set for {cfg.llm.provider} provider", err=True)
+            click.echo(f"  Run: export {env_var}='your_key'", err=True)
             sys.exit(1)
 
         # Initialize orchestrator
@@ -188,6 +193,7 @@ def analyze(repo: str, output: str, config_path: str) -> None:
             json.dump(analysis.to_dict(), f, indent=2)
 
         click.echo(f"Analysis saved to: {output}")
+        click.echo(f"  Language: {analysis.language}")
         click.echo(f"  Modules: {len(analysis.module_tree.get_top_level_modules())}")
         click.echo(f"  Total LOC: {analysis.statistics.total_loc:,}")
         click.echo(f"  Classes: {analysis.statistics.total_classes}")
