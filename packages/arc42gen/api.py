@@ -3,22 +3,23 @@ Simple HTTP API for arc42gen.
 Run with: uvicorn packages.arc42gen.api:app --port 8001
 """
 
-import os
 import tempfile
 import shutil
 from pathlib import Path
 from typing import Optional
 
-# Load .env file
-from dotenv import load_dotenv
-load_dotenv()
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+# Use unified config from packages/config
+from packages.config.settings import Settings
+
 from .models.config import Config
 from .core.orchestrator import Orchestrator
+
+# Load settings from unified config
+settings = Settings()
 
 app = FastAPI(title="Arc42gen API", version="0.1.0")
 
@@ -60,7 +61,6 @@ async def generate_docs(request: GenerateRequest) -> GenerateResponse:
         
         # If we have a token, embed it in the URL for git clone
         if request.github_token:
-            # Convert https://github.com/owner/repo to https://x-access-token:TOKEN@github.com/owner/repo
             if repo_url.startswith("https://github.com/"):
                 repo_url = repo_url.replace(
                     "https://github.com/",
@@ -70,34 +70,42 @@ async def generate_docs(request: GenerateRequest) -> GenerateResponse:
         if not repo_url.endswith(".git"):
             repo_url = f"{repo_url}.git"
         
-        # Create config
-        provider = os.getenv('LLM_PROVIDER', 'gemini')
-        
-        # Set the correct model based on provider
-        if provider == 'gemini':
-            model = os.getenv('LLM_MODEL', 'gemini-2.0-flash')
-            api_key = os.getenv('GEMINI_API_KEY')
+        # Get API key from unified config based on provider
+        provider = settings.ARC42GEN_LLM_PROVIDER
+        if provider == "gemini":
+            api_key = settings.GEMINI_API_KEY
         else:
-            model = os.getenv('LLM_MODEL', 'claude-sonnet-4-5-20250929')
-            api_key = os.getenv('ANTHROPIC_API_KEY')
+            api_key = settings.OPENAI_API_KEY  # Using OPENAI for anthropic fallback
         
-        config_dict = {
-            'llm': {
-                'provider': provider,
-                'model': model,
-                'api_key': api_key,
-            },
-            'repository': {},
-            'arc42': {'sections': [5]},
-            'decomposition': {},
-            'output': {'path': output_dir},
-        }
-        
-        if not config_dict['llm']['api_key']:
+        if not api_key:
             raise HTTPException(
                 status_code=500, 
-                detail="No API key configured. Set GEMINI_API_KEY or ANTHROPIC_API_KEY"
+                detail=f"No API key configured for {provider}. Set GEMINI_API_KEY in your .env file"
             )
+        
+        # Create arc42gen config from unified settings
+        config_dict = {
+            'llm': {
+                'provider': settings.ARC42GEN_LLM_PROVIDER,
+                'model': settings.ARC42GEN_LLM_MODEL,
+                'api_key': api_key,
+                'max_tokens': settings.ARC42GEN_MAX_TOKENS,
+            },
+            'repository': {
+                'include': settings.ARC42GEN_INCLUDE_PATTERNS,
+                'exclude': settings.ARC42GEN_EXCLUDE_PATTERNS,
+            },
+            'arc42': {
+                'sections': settings.ARC42GEN_SECTIONS,
+                'diagram_style': settings.ARC42GEN_DIAGRAM_STYLE,
+                'output_format': settings.ARC42GEN_OUTPUT_FORMAT,
+            },
+            'decomposition': {
+                'max_module_size': settings.ARC42GEN_MAX_MODULE_SIZE,
+                'max_depth': settings.ARC42GEN_MAX_DEPTH,
+            },
+            'output': {'path': output_dir},
+        }
         
         cfg = Config.from_dict(config_dict)
         orchestrator = Orchestrator(cfg)
@@ -136,4 +144,8 @@ async def generate_docs(request: GenerateRequest) -> GenerateResponse:
 @app.get("/health")
 async def health():
     """Health check endpoint."""
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "provider": settings.ARC42GEN_LLM_PROVIDER,
+        "model": settings.ARC42GEN_LLM_MODEL,
+    }
