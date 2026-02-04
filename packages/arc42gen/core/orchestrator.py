@@ -4,7 +4,7 @@ Main workflow orchestrator.
 
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 from ..models.config import Config
 from ..utils.git_utils import is_remote_url
@@ -47,6 +47,7 @@ class Orchestrator:
         self,
         repo_path: str,
         output_path: str,
+        sections: Optional[List[int]] = None,
         progress_callback: Optional[Callable[[int], None]] = None
     ) -> bool:
         """
@@ -55,11 +56,15 @@ class Orchestrator:
         Args:
             repo_path: Path to repository (local)
             output_path: Output directory path
+            sections: List of section numbers to generate (1-12), None for all
             progress_callback: Optional callback for progress updates (0-100)
 
         Returns:
             True if successful, False otherwise
         """
+        if sections is None:
+            sections = list(range(1, 13))
+
         try:
             # Step 1: Validate inputs
             logger.info("Validating inputs...")
@@ -72,18 +77,18 @@ class Orchestrator:
             analysis = self.analyzer.analyze(repo_path)
             logger.info(f"Analysis complete: {analysis.statistics.total_modules} modules found")
             if progress_callback:
-                progress_callback(40)
+                progress_callback(30)
 
-            # Step 3: Generate Arc42 Section 5
-            logger.info("Generating Arc42 Section 5...")
-            section_5 = self.generator.generate_section_5(analysis)
-            logger.info("Section 5 generated successfully")
+            # Step 3: Generate Arc42 sections
+            logger.info(f"Generating Arc42 sections: {sections}")
+            arc42_doc = self.generator.generate_all_sections(analysis, sections)
+            logger.info("Sections generated successfully")
             if progress_callback:
                 progress_callback(80)
 
             # Step 4: Format and save output
             logger.info(f"Writing output to: {output_path}")
-            self.formatter.write_section_5(section_5, output_path)
+            self.formatter.write_arc42_document(arc42_doc, output_path)
             logger.info("Output written successfully")
             if progress_callback:
                 progress_callback(100)

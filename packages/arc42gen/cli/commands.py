@@ -92,17 +92,36 @@ def config_validate(config_path: str) -> None:
         sys.exit(1)
 
 
+def parse_sections(sections_str: str) -> list:
+    """Parse sections string like '1,3,5' or 'all' into list of ints."""
+    if sections_str.lower() == 'all':
+        return list(range(1, 13))
+
+    sections = []
+    for part in sections_str.split(','):
+        part = part.strip()
+        if '-' in part:
+            start, end = part.split('-')
+            sections.extend(range(int(start), int(end) + 1))
+        else:
+            sections.append(int(part))
+    return sorted(set(sections))
+
+
 @cli.command()
 @click.option("--repo", required=True, help="Repository path (local path)")
-@click.option("--section", default=5, type=int, help="Arc42 section number (MVP: 5 only)")
+@click.option("--sections", default="all", help="Sections to generate: 'all', '5', '1,3,5', '1-4'")
 @click.option("--output", default="./docs/arc42", help="Output directory")
 @click.option("--config", "config_path", default=".arc42gen.yaml", help="Config file path")
-def generate(repo: str, section: int, output: str, config_path: str) -> None:
+def generate(repo: str, sections: str, output: str, config_path: str) -> None:
     """Generate Arc42 documentation from codebase."""
     from ..core.orchestrator import Orchestrator
 
-    if section != 5:
-        click.echo("MVP supports Section 5 only. Coming soon: all sections!", err=True)
+    try:
+        section_list = parse_sections(sections)
+    except ValueError:
+        click.echo(f"Invalid sections format: {sections}", err=True)
+        click.echo("  Use: 'all', '5', '1,3,5', or '1-4'", err=True)
         sys.exit(1)
 
     try:
@@ -125,7 +144,8 @@ def generate(repo: str, section: int, output: str, config_path: str) -> None:
         orchestrator = Orchestrator(cfg)
 
         # Run generation with progress bar
-        click.echo(f"Generating Arc42 Section {section} for: {repo}")
+        section_str = ', '.join(map(str, section_list))
+        click.echo(f"Generating Arc42 Sections [{section_str}] for: {repo}")
 
         with click.progressbar(
             length=100,
@@ -140,12 +160,13 @@ def generate(repo: str, section: int, output: str, config_path: str) -> None:
             success = orchestrator.run(
                 repo_path=repo,
                 output_path=output,
+                sections=section_list,
                 progress_callback=progress_callback
             )
 
         if success:
             click.echo(f"\nDocumentation generated successfully!")
-            click.echo(f"  Main file: {output}/arc42_section_5.md")
+            click.echo(f"  Output: {output}/")
             if cfg.output.create_diagrams_folder:
                 click.echo(f"  Diagrams: {output}/diagrams/")
         else:
@@ -201,6 +222,169 @@ def analyze(repo: str, output: str, config_path: str) -> None:
 
     except Exception as e:
         logger.exception("Analysis failed")
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.group()
+def diagrams() -> None:
+    """C4 diagram generation commands."""
+    pass
+
+
+@diagrams.command(name="generate")
+@click.option("--repo", required=True, help="Repository path")
+@click.option("--output", default="./docs/diagrams", help="Output directory")
+@click.option("--levels", default="1,2,3,4", help="C4 levels to generate: '1,2,3,4' or 'all'")
+@click.option("--config", "config_path", default=".arc42gen.yaml", help="Config file path")
+def diagrams_generate(repo: str, output: str, levels: str, config_path: str) -> None:
+    """Generate C4 diagrams at all levels."""
+    from ..core.analyzer import CodebaseAnalyzer
+    from ..diagrams import C4Generator
+
+    try:
+        # Parse levels
+        if levels.lower() == 'all':
+            level_list = [1, 2, 3, 4]
+        else:
+            level_list = [int(l.strip()) for l in levels.split(',')]
+    except ValueError:
+        click.echo(f"Invalid levels: {levels}", err=True)
+        sys.exit(1)
+
+    try:
+        # Load configuration
+        if Path(config_path).exists():
+            cfg = Config.from_yaml(config_path)
+        else:
+            click.echo(f"Config file not found: {config_path}", err=True)
+            sys.exit(1)
+
+        if not cfg.llm.api_key:
+            env_var = cfg.llm.get_api_key_env_var()
+            click.echo(f"{env_var} not set", err=True)
+            sys.exit(1)
+
+        analyzer = CodebaseAnalyzer(cfg)
+        generator = C4Generator(config=cfg.llm)
+
+        click.echo(f"Analyzing: {repo}")
+        analysis = analyzer.analyze(repo)
+
+        click.echo(f"Generating C4 diagrams (levels: {level_list})...")
+        diagrams = generator.generate_all_levels(analysis, level_list)
+
+        # Write output
+        output_dir = Path(output)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        if diagrams.context:
+            path = output_dir / "c4_level1_context.md"
+            path.write_text(diagrams.context.to_markdown())
+            click.echo(f"  Level 1: {path}")
+
+        if diagrams.containers:
+            path = output_dir / "c4_level2_container.md"
+            path.write_text(diagrams.containers.to_markdown())
+            click.echo(f"  Level 2: {path}")
+
+        for i, comp in enumerate(diagrams.components):
+            filename = f"c4_level3_component_{comp.target_component or i+1}.md"
+            path = output_dir / filename.replace(' ', '_').lower()
+            path.write_text(comp.to_markdown())
+            click.echo(f"  Level 3: {path}")
+
+        for i, code in enumerate(diagrams.code):
+            filename = f"c4_level4_code_{code.target_component or i+1}.md"
+            path = output_dir / filename.replace(' ', '_').lower()
+            path.write_text(code.to_markdown())
+            click.echo(f"  Level 4: {path}")
+
+        click.echo("\nC4 diagrams generated successfully!")
+
+    except Exception as e:
+        logger.exception("Generation failed")
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.group()
+def diataxis() -> None:
+    """Diátaxis framework documentation commands."""
+    pass
+
+
+@diataxis.command(name="generate")
+@click.option("--repo", required=True, help="Repository path")
+@click.option("--output", default="./docs", help="Output directory")
+@click.option("--config", "config_path", default=".arc42gen.yaml", help="Config file path")
+@click.option("--type", "doc_type", default="all", help="Type: all, tutorials, how-to, reference, explanation")
+def diataxis_generate(repo: str, output: str, config_path: str, doc_type: str) -> None:
+    """Generate Diátaxis documentation."""
+    from ..core.analyzer import CodebaseAnalyzer
+    from ..diataxis import DiátaxisGenerator
+
+    try:
+        # Load configuration
+        if Path(config_path).exists():
+            cfg = Config.from_yaml(config_path)
+        else:
+            click.echo(f"Config file not found: {config_path}", err=True)
+            sys.exit(1)
+
+        if not cfg.llm.api_key:
+            env_var = cfg.llm.get_api_key_env_var()
+            click.echo(f"{env_var} not set", err=True)
+            sys.exit(1)
+
+        analyzer = CodebaseAnalyzer(cfg)
+        generator = DiátaxisGenerator(config=cfg.llm)
+
+        click.echo(f"Analyzing: {repo}")
+        analysis = analyzer.analyze(repo)
+
+        click.echo("Generating Diátaxis documentation...")
+        doc = generator.generate_all(analysis)
+
+        # Write output
+        output_dir = Path(output)
+
+        if doc_type in ("all", "tutorials"):
+            tutorials_dir = output_dir / "tutorials"
+            tutorials_dir.mkdir(parents=True, exist_ok=True)
+            for tutorial in doc.tutorials:
+                filename = tutorial.title.lower().replace(' ', '_') + ".md"
+                (tutorials_dir / filename).write_text(tutorial.to_markdown())
+            click.echo(f"  Tutorials: {tutorials_dir}/")
+
+        if doc_type in ("all", "how-to"):
+            howto_dir = output_dir / "how-to"
+            howto_dir.mkdir(parents=True, exist_ok=True)
+            for guide in doc.how_to_guides:
+                filename = guide.title.lower().replace(' ', '_') + ".md"
+                (howto_dir / filename).write_text(guide.to_markdown())
+            click.echo(f"  How-To: {howto_dir}/")
+
+        if doc_type in ("all", "reference"):
+            ref_dir = output_dir / "reference"
+            ref_dir.mkdir(parents=True, exist_ok=True)
+            for ref in doc.references:
+                filename = ref.title.lower().replace(' ', '_') + ".md"
+                (ref_dir / filename).write_text(ref.to_markdown())
+            click.echo(f"  Reference: {ref_dir}/")
+
+        if doc_type in ("all", "explanation"):
+            exp_dir = output_dir / "explanation"
+            exp_dir.mkdir(parents=True, exist_ok=True)
+            for exp in doc.explanations:
+                filename = exp.title.lower().replace(' ', '_') + ".md"
+                (exp_dir / filename).write_text(exp.to_markdown())
+            click.echo(f"  Explanation: {exp_dir}/")
+
+        click.echo("\nDiátaxis documentation generated successfully!")
+
+    except Exception as e:
+        logger.exception("Generation failed")
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
 
