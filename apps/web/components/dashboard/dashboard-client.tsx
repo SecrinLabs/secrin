@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { CreateProjectWizard } from "@/components/projects/create-project-wizard";
+import { ProjectCard } from "@/components/projects/project-card";
 import { LogoutButton } from "@/components/logout-button";
 import { Project, CreateProjectResponse } from "@/types/project";
 
@@ -26,6 +26,25 @@ interface DashboardClientProps {
 export function DashboardClient({ user }: DashboardClientProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch projects on mount
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        const response = await fetch("/api/projects");
+        if (response.ok) {
+          const data = await response.json();
+          setProjects(data.projects || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch projects:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchProjects();
+  }, []);
 
   const handleProjectCreated = (response: CreateProjectResponse) => {
     setProjects((prev) => [...prev, response.data.project]);
@@ -74,7 +93,11 @@ export function DashboardClient({ user }: DashboardClientProps) {
           </Button>
         </div>
 
-        {projects.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : projects.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="rounded-full bg-muted p-4 mb-4">
@@ -94,29 +117,17 @@ export function DashboardClient({ user }: DashboardClientProps) {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <Card key={project.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
-                  {project.description && (
-                    <CardDescription>{project.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="font-mono">{project.repoName}</span>
-                    {project.repoUrl && (
-                      <a
-                        href={project.repoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        View
-                      </a>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <ProjectCard
+                key={project.id}
+                project={project}
+                onUpdate={(updatedProject) => {
+                  setProjects((prev) =>
+                    prev.map((p) =>
+                      p.id === updatedProject.id ? updatedProject : p
+                    )
+                  );
+                }}
+              />
             ))}
           </div>
         )}

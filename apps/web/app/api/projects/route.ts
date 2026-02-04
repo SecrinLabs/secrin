@@ -74,3 +74,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed to create repo" }, { status: 500 });
   }
 }
+
+/**
+ * GET /api/projects
+ * Get all projects for the current user
+ */
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const projects = await prisma.project.findMany({
+      where: { userId: session.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ projects });
+  } catch (error: any) {
+    console.error("Error fetching projects:", error);
+    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
+  }
+}

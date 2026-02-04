@@ -28,17 +28,27 @@ model Project {
   name        String
   slug        String? @unique
   description String?
-  repoName    String
-  repoUrl     String?
+  repoName    String // Docs repo name
+  repoUrl     String? // Docs repo URL
   githubOwner String?
   status      String  @default("active")
   userId      String
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Source repository (where the actual code lives)
+  sourceRepoUrl    String? // e.g., https://github.com/owner/source-repo
+  sourceRepoOwner  String? // GitHub owner of source repo
+  sourceRepoName   String? // GitHub repo name
+  sourceRepoBranch String? // Branch to watch (default: main)
+  webhookId        String? // GitHub webhook ID for cleanup
+  lastDocGenAt     DateTime? // Last successful doc generation
+  docGenStatus     String? // "pending", "running", "success", "failed"
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([sourceRepoOwner, sourceRepoName])
 }
 
 // NextAuth Models

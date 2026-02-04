@@ -1,14 +1,25 @@
 export interface Project {
   id: string;
   name: string;
+  slug?: string;
   description?: string;
   repoName: string;
   repoUrl?: string;
+  githubOwner?: string;
   createdAt: string;
   status: ProjectStatus;
+  // Source repository fields
+  sourceRepoUrl?: string;
+  sourceRepoOwner?: string;
+  sourceRepoName?: string;
+  sourceRepoBranch?: string;
+  lastDocGenAt?: string;
+  docGenStatus?: DocGenStatus;
 }
 
 export type ProjectStatus = "pending" | "creating" | "active" | "error";
+
+export type DocGenStatus = "pending" | "running" | "success" | "failed";
 
 export interface CreateProjectRequest {
   name: string;

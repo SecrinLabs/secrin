@@ -36,6 +36,7 @@ server = "scripts.server:main"
 setup = "scripts.setup:main"
 ingest = "packages.ingest.full_ingest:main"
 arc42gen = "packages.arc42gen.cli.commands:cli"
+arc42gen-api = "scripts.arc42gen_api:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
