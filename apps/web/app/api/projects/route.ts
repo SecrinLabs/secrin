@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
+import { getValidAccessToken } from "@/lib/github-token";
 import { Octokit } from "octokit";
 
 const sanitizeRepoName = (name: string) =>
@@ -23,25 +24,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Project name is required" }, { status: 400 });
     }
 
-    // Get the user's GitHub installation
-    const installation = await prisma.gitHubInstallation.findUnique({
-      where: { userId: session.user.id },
-    });
+    // Get a valid access token (will auto-refresh if expired)
+    const tokenResult = await getValidAccessToken(session.user.id);
     
-    if (!installation) {
-      return NextResponse.json({ error: "GitHub App not installed" }, { status: 400 });
+    if (tokenResult.error) {
+      return NextResponse.json({ error: tokenResult.error }, { status: 400 });
     }
 
-    // Check if we have the user access token
-    if (!installation.accessToken) {
-      return NextResponse.json({ 
-        error: "GitHub access token not found. Please reinstall the GitHub App." 
-      }, { status: 400 });
-    }
-
-    // Use the user access token (ghu_*) to authenticate
-    // This token was obtained via OAuth code exchange and can create repos on behalf of the user
-    const octokit = new Octokit({ auth: installation.accessToken });
+    // Use the access token (ghu_*) to authenticate
+    const octokit = new Octokit({ auth: tokenResult.accessToken });
 
     // Create Repo in user's account
     const repoName = sanitizeRepoName(name);

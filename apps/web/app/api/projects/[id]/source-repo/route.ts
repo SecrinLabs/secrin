@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
+import { getValidAccessToken } from "@/lib/github-token";
 import { Octokit } from "octokit";
 
 interface SourceRepoInput {
@@ -75,20 +76,17 @@ export async function PUT(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Get the user's GitHub installation
-    const installation = await prisma.gitHubInstallation.findUnique({
-      where: { userId: session.user.id },
-    });
-
-    if (!installation?.accessToken) {
+    // Get a valid access token (will auto-refresh if expired)
+    const tokenResult = await getValidAccessToken(session.user.id);
+    if (tokenResult.error) {
       return NextResponse.json(
-        { error: "GitHub App not installed. Please install the GitHub App first." },
+        { error: tokenResult.error },
         { status: 400 }
       );
     }
 
     // Verify we can access the source repo
-    const octokit = new Octokit({ auth: installation.accessToken });
+    const octokit = new Octokit({ auth: tokenResult.accessToken });
 
     try {
       await octokit.request("GET /repos/{owner}/{repo}", {
@@ -190,12 +188,11 @@ export async function DELETE(
 
     // Delete the webhook if it exists
     if (project.webhookId && project.sourceRepoOwner && project.sourceRepoName) {
-      const installation = await prisma.gitHubInstallation.findUnique({
-        where: { userId: session.user.id },
-      });
+      // Get valid token (will auto-refresh if expired)
+      const tokenResult = await getValidAccessToken(session.user.id);
 
-      if (installation?.accessToken) {
-        const octokit = new Octokit({ auth: installation.accessToken });
+      if (!tokenResult.error) {
+        const octokit = new Octokit({ auth: tokenResult.accessToken });
         try {
           await octokit.request("DELETE /repos/{owner}/{repo}/hooks/{hook_id}", {
             owner: project.sourceRepoOwner,

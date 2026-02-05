@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
 import { Octokit } from "octokit";
 import crypto from "crypto";
 
@@ -119,16 +120,17 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        // Commit to docs repo
-        const accessToken = project.user.gitHubInstallation?.accessToken;
-        if (!accessToken) {
-          console.error(`No access token for project ${project.name}`);
+        // Commit to docs repo - get valid token (will auto-refresh if expired)
+        const tokenResult = await getValidAccessTokenFromInstallation(project.user.gitHubInstallation);
+        if (tokenResult.error) {
+          console.error(`Token error for project ${project.name}: ${tokenResult.error}`);
           await prisma.project.update({
             where: { id: project.id },
             data: { docGenStatus: "failed" },
           });
           continue;
         }
+        const accessToken = tokenResult.accessToken!;
 
         await commitFilesToRepo({
           accessToken,

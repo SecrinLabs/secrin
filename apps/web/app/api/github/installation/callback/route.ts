@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
     }
 
     const accessToken = tokenData.access_token; // This will be a ghu_* token
+    const refreshToken = tokenData.refresh_token; // ghr_* refresh token
+    const expiresIn = tokenData.expires_in; // seconds until expiry (8 hours = 28800)
 
     if (!accessToken) {
       console.error("No access_token in response:", tokenData);
@@ -74,7 +76,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Save/Update the installation record with the REAL access token
+    // Calculate token expiry time
+    const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
+
+    // Save/Update the installation record with the REAL access token and refresh token
     const installation = await prisma.gitHubInstallation.upsert({
       where: {
         userId: session.user.id,
@@ -82,12 +87,16 @@ export async function POST(req: NextRequest) {
       update: {
         installationId: parseInt(installation_id),
         accessToken: accessToken,
+        refreshToken: refreshToken || null,
+        tokenExpiresAt: tokenExpiresAt,
         accountLogin: null,
       },
       create: {
         userId: session.user.id,
         installationId: parseInt(installation_id),
         accessToken: accessToken,
+        refreshToken: refreshToken || null,
+        tokenExpiresAt: tokenExpiresAt,
       },
     });
 

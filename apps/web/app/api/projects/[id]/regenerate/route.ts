@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
+import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
 import { Octokit } from "octokit";
 
 const ARC42GEN_API_URL = process.env.ARC42GEN_API_URL || "http://localhost:8001";
@@ -48,13 +49,15 @@ export async function POST(
       );
     }
 
-    const accessToken = project.user.gitHubInstallation?.accessToken;
-    if (!accessToken) {
+    // Get a valid access token (will auto-refresh if expired)
+    const tokenResult = await getValidAccessTokenFromInstallation(project.user.gitHubInstallation);
+    if (tokenResult.error) {
       return NextResponse.json(
-        { error: "GitHub App not installed" },
+        { error: tokenResult.error },
         { status: 400 }
       );
     }
+    const accessToken = tokenResult.accessToken!;
 
     // Update status to running
     await prisma.project.update({

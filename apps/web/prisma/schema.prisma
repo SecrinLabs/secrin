@@ -11,11 +11,13 @@ datasource db {
 
 // GitHub App Installation - stores user's GitHub App installation
 model GitHubInstallation {
-  id             String  @id @default(cuid())
-  userId         String  @unique // Link to User model
-  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  installationId Int     @unique
-  accessToken    String? @db.Text // User access token from OAuth exchange (ghu_*)
+  id             String    @id @default(cuid())
+  userId         String    @unique // Link to User model
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installationId Int       @unique
+  accessToken    String?   @db.Text // User access token from OAuth exchange (ghu_*)
+  refreshToken   String?   @db.Text // Refresh token for getting new access tokens
+  tokenExpiresAt DateTime? // When the access token expires
   accountLogin   String?
 
   createdAt DateTime @default(now())
