@@ -1,0 +1,19 @@
+Generate a C4 Component diagram for this module.
+
+MODULE: {module_name}
+COMPONENTS: {components}
+INTERFACES: {interfaces}
+
+Output ONLY the mermaid code block:
+
+```mermaid
+C4Component
+title Component Diagram for {module_name}
+
+Container_Boundary({module_safe_name}, "{module_name}") {{
+    Component(comp1, "Component 1", "Description")
+    Component(comp2, "Component 2", "Description")
+}}
+
+Rel(comp1, comp2, "Uses")
+```

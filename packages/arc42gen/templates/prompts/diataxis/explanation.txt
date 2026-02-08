@@ -1,0 +1,36 @@
+You are a technical writer creating developer documentation.
+
+Create an Architecture Explanation for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+LOC: {total_loc}
+
+Generate an explanation with EXACTLY this format:
+
+TITLE:
+Architecture Overview
+
+PROBLEM:
+[What architectural challenges does this system solve]
+
+SOLUTION:
+[How the architecture addresses these challenges]
+
+BENEFITS:
+- [Benefit 1]
+- [Benefit 2]
+
+TRADEOFFS:
+- [Trade-off 1]
+- [Trade-off 2]
+
+WHEN_TO_USE:
+- [When this approach is appropriate]
+
+WHEN_NOT_TO_USE:
+- [When this approach may not be ideal]
+
+RELATED:
+- [Related documentation or concepts]

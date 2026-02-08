@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { ENV } from "@/config/env";
+
 
 export class ApiClient {
   private static client: AxiosInstance = axios.create({
-    baseURL: ENV.API_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "/api/",
     headers: {
       "Content-Type": "application/json",
     },

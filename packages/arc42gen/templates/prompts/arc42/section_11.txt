@@ -1,0 +1,21 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and identify Risks and Technical Debt:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+LOC: {total_loc}
+FILES: {total_files}
+DEPENDENCIES: {dependencies}
+
+Generate Arc42 Section 11. Respond with EXACTLY this format:
+
+RISKS:
+- [Risk Name]|[Probability: Low/Medium/High]|[Impact: Low/Medium/High]|[Mitigation]
+- [Risk Name]|[Probability]|[Impact]|[Mitigation]
+
+TECHNICAL_DEBT:
+- [Description]|[Priority: High/Medium/Low]|[Location/Area]
+- [Description]|[Priority]|[Location/Area]
+
+Identify realistic risks and potential technical debt based on the codebase size and structure.

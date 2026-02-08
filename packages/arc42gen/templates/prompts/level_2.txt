@@ -1,0 +1,26 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this module and generate a Level 2 Whitebox description:
+
+MODULE: {module_name}
+TYPE: {module_type}
+LOC: {module_loc}
+
+CONTENTS:
+{contents}
+
+INTERFACES: {interfaces}
+DEPENDENCIES: {dependencies}
+
+Generate a Level 2 Whitebox. Respond with EXACTLY this format:
+
+PURPOSE:
+[1-2 sentences describing this module's purpose]
+
+INTERNAL_STRUCTURE:
+- [SubComponent 1]: [Responsibility]
+- [SubComponent 2]: [Responsibility]
+(list main internal components)
+
+DEPENDENCIES:
+[List external dependencies this module relies on]

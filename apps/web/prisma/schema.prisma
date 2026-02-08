@@ -1,0 +1,92 @@
+// Prisma schema for Secrin
+// Only includes what's needed for projects and GitHub App integration
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// GitHub App Installation - stores user's GitHub App installation
+model GitHubInstallation {
+  id             String    @id @default(cuid())
+  userId         String    @unique // Link to User model
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installationId Int       @unique
+  accessToken    String?   @db.Text // User access token from OAuth exchange (ghu_*)
+  refreshToken   String?   @db.Text // Refresh token for getting new access tokens
+  tokenExpiresAt DateTime? // When the access token expires
+  accountLogin   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Project model
+model Project {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String? @unique
+  description String?
+  repoName    String // Docs repo name
+  repoUrl     String? // Docs repo URL
+  githubOwner String?
+  status      String  @default("active")
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Source repository (where the actual code lives)
+  sourceRepoUrl    String? // e.g., https://github.com/owner/source-repo
+  sourceRepoOwner  String? // GitHub owner of source repo
+  sourceRepoName   String? // GitHub repo name
+  sourceRepoBranch String? // Branch to watch (default: main)
+  webhookId        String? // GitHub webhook ID for cleanup
+  lastDocGenAt     DateTime? // Last successful doc generation
+  docGenStatus     String? // "pending", "running", "success", "failed"
+  docGenJobId      String? // RQ job ID for status polling
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sourceRepoOwner, sourceRepoName])
+}
+
+// NextAuth Models
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+
+  // Custom fields
+  isNew Boolean @default(true)
+
+  // Relations
+  projects           Project[]
+  gitHubInstallation GitHubInstallation?
+}

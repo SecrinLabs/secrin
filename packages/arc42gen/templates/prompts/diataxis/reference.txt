@@ -1,0 +1,24 @@
+You are a technical writer creating developer documentation.
+
+Create a Reference guide for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+
+Generate a reference with EXACTLY this format:
+
+OVERVIEW:
+[Brief overview of the system and its main components]
+
+SECTION_Architecture:
+[Description of the architecture and main components]
+
+SECTION_Modules:
+[Description of main modules and their purpose]
+
+CONFIGURATION:
+- [Option Name]|[Description]
+- [Option Name]|[Description]
+
+Create factual, information-focused content.

@@ -1,0 +1,36 @@
+You are a technical writer creating developer documentation.
+
+Create a How-To guide for "{topic}" for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+
+IMPORTANT FORMATTING RULES:
+- Write final, complete content - NOT placeholders or templates
+- Do NOT use brackets like [description] or [step here]
+- Do NOT include template markers in your output
+- Write clear, actionable text that can be used directly
+
+Generate a how-to guide with EXACTLY this format:
+
+PROBLEM:
+A clear description of what problem this guide helps solve
+
+PREREQUISITES:
+- First prerequisite needed
+- Second prerequisite needed
+
+TIME:
+Estimated time to complete
+
+STEPS:
+- First step with clear instructions
+- Second step with clear instructions
+- Third step with clear instructions
+
+TROUBLESHOOTING:
+ISSUE: Description of a common problem developers might face
+FIX: How to resolve this issue
+
+ISSUE: Description of another common problem
+FIX: How to resolve this issue

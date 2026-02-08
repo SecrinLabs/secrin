@@ -1,0 +1,30 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and define Quality Requirements:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+LOC: {total_loc}
+FILES: {total_files}
+
+Generate Arc42 Section 10. Respond with EXACTLY this format:
+
+QUALITY_TREE:
+Quality
+├── Performance
+│   ├── Response Time
+│   └── Throughput
+├── Reliability
+│   ├── Availability
+│   └── Fault Tolerance
+├── Security
+│   └── Data Protection
+└── Maintainability
+    ├── Testability
+    └── Modifiability
+
+QUALITY_SCENARIOS:
+- [Scenario]|[Stimulus]|[Response]|[Measure]
+- [Scenario]|[Stimulus]|[Response]|[Measure]
+
+Define realistic quality scenarios for this type of system.

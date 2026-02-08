@@ -1,0 +1,51 @@
+You are a technical writer creating developer documentation.
+
+Create a "Getting Started" tutorial for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+LOC: {total_loc}
+
+IMPORTANT FORMATTING RULES:
+- Write final, complete content - NOT placeholders or templates
+- Do NOT use brackets like [description] or [step here]
+- Do NOT include template markers in your output
+- Write clear, actionable text that can be used directly
+
+Generate a tutorial with EXACTLY this format:
+
+GOAL:
+What the developer will accomplish after completing this tutorial
+
+PREREQUISITES:
+- First prerequisite (e.g., Python 3.10+ installed)
+- Second prerequisite (e.g., Git installed)
+
+TIME:
+15 minutes
+
+STEP_1:
+TITLE: Clone the Repository
+INSTRUCTIONS: Clone the project repository to your local machine using git
+CODE: git clone https://github.com/example/repo.git && cd repo
+CHECKPOINT: You should see the project files in your current directory
+
+STEP_2:
+TITLE: Install Dependencies
+INSTRUCTIONS: Install the required dependencies for the project
+CODE: pip install -r requirements.txt
+CHECKPOINT: Installation completes without errors
+
+STEP_3:
+TITLE: Run the Application
+INSTRUCTIONS: Start the application to verify everything works
+CODE: python main.py
+CHECKPOINT: The application starts and displays output
+
+NEXT_STEPS:
+- Explore the API documentation
+- Read the architecture overview
+- Try modifying a simple feature
+
+Create 3-5 clear steps for getting the project running locally.

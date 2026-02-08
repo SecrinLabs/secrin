@@ -1,4 +1,3 @@
-import { ENV } from "@/config/env";
 import type { AgentType, ChatRequest, StreamChunk } from "@/types/chat";
 
 /**
@@ -25,7 +24,7 @@ export const ChatService = {
       stream: true,
     };
 
-    const response = await fetch(`${ENV.API_URL}/ask`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/ask`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -126,7 +125,7 @@ export const ChatService = {
       stream: false,
     };
 
-    const response = await fetch(`${ENV.API_URL}/ask`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1"}/ask`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

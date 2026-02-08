@@ -106,6 +106,12 @@ class Settings(BaseSettings):
         description="Gemini API key"
     )
 
+    # Anthropic Configuration
+    ANTHROPIC_API_KEY: str = Field(
+        default="",
+        description="Anthropic API key"
+    )
+
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(
         default="",
@@ -139,8 +145,8 @@ class Settings(BaseSettings):
     )
     
     OLLAMA_TIMEOUT: int = Field(
-        default=120,
-        description="Ollama request timeout in seconds"
+        default=0,
+        description="Ollama request timeout in seconds. 0 = no timeout (recommended for local models)"
     )
     
     # Sentence Transformer Configuration
@@ -185,6 +191,84 @@ class Settings(BaseSettings):
         ge=0.0,
         le=2.0,
         description="LLM temperature for response generation"
+    )
+    
+    # ============================================================================
+    # Arc42gen Documentation Generator Configuration
+    # ============================================================================
+    
+    ARC42GEN_LLM_PROVIDER: Literal["gemini", "anthropic", "ollama"] = Field(
+        default="gemini",
+        description="LLM provider for arc42gen (gemini, anthropic, or ollama)"
+    )
+    
+    ARC42GEN_LLM_MODEL: str = Field(
+        default="",
+        description="LLM model for arc42gen. Leave empty to auto-select based on provider."
+    )
+    
+    ARC42GEN_MAX_TOKENS: int = Field(
+        default=16000,
+        ge=1000,
+        le=100000,
+        description="Maximum tokens for arc42gen LLM responses"
+    )
+    
+    ARC42GEN_SECTIONS: list[int] = Field(
+        default_factory=lambda: [5],
+        description="Arc42 sections to generate (currently only section 5 supported)"
+    )
+    
+    ARC42GEN_DIAGRAM_STYLE: Literal["c4", "uml"] = Field(
+        default="c4",
+        description="Diagram style for arc42gen output"
+    )
+    
+    ARC42GEN_OUTPUT_FORMAT: Literal["markdown"] = Field(
+        default="markdown",
+        description="Output format for arc42gen"
+    )
+    
+    ARC42GEN_MAX_MODULE_SIZE: int = Field(
+        default=5000,
+        description="Maximum lines of code per module for decomposition"
+    )
+    
+    ARC42GEN_MAX_DEPTH: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum depth for hierarchical decomposition"
+    )
+    
+    ARC42GEN_INCLUDE_PATTERNS: list[str] = Field(
+        default_factory=lambda: [
+            "**/*.py", "**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx"
+        ],
+        description="Glob patterns for files to include in analysis"
+    )
+    
+    ARC42GEN_EXCLUDE_PATTERNS: list[str] = Field(
+        default_factory=lambda: [
+            "**/test/**", "**/tests/**", "**/__pycache__/**",
+            "**/venv/**", "**/.venv/**", "**/node_modules/**",
+            "**/dist/**", "**/build/**", "**/*.min.js"
+        ],
+        description="Glob patterns for files to exclude from analysis"
+    )
+    
+    ARC42GEN_API_URL: str = Field(
+        default="http://localhost:8001",
+        description="URL for arc42gen API service"
+    )
+
+    # ============================================================================
+    # Redis Configuration
+    # ============================================================================
+
+    REDIS_URL: str = Field(
+        default="redis://localhost:6379",
+        description="Redis connection URL for job queue"
     )
     
     # ============================================================================

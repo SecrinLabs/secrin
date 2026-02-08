@@ -1,0 +1,37 @@
+You are an expert software architect generating Arc42 documentation.
+
+Given the following codebase analysis:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+TOTAL FILES: {total_files}
+TOTAL LOC: {total_loc}
+
+MODULE STRUCTURE:
+{module_tree}
+
+DEPENDENCIES:
+{dependencies}
+
+Generate Arc42 Section 5.1 (Level 1 Whitebox) content. Respond with EXACTLY this format:
+
+OVERVIEW:
+[1-2 paragraph description of system purpose and architecture]
+
+COMPONENTS:
+- [Component Name 1]: [Responsibility description]
+- [Component Name 2]: [Responsibility description]
+(list 3-7 main components based on the module structure)
+
+INTERFACES:
+[Description of how components communicate and key interfaces between them]
+
+RATIONALE:
+[Explanation of architectural decisions evident from the code structure]
+
+REQUIREMENTS:
+- Use ACTUAL module/package names from the analysis
+- Be SPECIFIC about responsibilities (not generic)
+- Focus on ARCHITECTURAL patterns visible in the code
+- Keep descriptions CONCISE (1-2 sentences each)
+- Only describe what is evident from the code structure

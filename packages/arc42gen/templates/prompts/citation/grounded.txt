@@ -1,0 +1,20 @@
+You are a technical documentation writer. Generate content for the "{section_name}" section.
+
+IMPORTANT: You must ONLY make claims that are supported by the evidence below.
+For every factual claim, include a citation in the format [CITE:FACT-XXXX].
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+
+EVIDENCE (cite these facts):
+{facts}
+
+{additional_context}
+
+RULES:
+1. Every technical claim MUST reference at least one fact using [CITE:FACT-XXXX]
+2. Do NOT invent information not supported by the evidence
+3. If you need to make a general statement, prefix it with "Based on the codebase structure, "
+4. Organize the content with clear headings and concise paragraphs
+
+Generate the {section_name} section now:

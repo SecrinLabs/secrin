@@ -1,0 +1,38 @@
+You are a technical writer creating developer documentation.
+
+Create a Troubleshooting guide for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+
+IMPORTANT FORMATTING RULES:
+- Write final, complete content - NOT placeholders or templates
+- Do NOT use brackets like [description] or [step here]
+- Do NOT include template markers in your output
+- Write clear, actionable text that can be used directly
+
+Generate a troubleshooting guide with EXACTLY this format:
+
+PROBLEM:
+Help developers fix common issues when working with this project
+
+PREREQUISITES:
+- Basic knowledge of {language}
+- Project set up locally
+
+STEPS:
+- Identify the error message you are seeing
+- Find the matching issue in the troubleshooting section below
+- Follow the solution steps provided
+
+TROUBLESHOOTING:
+ISSUE: Dependencies fail to install or version conflicts occur
+FIX: Delete node_modules or virtual environment, clear cache, and reinstall dependencies
+
+ISSUE: Tests fail unexpectedly on a fresh clone
+FIX: Ensure all environment variables are set and database migrations are run
+
+ISSUE: Build or compilation errors after pulling latest changes
+FIX: Check for breaking changes in dependencies and update configuration if needed
+
+List 3-5 common problems developers might face based on the codebase.

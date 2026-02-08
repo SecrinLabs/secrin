@@ -1,0 +1,26 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and infer Architecture Decisions:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+DEPENDENCIES: {dependencies}
+MODULES: {modules}
+
+Generate Arc42 Section 9. Respond with EXACTLY this format:
+
+ADR_001:
+TITLE: [Decision title]
+STATUS: Accepted
+CONTEXT: [Why this decision was needed]
+DECISION: [What was decided]
+CONSEQUENCES: [Positive and negative consequences, separated by |]
+
+ADR_002:
+TITLE: [Another decision]
+STATUS: Accepted
+CONTEXT: [Context]
+DECISION: [Decision]
+CONSEQUENCES: [Consequences]
+
+Infer 3-5 major architecture decisions from the technology stack and code structure.

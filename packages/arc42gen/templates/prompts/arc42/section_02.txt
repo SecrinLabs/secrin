@@ -1,0 +1,24 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and infer Architecture Constraints:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+DEPENDENCIES: {dependencies}
+STRUCTURE: {structure}
+
+Generate Arc42 Section 2. Respond with EXACTLY this format:
+
+TECHNICAL_CONSTRAINTS:
+- [Name]|[Description]|[Impact]
+- [Name]|[Description]|[Impact]
+
+ORGANIZATIONAL_CONSTRAINTS:
+- [Name]|[Description]
+- [Name]|[Description]
+
+CONVENTIONS:
+- [Name]|[Description]
+- [Name]|[Description]
+
+Infer constraints from the technology stack and code structure.

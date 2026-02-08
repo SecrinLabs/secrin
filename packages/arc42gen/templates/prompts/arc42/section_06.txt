@@ -1,0 +1,35 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and describe Runtime Scenarios:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+DEPENDENCIES: {dependencies}
+
+Generate Arc42 Section 6. Respond with EXACTLY this format:
+
+OVERVIEW:
+[Brief description of how the system operates at runtime]
+
+SCENARIO_1:
+NAME: [Scenario name like "User Authentication" or "Data Processing"]
+DESCRIPTION: [What happens in this scenario]
+DIAGRAM:
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    [Add participants and interactions]
+```
+
+SCENARIO_2:
+NAME: [Another key scenario]
+DESCRIPTION: [What happens]
+DIAGRAM:
+```mermaid
+sequenceDiagram
+    [Sequence diagram]
+```
+
+Identify 2-3 key runtime scenarios based on the module structure.

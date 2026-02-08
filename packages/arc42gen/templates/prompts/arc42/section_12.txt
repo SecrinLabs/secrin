@@ -1,0 +1,19 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and create a Glossary:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+
+Generate Arc42 Section 12. Respond with EXACTLY this format:
+
+TECHNICAL_TERMS:
+- [Term]|[Definition]
+- [Term]|[Definition]
+
+DOMAIN_TERMS:
+- [Term]|[Definition]
+- [Term]|[Definition]
+
+Include common technical terms and any domain-specific terms from module names.

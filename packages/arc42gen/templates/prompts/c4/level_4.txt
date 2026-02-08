@@ -1,0 +1,23 @@
+Generate a Mermaid class diagram for this module.
+
+MODULE: {module_name}
+INTERFACES/CLASSES: {interfaces}
+LOC: {module_loc}
+
+Output ONLY the mermaid code block:
+
+```mermaid
+classDiagram
+    class ClassName {{
+        +property: Type
+        +method(): ReturnType
+    }}
+
+    class AnotherClass {{
+        +property: Type
+    }}
+
+    ClassName --> AnotherClass
+```
+
+Create a simple class diagram based on the interfaces/classes listed.
