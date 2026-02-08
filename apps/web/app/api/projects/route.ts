@@ -34,13 +34,15 @@ export async function POST(req: NextRequest) {
     // Use the access token (ghu_*) to authenticate
     const octokit = new Octokit({ auth: tokenResult.accessToken });
 
-    // Create Repo in user's account
-    const repoName = sanitizeRepoName(name);
-    const { data: createdRepo } = await octokit.request("POST /user/repos", {
+    // Create Repo from template in user's account
+    const repoName = `${sanitizeRepoName(name)}-docs`;
+    const { data: createdRepo } = await octokit.request("POST /repos/{template_owner}/{template_repo}/generate", {
+      template_owner: "SecrinLabs",
+      template_repo: "secrin-docs-template",
       name: repoName,
-      description: description || `Project: ${name}`,
+      description: description || `Documentation for ${name} - powered by Secrin`,
       private: true,
-      auto_init: true,
+      include_all_branches: false,
       headers: {
         "X-GitHub-Api-Version": "2022-11-28",
       },

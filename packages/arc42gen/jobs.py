@@ -45,12 +45,15 @@ def _update_progress(step: int, total: int, message: str, status: str = "running
 
 def add_mdx_frontmatter(content: str, title: str, description: str = "") -> str:
     """Add MDX frontmatter for Fumadocs compatibility."""
-    frontmatter = f"""---
-title: {title}
-description: {description or title}
+    # Escape double quotes in title and description for YAML safety
+    safe_title = title.replace('"', '\\"')
+    safe_description = (description or title).replace('"', '\\"')
+    frontmatter = f'''---
+title: "{safe_title}"
+description: "{safe_description}"
 ---
 
-"""
+'''
     return frontmatter + content
 
 
@@ -72,13 +75,13 @@ def _commit_to_github(
     ref = repo.get_git_ref(f"heads/{branch}")
     latest_commit = repo.get_git_commit(ref.object.sha)
 
-    # Create tree elements for all files (under docs/ folder)
+    # Create tree elements for all files (under content/docs/ folder)
     tree_elements = []
     for path, content in files.items():
         blob = repo.create_git_blob(content, "utf-8")
         tree_elements.append(
             InputGitTreeElement(
-                path=f"docs/{path}",
+                path=f"content/docs/{path}",
                 mode="100644",
                 type="blob",
                 sha=blob.sha,

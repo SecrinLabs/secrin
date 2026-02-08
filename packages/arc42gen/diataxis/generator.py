@@ -12,6 +12,7 @@ from ..models.config import LLMConfig
 from ..providers.base import BaseLLMProvider
 from ..providers.factory import create_llm_provider
 from ..templates import load_prompt
+from ..utils.sanitizer import sanitize_llm_content, sanitize_list_item, is_placeholder_content
 from .models import (
     Tutorial,
     TutorialStep,
@@ -84,15 +85,15 @@ class DiátaxisGenerator:
         )
 
     def _parse_tutorial_response(self, response: str, default_title: str) -> Tutorial:
-        goal = self._extract_section(response, "GOAL") or "Complete the tutorial"
-        time = self._extract_section(response, "TIME") or ""
+        goal = sanitize_llm_content(self._extract_section(response, "GOAL") or "Complete the tutorial")
+        time = sanitize_llm_content(self._extract_section(response, "TIME") or "")
 
         prerequisites = []
         prereq_text = self._extract_section(response, "PREREQUISITES")
         if prereq_text:
             for line in prereq_text.split('\n'):
-                line = line.strip().lstrip('-').strip()
-                if line:
+                line = sanitize_list_item(line.strip().lstrip('-').strip())
+                if line and not is_placeholder_content(line):
                     prerequisites.append(line)
 
         steps = []
@@ -106,21 +107,21 @@ class DiátaxisGenerator:
 
                 title_match = re.search(r"TITLE:\s*(.+?)(?=\n|INSTRUCTIONS)", step_text)
                 if title_match:
-                    title = title_match.group(1).strip()
+                    title = sanitize_llm_content(title_match.group(1).strip())
 
                 instr_match = re.search(r"INSTRUCTIONS:\s*(.+?)(?=\nCODE|CHECKPOINT|$)", step_text, re.DOTALL)
                 if instr_match:
-                    instructions = instr_match.group(1).strip()
+                    instructions = sanitize_llm_content(instr_match.group(1).strip())
 
                 code_match = re.search(r"CODE:\s*(.+?)(?=\nCHECKPOINT|$)", step_text, re.DOTALL)
                 if code_match:
-                    code = code_match.group(1).strip()
+                    code = code_match.group(1).strip()  # Don't sanitize code
 
                 check_match = re.search(r"CHECKPOINT:\s*(.+?)$", step_text, re.DOTALL)
                 if check_match:
-                    checkpoint = check_match.group(1).strip()
+                    checkpoint = sanitize_llm_content(check_match.group(1).strip())
 
-                if title:
+                if title and not is_placeholder_content(title):
                     steps.append(TutorialStep(
                         title=title,
                         instructions=instructions,
@@ -132,8 +133,8 @@ class DiátaxisGenerator:
         next_text = self._extract_section(response, "NEXT_STEPS")
         if next_text:
             for line in next_text.split('\n'):
-                line = line.strip().lstrip('-').strip()
-                if line:
+                line = sanitize_list_item(line.strip().lstrip('-').strip())
+                if line and not is_placeholder_content(line):
                     next_steps.append(line)
 
         return Tutorial(
@@ -177,34 +178,55 @@ class DiátaxisGenerator:
         )
 
     def _parse_howto_response(self, response: str, default_title: str) -> HowToGuide:
-        problem = self._extract_section(response, "PROBLEM") or ""
-        time = self._extract_section(response, "TIME") or ""
+        problem = sanitize_llm_content(self._extract_section(response, "PROBLEM") or "")
+        time = sanitize_llm_content(self._extract_section(response, "TIME") or "")
 
         prerequisites = []
         prereq_text = self._extract_section(response, "PREREQUISITES")
         if prereq_text:
             for line in prereq_text.split('\n'):
-                line = line.strip().lstrip('-').strip()
-                if line:
+                line = sanitize_list_item(line.strip().lstrip('-').strip())
+                if line and not is_placeholder_content(line):
                     prerequisites.append(line)
 
         steps = []
         steps_text = self._extract_section(response, "STEPS")
         if steps_text:
             for line in steps_text.split('\n'):
-                line = line.strip().lstrip('-').lstrip('0123456789.').strip()
-                if line:
+                line = sanitize_list_item(line.strip().lstrip('-').lstrip('0123456789.').strip())
+                if line and not is_placeholder_content(line):
                     steps.append(line)
 
         troubleshooting = []
-        for i in range(1, 10):
-            prob = self._extract_section(response, f"PROBLEM_{i}")
-            sol = self._extract_section(response, f"SOLUTION_{i}")
-            if prob and sol:
-                troubleshooting.append(TroubleshootingItem(
-                    problem=prob,
-                    solution=sol,
-                ))
+        # Parse new ISSUE/FIX format
+        troubleshooting_text = self._extract_section(response, "TROUBLESHOOTING")
+        if troubleshooting_text:
+            issue_pattern = r'ISSUE:\s*(.+?)(?=\nFIX:|$)'
+            fix_pattern = r'FIX:\s*(.+?)(?=\nISSUE:|$)'
+            issues = re.findall(issue_pattern, troubleshooting_text, re.DOTALL)
+            fixes = re.findall(fix_pattern, troubleshooting_text, re.DOTALL)
+            for issue, fix in zip(issues, fixes):
+                issue_clean = sanitize_llm_content(issue)
+                fix_clean = sanitize_llm_content(fix)
+                if issue_clean and fix_clean and not is_placeholder_content(issue_clean):
+                    troubleshooting.append(TroubleshootingItem(
+                        problem=issue_clean,
+                        solution=fix_clean,
+                    ))
+        
+        # Fallback: try old PROBLEM_N/SOLUTION_N format for backward compatibility
+        if not troubleshooting:
+            for i in range(1, 10):
+                prob = self._extract_section(response, f"PROBLEM_{i}")
+                sol = self._extract_section(response, f"SOLUTION_{i}")
+                if prob and sol:
+                    prob_clean = sanitize_llm_content(prob)
+                    sol_clean = sanitize_llm_content(sol)
+                    if prob_clean and sol_clean and not is_placeholder_content(prob_clean):
+                        troubleshooting.append(TroubleshootingItem(
+                            problem=prob_clean,
+                            solution=sol_clean,
+                        ))
 
         return HowToGuide(
             title=default_title,

@@ -5,26 +5,32 @@ Create a How-To guide for "{topic}" for this codebase:
 REPOSITORY: {repo_name}
 LANGUAGE: {language}
 
+IMPORTANT FORMATTING RULES:
+- Write final, complete content - NOT placeholders or templates
+- Do NOT use brackets like [description] or [step here]
+- Do NOT include template markers in your output
+- Write clear, actionable text that can be used directly
+
 Generate a how-to guide with EXACTLY this format:
 
 PROBLEM:
-[What problem does this guide solve]
+A clear description of what problem this guide helps solve
 
 PREREQUISITES:
-- [Prerequisite 1]
-- [Prerequisite 2]
+- First prerequisite needed
+- Second prerequisite needed
 
 TIME:
-[Estimated time]
+Estimated time to complete
 
 STEPS:
-- [Step 1]
-- [Step 2]
-- [Step 3]
+- First step with clear instructions
+- Second step with clear instructions
+- Third step with clear instructions
 
 TROUBLESHOOTING:
-PROBLEM_1: [Common problem]
-SOLUTION_1: [How to fix it]
+ISSUE: Description of a common problem developers might face
+FIX: How to resolve this issue
 
-PROBLEM_2: [Another common problem]
-SOLUTION_2: [How to fix it]
+ISSUE: Description of another common problem
+FIX: How to resolve this issue
