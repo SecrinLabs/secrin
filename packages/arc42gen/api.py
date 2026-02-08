@@ -1,386 +1,263 @@
-import tempfile
-import shutil
 import logging
-from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from redis import Redis
+from rq import Queue
+from rq.job import Job
 
-# Use unified config from packages/config
 from packages.config.settings import Settings
-
-from .models.config import Config
-from .core.orchestrator import Orchestrator
-from .core.analyzer import CodebaseAnalyzer
-from .diagrams import C4Generator
-from .diataxis import DiátaxisGenerator
-from .citation import FactExtractor
-from .publishing import DocumentationPublisher
+from .models.config import LLMConfig
 
 logger = logging.getLogger(__name__)
 
-# Load settings from unified config
 settings = Settings()
 
-app = FastAPI(title="Arc42gen API", version="0.1.0")
+REDIS_URL = settings.REDIS_URL
 
-# Allow CORS for the web app
+app = FastAPI(title="Arc42gen API", version="0.2.0")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Redis + RQ setup
+redis_conn = Redis.from_url(REDIS_URL)
+queue = Queue(connection=redis_conn, default_timeout=7200)  # 2 hour timeout
 
-class GenerateRequest(BaseModel):
-    """Request to generate docs for a repository."""
-    source_repo_url: str  # GitHub URL like https://github.com/owner/repo
+
+class JobSubmitRequest(BaseModel):
+    """Request to submit a doc generation job."""
+    source_repo_url: str
     branch: str = "main"
-    github_token: Optional[str] = None  # Token for private repos
+    github_token: str
+    owner: str  # GitHub owner of docs repo
+    repo_name: str  # Docs repo name
+    source_owner: str  # Owner of source repo
+    source_name: str  # Name of source repo
+    project_id: str
 
 
-class GenerateResponse(BaseModel):
-    """Response with generated documentation."""
-    success: bool
-    files: dict[str, str]  # filename -> content
+class JobSubmitResponse(BaseModel):
+    job_id: str
+    status: str
+
+
+class JobStatusResponse(BaseModel):
+    job_id: str
+    status: str  # queued, running, success, failed, cancelled
+    progress: int = 0
+    current_step: Optional[str] = None
+    result: Optional[dict] = None
     error: Optional[str] = None
 
 
-def add_mdx_frontmatter(content: str, title: str, description: str = "") -> str:
-    """Add MDX frontmatter for Fumadocs compatibility."""
-    frontmatter = f"""---
-title: {title}
-description: {description or title}
----
+def _build_config_dict() -> dict:
+    """Build the LLM/generation config from server settings."""
+    provider = settings.ARC42GEN_LLM_PROVIDER
 
-"""
-    return frontmatter + content
+    model = settings.ARC42GEN_LLM_MODEL
+    if not model:
+        model = LLMConfig.DEFAULT_MODELS.get(provider, "")
 
+    api_key_map = {
+        "gemini": settings.GEMINI_API_KEY,
+        "anthropic": settings.ANTHROPIC_API_KEY,
+        "ollama": "ollama",
+    }
+    api_key = api_key_map.get(provider, "")
 
-@app.post("/generate", response_model=GenerateResponse)
-async def generate_docs(request: GenerateRequest) -> GenerateResponse:
-    # Create temp directory for output
-    output_dir = tempfile.mkdtemp()
-
-    try:
-        # Build the repo URL with authentication if token provided
-        repo_url = request.source_repo_url
-
-        # If we have a token, embed it in the URL for git clone
-        if request.github_token:
-            if repo_url.startswith("https://github.com/"):
-                repo_url = repo_url.replace(
-                    "https://github.com/",
-                    f"https://x-access-token:{request.github_token}@github.com/"
-                )
-
-        if not repo_url.endswith(".git"):
-            repo_url = f"{repo_url}.git"
-
-        # Get API key from unified config based on provider
-        provider = settings.ARC42GEN_LLM_PROVIDER
-        if provider == "gemini":
-            api_key = settings.GEMINI_API_KEY
-        else:
-            api_key = settings.OPENAI_API_KEY  # Using OPENAI for anthropic fallback
-
-        if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail=f"No API key configured for {provider}. Set GEMINI_API_KEY in your .env file"
-            )
-
-        # Create arc42gen config from unified settings
-        config_dict = {
-            'llm': {
-                'provider': settings.ARC42GEN_LLM_PROVIDER,
-                'model': settings.ARC42GEN_LLM_MODEL,
-                'api_key': api_key,
-                'max_tokens': settings.ARC42GEN_MAX_TOKENS,
-            },
-            'repository': {
-                'include': settings.ARC42GEN_INCLUDE_PATTERNS,
-                'exclude': settings.ARC42GEN_EXCLUDE_PATTERNS,
-            },
-            'arc42': {
-                'sections': settings.ARC42GEN_SECTIONS,
-                'diagram_style': settings.ARC42GEN_DIAGRAM_STYLE,
-                'output_format': settings.ARC42GEN_OUTPUT_FORMAT,
-            },
-            'decomposition': {
-                'max_module_size': settings.ARC42GEN_MAX_MODULE_SIZE,
-                'max_depth': settings.ARC42GEN_MAX_DEPTH,
-            },
-            'output': {'path': output_dir},
-        }
-
-        cfg = Config.from_dict(config_dict)
-
-        # Initialize all files dict
-        files = {}
-
-        # =====================================================================
-        # Step 1: Analyze codebase (shared by all generators)
-        # =====================================================================
-        logger.info(f"Analyzing codebase: {repo_url}")
-        analyzer = CodebaseAnalyzer(cfg)
-        analysis = analyzer.analyze(repo_url)
-
-        # =====================================================================
-        # Step 2: Generate Arc42 documentation
-        # =====================================================================
-        logger.info("Generating Arc42 documentation...")
-        orchestrator = Orchestrator(cfg)
-        success = orchestrator.run(
-            repo_path=repo_url,
-            output_path=output_dir,
+    if provider != "ollama" and not api_key:
+        env_var = LLMConfig.API_KEY_ENV_VARS.get(provider, "LLM_API_KEY")
+        raise HTTPException(
+            status_code=500,
+            detail=f"No API key configured for {provider}. Set {env_var} in your .env file",
         )
 
-        if success:
-            # Read Arc42 generated files
-            output_path = Path(output_dir)
-            for file_path in output_path.rglob("*.md"):
-                rel_path = file_path.relative_to(output_path)
-                content = file_path.read_text()
-                # Convert to MDX with frontmatter
-                title = rel_path.stem.replace('_', ' ').replace('-', ' ').title()
-                mdx_content = add_mdx_frontmatter(content, title, f"Arc42 - {title}")
-                files[f"architecture/{rel_path.stem}.mdx"] = mdx_content
+    return {
+        "llm": {
+            "provider": provider,
+            "model": model,
+            "api_key": api_key,
+            "max_tokens": settings.ARC42GEN_MAX_TOKENS,
+            "base_url": settings.OLLAMA_BASE_URL if provider == "ollama" else "",
+            "timeout": settings.OLLAMA_TIMEOUT if provider == "ollama" else 0,
+        },
+        "repository": {
+            "include": settings.ARC42GEN_INCLUDE_PATTERNS,
+            "exclude": settings.ARC42GEN_EXCLUDE_PATTERNS,
+        },
+        "arc42": {
+            "sections": settings.ARC42GEN_SECTIONS,
+            "diagram_style": settings.ARC42GEN_DIAGRAM_STYLE,
+            "output_format": settings.ARC42GEN_OUTPUT_FORMAT,
+        },
+        "decomposition": {
+            "max_module_size": settings.ARC42GEN_MAX_MODULE_SIZE,
+            "max_depth": settings.ARC42GEN_MAX_DEPTH,
+        },
+    }
 
-        # =====================================================================
-        # Step 3: Generate C4 Diagrams
-        # =====================================================================
-        logger.info("Generating C4 diagrams...")
-        try:
-            c4_generator = C4Generator(config=cfg.llm)
-            c4_diagrams = c4_generator.generate_all_levels(analysis, levels=[1, 2, 3, 4])
 
-            # Level 1: System Context
-            if c4_diagrams.context:
-                content = c4_diagrams.context.to_markdown()
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    "System Context Diagram",
-                    "C4 Level 1 - Shows the system in context with external actors and systems"
-                )
-                files["diagrams/c4-level1-context.mdx"] = mdx_content
+@app.post("/jobs", response_model=JobSubmitResponse)
+async def submit_job(request: JobSubmitRequest) -> JobSubmitResponse:
+    """Submit a doc generation job. Returns instantly with a job_id."""
+    logger.info("=" * 60)
+    logger.info("JOB SUBMIT")
+    logger.info("  repo: %s/%s", request.source_owner, request.source_name)
+    logger.info("  docs_repo: %s/%s", request.owner, request.repo_name)
+    logger.info("  project_id: %s", request.project_id)
+    logger.info("=" * 60)
 
-            # Level 2: Container
-            if c4_diagrams.containers:
-                content = c4_diagrams.containers.to_markdown()
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    "Container Diagram",
-                    "C4 Level 2 - Shows high-level technology choices"
-                )
-                files["diagrams/c4-level2-container.mdx"] = mdx_content
+    # Build the repo URL with authentication
+    repo_url = request.source_repo_url
+    if request.github_token and repo_url.startswith("https://github.com/"):
+        repo_url = repo_url.replace(
+            "https://github.com/",
+            f"https://x-access-token:{request.github_token}@github.com/",
+        )
+    if not repo_url.endswith(".git"):
+        repo_url = f"{repo_url}.git"
 
-            # Level 3: Component diagrams
-            for i, comp in enumerate(c4_diagrams.components):
-                content = comp.to_markdown()
-                name = comp.target_component or f"component-{i+1}"
-                safe_name = name.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    f"Component Diagram: {name}",
-                    f"C4 Level 3 - Internal components of {name}"
-                )
-                files[f"diagrams/c4-level3-{safe_name}.mdx"] = mdx_content
+    config_dict = _build_config_dict()
 
-            # Level 4: Code diagrams
-            for i, code in enumerate(c4_diagrams.code):
-                content = code.to_markdown()
-                name = code.target_component or f"code-{i+1}"
-                safe_name = name.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    f"Code Diagram: {name}",
-                    f"C4 Level 4 - Class/code structure of {name}"
-                )
-                files[f"diagrams/c4-level4-{safe_name}.mdx"] = mdx_content
+    job = queue.enqueue(
+        "packages.arc42gen.jobs.generate_and_commit",
+        repo_url=repo_url,
+        branch=request.branch,
+        github_token=request.github_token,
+        owner=request.owner,
+        repo_name=request.repo_name,
+        source_owner=request.source_owner,
+        source_name=request.source_name,
+        project_id=request.project_id,
+        config_dict=config_dict,
+        job_timeout=7200,  # 2 hours
+        result_ttl=86400,  # keep result 24 hours
+    )
 
-        except Exception as e:
-            logger.error(f"C4 diagram generation failed: {e}")
+    logger.info("Job enqueued: %s", job.id)
+    return JobSubmitResponse(job_id=job.id, status="queued")
 
-        # =====================================================================
-        # Step 4: Generate Diataxis Documentation
-        # =====================================================================
-        logger.info("Generating Diataxis documentation...")
-        try:
-            diataxis_generator = DiátaxisGenerator(config=cfg.llm)
-            diataxis_doc = diataxis_generator.generate_all(analysis)
 
-            # Tutorials
-            for tutorial in diataxis_doc.tutorials:
-                content = tutorial.to_markdown()
-                safe_name = tutorial.title.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    f"Tutorial: {tutorial.title}",
-                    tutorial.goal
-                )
-                files[f"tutorials/{safe_name}.mdx"] = mdx_content
+@app.get("/jobs/{job_id}", response_model=JobStatusResponse)
+async def get_job_status(job_id: str) -> JobStatusResponse:
+    """Get the status and progress of a job."""
+    try:
+        job = Job.fetch(job_id, connection=redis_conn)
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
 
-            # How-To Guides
-            for guide in diataxis_doc.how_to_guides:
-                content = guide.to_markdown()
-                safe_name = guide.title.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    f"How-To: {guide.title}",
-                    guide.problem
-                )
-                files[f"how-to/{safe_name}.mdx"] = mdx_content
+    meta = job.meta or {}
 
-            # Reference
-            for ref in diataxis_doc.references:
-                content = ref.to_markdown()
-                safe_name = ref.title.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    ref.title,
-                    ref.overview[:200] if ref.overview else "Technical reference documentation"
-                )
-                files[f"reference/{safe_name}.mdx"] = mdx_content
+    # Map RQ job status to our status
+    if job.is_queued:
+        status = "queued"
+    elif job.is_started:
+        status = meta.get("status", "running")
+    elif job.is_finished:
+        result = job.result or {}
+        status = "success" if result.get("success") else "failed"
+    elif job.is_failed:
+        status = "failed"
+    elif job.is_canceled:
+        status = "cancelled"
+    else:
+        status = "unknown"
 
-            # Explanation
-            for exp in diataxis_doc.explanations:
-                content = exp.to_markdown()
-                safe_name = exp.title.lower().replace(' ', '-').replace('_', '-')
-                mdx_content = add_mdx_frontmatter(
-                    content,
-                    f"Explanation: {exp.title}",
-                    exp.problem[:200] if exp.problem else "Understanding the architecture"
-                )
-                files[f"explanation/{safe_name}.mdx"] = mdx_content
+    error = None
+    result = None
 
-        except Exception as e:
-            logger.error(f"Diataxis documentation generation failed: {e}")
+    if job.is_finished:
+        result = job.result
+        if isinstance(result, dict) and not result.get("success"):
+            error = result.get("error")
+    elif job.is_failed:
+        error = str(job.exc_info) if job.exc_info else "Job failed"
 
-        # =====================================================================
-        # Step 4.5: Extract facts and add provenance (if citation enabled)
-        # =====================================================================
-        facts = []
-        try:
-            if cfg.citation.require_citations:
-                logger.info("Extracting codebase facts for citation...")
-                fact_extractor = FactExtractor(repo_path=analysis.repo_path)
-                facts = fact_extractor.extract_all_facts(analysis)
-                logger.info(f"Extracted {len(facts)} facts")
+    return JobStatusResponse(
+        job_id=job_id,
+        status=status,
+        progress=meta.get("progress", 0),
+        current_step=meta.get("current_step"),
+        result=result if job.is_finished else None,
+        error=error,
+    )
 
-            # Always add provenance
-            publisher = DocumentationPublisher(llm_config=cfg.llm)
 
-            # Get source commit if available
-            source_commit = ""
+@app.delete("/jobs/{job_id}")
+async def cancel_job(job_id: str):
+    """Cancel a queued or running job."""
+    try:
+        job = Job.fetch(job_id, connection=redis_conn)
+    except Exception:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
+
+    if job.is_queued or job.is_started:
+        job.cancel()
+        logger.info("Job cancelled: %s", job_id)
+        return {"job_id": job_id, "status": "cancelled"}
+
+    return {"job_id": job_id, "status": job.get_status(), "message": "Job already finished"}
+
+
+@app.get("/jobs")
+async def list_jobs():
+    """List recent jobs (for debugging)."""
+    jobs = []
+
+    # Get jobs from different registries
+    for registry_name, registry in [
+        ("queued", queue),
+        ("started", queue.started_job_registry),
+        ("finished", queue.finished_job_registry),
+        ("failed", queue.failed_job_registry),
+    ]:
+        if registry_name == "queued":
+            job_ids = queue.job_ids[:20]
+        else:
+            job_ids = registry.get_job_ids()[:20]
+
+        for jid in job_ids:
             try:
-                import subprocess
-                result = subprocess.run(
-                    ["git", "rev-parse", "HEAD"],
-                    cwd=analysis.repo_path,
-                    capture_output=True, text=True, timeout=5,
-                )
-                if result.returncode == 0:
-                    source_commit = result.stdout.strip()
+                job = Job.fetch(jid, connection=redis_conn)
+                meta = job.meta or {}
+                jobs.append({
+                    "job_id": jid,
+                    "status": meta.get("status", registry_name),
+                    "progress": meta.get("progress", 0),
+                    "current_step": meta.get("current_step"),
+                    "enqueued_at": str(job.enqueued_at) if job.enqueued_at else None,
+                })
             except Exception:
                 pass
 
-            if cfg.maintenance.include_provenance:
-                publish_result = publisher.publish_with_provenance(
-                    files=files,
-                    facts=facts,
-                    source_commit=source_commit,
-                )
-                logger.info(f"Added provenance to {publish_result.files_published} files")
-
-            # Add citation index if facts were extracted
-            if facts and cfg.citation.require_citations:
-                citation_index = publisher.create_citation_index(facts)
-                citation_mdx = add_mdx_frontmatter(
-                    citation_index,
-                    "Citation Index",
-                    "Source code references for all documented claims"
-                )
-                files["reference/citation-index.mdx"] = citation_mdx
-
-        except Exception as e:
-            logger.error(f"Citation/provenance generation failed: {e}")
-
-        # =====================================================================
-        # Step 5: Generate index page
-        # =====================================================================
-        index_content = f"""---
-title: Documentation
-description: Auto-generated documentation for {analysis.repo_name}
----
-
-# {analysis.repo_name} Documentation
-
-Welcome to the auto-generated documentation for **{analysis.repo_name}**.
-
-## Documentation Structure
-
-### 📐 Architecture
-Arc42 architecture documentation covering system design, building blocks, and technical decisions.
-
-### 📊 Diagrams
-C4 model diagrams at all 4 levels:
-- **Level 1**: System Context - External actors and systems
-- **Level 2**: Container - High-level technology choices
-- **Level 3**: Component - Internal components
-- **Level 4**: Code - Class/code structure
-
-### 📚 Tutorials
-Learning-oriented guides to help you get started with the project.
-
-### 🔧 How-To
-Problem-solving guides for common tasks and troubleshooting.
-
-### 📖 Reference
-Technical reference documentation including API details and configuration.
-
-### 💡 Explanation
-Deep-dive explanations of architecture decisions and trade-offs.
-
----
-
-*Generated automatically by [Secrin](https://secrin.dev)*
-"""
-        files["index.mdx"] = index_content
-
-        # =====================================================================
-        # Step 6: Generate meta.json for navigation
-        # =====================================================================
-        import json
-        meta_content = {
-            "title": analysis.repo_name,
-            "pages": ["index", "architecture", "diagrams", "tutorials", "how-to", "reference", "explanation"]
-        }
-        files["meta.json"] = json.dumps(meta_content, indent=2)
-
-        if not files:
-            return GenerateResponse(success=False, files={}, error="No documentation generated")
-
-        logger.info(f"Generated {len(files)} documentation files")
-        return GenerateResponse(success=True, files=files)
-
-    except Exception as e:
-        logger.error(f"Documentation generation failed: {e}")
-        return GenerateResponse(success=False, files={}, error=str(e))
-
-    finally:
-        # Cleanup temp directory
-        shutil.rmtree(output_dir, ignore_errors=True)
+    return {"jobs": jobs}
 
 
 @app.get("/health")
 async def health():
     """Health check endpoint."""
+    provider = settings.ARC42GEN_LLM_PROVIDER
+    model = settings.ARC42GEN_LLM_MODEL or LLMConfig.DEFAULT_MODELS.get(provider, "")
+
+    # Check Redis connectivity
+    redis_ok = False
+    try:
+        redis_conn.ping()
+        redis_ok = True
+    except Exception:
+        pass
+
     return {
-        "status": "ok",
-        "provider": settings.ARC42GEN_LLM_PROVIDER,
-        "model": settings.ARC42GEN_LLM_MODEL,
+        "status": "ok" if redis_ok else "degraded",
+        "provider": provider,
+        "model": model,
+        "redis": "connected" if redis_ok else "disconnected",
+        "queue_size": queue.count if redis_ok else None,
     }

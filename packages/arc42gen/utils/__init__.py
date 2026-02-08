@@ -18,6 +18,10 @@ from .git_utils import (
     cleanup_cloned_repo,
     get_repo_info,
 )
+from .progress import (
+    ProgressTracker,
+    ProgressBar,
+)
 
 __all__ = [
     "get_file_extension",
@@ -30,4 +34,6 @@ __all__ = [
     "clone_repository",
     "cleanup_cloned_repo",
     "get_repo_info",
+    "ProgressTracker",
+    "ProgressBar",
 ]

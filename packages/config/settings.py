@@ -106,6 +106,12 @@ class Settings(BaseSettings):
         description="Gemini API key"
     )
 
+    # Anthropic Configuration
+    ANTHROPIC_API_KEY: str = Field(
+        default="",
+        description="Anthropic API key"
+    )
+
     # OpenAI Configuration
     OPENAI_API_KEY: str = Field(
         default="",
@@ -139,8 +145,8 @@ class Settings(BaseSettings):
     )
     
     OLLAMA_TIMEOUT: int = Field(
-        default=120,
-        description="Ollama request timeout in seconds"
+        default=0,
+        description="Ollama request timeout in seconds. 0 = no timeout (recommended for local models)"
     )
     
     # Sentence Transformer Configuration
@@ -191,14 +197,14 @@ class Settings(BaseSettings):
     # Arc42gen Documentation Generator Configuration
     # ============================================================================
     
-    ARC42GEN_LLM_PROVIDER: Literal["gemini", "anthropic"] = Field(
+    ARC42GEN_LLM_PROVIDER: Literal["gemini", "anthropic", "ollama"] = Field(
         default="gemini",
-        description="LLM provider for arc42gen (gemini or anthropic)"
+        description="LLM provider for arc42gen (gemini, anthropic, or ollama)"
     )
     
     ARC42GEN_LLM_MODEL: str = Field(
-        default="gemini-2.0-flash",
-        description="LLM model for arc42gen (gemini-2.0-flash, claude-sonnet-4-5-20250929)"
+        default="",
+        description="LLM model for arc42gen. Leave empty to auto-select based on provider."
     )
     
     ARC42GEN_MAX_TOKENS: int = Field(
@@ -254,6 +260,15 @@ class Settings(BaseSettings):
     ARC42GEN_API_URL: str = Field(
         default="http://localhost:8001",
         description="URL for arc42gen API service"
+    )
+
+    # ============================================================================
+    # Redis Configuration
+    # ============================================================================
+
+    REDIS_URL: str = Field(
+        default="redis://localhost:6379",
+        description="Redis connection URL for job queue"
     )
     
     # ============================================================================

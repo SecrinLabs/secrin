@@ -44,8 +44,18 @@ def create_llm_provider(config: LLMConfig) -> BaseLLMProvider:
             model=config.model,
         )
 
+    elif provider == "ollama":
+        from .ollama_provider import OllamaProvider
+        logger.info(f"Creating Ollama provider with model: {config.model}")
+        return OllamaProvider(
+            api_key=config.api_key,
+            model=config.model,
+            base_url=getattr(config, 'base_url', '') or "http://localhost:11434",
+            timeout=getattr(config, 'timeout', 0),
+        )
+
     else:
-        supported = ["anthropic", "gemini"]
+        supported = ["anthropic", "gemini", "ollama"]
         raise ValueError(
             f"Unsupported LLM provider: {provider}. "
             f"Supported providers: {', '.join(supported)}"
@@ -65,6 +75,7 @@ def get_default_model(provider: str) -> str:
     defaults = {
         "anthropic": "claude-sonnet-4-5-20250929",
         "gemini": "gemini-2.0-flash",
+        "ollama": "llama3.2",
     }
     return defaults.get(provider.lower(), "")
 
@@ -82,5 +93,6 @@ def get_api_key_env_var(provider: str) -> str:
     env_vars = {
         "anthropic": "ANTHROPIC_API_KEY",
         "gemini": "GEMINI_API_KEY",
+        "ollama": "OLLAMA_BASE_URL",
     }
     return env_vars.get(provider.lower(), "LLM_API_KEY")

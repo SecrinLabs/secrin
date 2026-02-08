@@ -74,6 +74,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                   <DocGenStatusBadge
                     status={project.docGenStatus}
                     lastDocGenAt={project.lastDocGenAt}
+                    projectId={project.id}
                   />
                 )}
               </CardTitle>
@@ -114,6 +115,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 sourceRepoBranch={project.sourceRepoBranch}
                 docGenStatus={project.docGenStatus}
                 lastDocGenAt={project.lastDocGenAt}
+                projectId={project.id}
                 onTriggerRegenerate={handleTriggerRegenerate}
                 isRegenerating={isRegenerating}
               />

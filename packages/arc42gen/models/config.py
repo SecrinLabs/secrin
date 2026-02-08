@@ -19,21 +19,25 @@ from ..constants import (
 @dataclass
 class LLMConfig:
     """LLM provider configuration."""
-    provider: str = "anthropic"  # 'anthropic' or 'gemini'
+    provider: str = "anthropic"  # 'anthropic', 'gemini', or 'ollama'
     model: str = "claude-sonnet-4-5-20250929"
     api_key: str = ""
     max_tokens: int = 16000
+    base_url: str = ""  # Used by Ollama provider
+    timeout: int = 0  # Request timeout in seconds. 0 = no timeout (recommended for local Ollama)
 
     # Provider-specific default models
     DEFAULT_MODELS = {
         "anthropic": "claude-sonnet-4-5-20250929",
         "gemini": "gemini-2.0-flash",
+        "ollama": "llama3.2",
     }
 
     # Environment variable names for API keys
     API_KEY_ENV_VARS = {
         "anthropic": "ANTHROPIC_API_KEY",
         "gemini": "GEMINI_API_KEY",
+        "ollama": "OLLAMA_BASE_URL",
     }
 
     def get_api_key_env_var(self) -> str:
@@ -247,12 +251,12 @@ class Config:
         errors = []
 
         # Validate LLM config
-        if not self.llm.api_key:
+        if self.llm.provider != 'ollama' and not self.llm.api_key:
             env_var = self.llm.get_api_key_env_var()
             errors.append(f"LLM API key not set. Set {env_var} environment variable.")
 
-        if self.llm.provider not in ['anthropic', 'gemini']:
-            errors.append(f"Unsupported LLM provider: {self.llm.provider}. Supported: anthropic, gemini")
+        if self.llm.provider not in ['anthropic', 'gemini', 'ollama']:
+            errors.append(f"Unsupported LLM provider: {self.llm.provider}. Supported: anthropic, gemini, ollama")
 
         # Validate repository config
         if not self.repository.include:
@@ -284,12 +288,14 @@ DEFAULT_CONFIG_YAML = """# Arc42-Gen Configuration
 version: "1.0"
 
 # LLM Settings
-# Supported providers: "anthropic" (Claude), "gemini" (Google)
+# Supported providers: "anthropic" (Claude), "gemini" (Google), "ollama" (local)
 llm:
-  provider: "gemini"  # Options: "anthropic" or "gemini"
-  model: "gemini-2.0-flash"  # For Gemini: gemini-2.0-flash, gemini-1.5-pro | For Anthropic: claude-sonnet-4-5-20250929
-  api_key: "${GEMINI_API_KEY}"  # Set via environment variable (GEMINI_API_KEY or ANTHROPIC_API_KEY)
+  provider: "gemini"  # Options: "anthropic", "gemini", or "ollama"
+  model: "gemini-2.0-flash"  # Gemini: gemini-2.0-flash | Anthropic: claude-sonnet-4-5-20250929 | Ollama: llama3.2
+  api_key: "${GEMINI_API_KEY}"  # Set via environment variable (not needed for ollama)
   max_tokens: 16000
+  # base_url: "http://localhost:11434"  # Only needed for ollama (default: http://localhost:11434)
+  # timeout: 0  # Request timeout in seconds. 0 = no timeout (recommended for local Ollama)
 
 # Repository Analysis
 repository:

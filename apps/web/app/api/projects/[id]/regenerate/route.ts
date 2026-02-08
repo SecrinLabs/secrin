@@ -3,13 +3,21 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
 import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
-import { Octokit } from "octokit";
 
 const ARC42GEN_API_URL = process.env.ARC42GEN_API_URL || "http://localhost:8001";
 
+function log(msg: string) {
+  console.log(`[regenerate] ${new Date().toISOString().slice(11, 19)} ${msg}`);
+}
+
+function logError(msg: string, err?: any) {
+  console.error(`[regenerate] ${new Date().toISOString().slice(11, 19)} ${msg}`);
+  if (err) console.error(err);
+}
+
 /**
  * POST /api/projects/[id]/regenerate
- * Generate docs and commit to the docs repo
+ * Submit a doc generation job (returns immediately with job_id)
  */
 export async function POST(
   req: NextRequest,
@@ -23,7 +31,6 @@ export async function POST(
 
     const { id: projectId } = await params;
 
-    // Get project with user's GitHub installation
     const project = await prisma.project.findFirst({
       where: {
         id: projectId,
@@ -49,91 +56,77 @@ export async function POST(
       );
     }
 
-    // Get a valid access token (will auto-refresh if expired)
+    // Get a valid access token
+    log(`Getting access token for installation...`);
     const tokenResult = await getValidAccessTokenFromInstallation(project.user.gitHubInstallation);
     if (tokenResult.error) {
+      logError(`Token error: ${tokenResult.error}`);
       return NextResponse.json(
         { error: tokenResult.error },
         { status: 400 }
       );
     }
     const accessToken = tokenResult.accessToken!;
+    log(`Token obtained successfully`);
 
-    // Update status to running
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { docGenStatus: "running" },
-    });
+    log(`========================================`);
+    log(`Submitting doc generation job`);
+    log(`  Project: ${project.name}`);
+    log(`  Source: ${project.sourceRepoUrl}`);
+    log(`  Docs repo: ${project.githubOwner}/${project.repoName}`);
+    log(`  API URL: ${ARC42GEN_API_URL}`);
+    log(`========================================`);
 
-    console.log(`Regenerating docs for ${project.name}...`);
-    console.log(`Source: ${project.sourceRepoUrl}`);
-    console.log(`Docs repo: ${project.githubOwner}/${project.repoName}`);
-
-    // Call arc42gen API with the token for private repos
-    const genResponse = await fetch(`${ARC42GEN_API_URL}/generate`, {
+    // Submit job to arc42gen API (returns instantly)
+    const jobResponse = await fetch(`${ARC42GEN_API_URL}/jobs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         source_repo_url: project.sourceRepoUrl,
         branch: project.sourceRepoBranch || "main",
         github_token: accessToken,
+        owner: project.githubOwner,
+        repo_name: project.repoName,
+        source_owner: project.sourceRepoOwner,
+        source_name: project.sourceRepoName,
+        project_id: projectId,
       }),
+      signal: AbortSignal.timeout(10_000), // 10s — should be instant
     });
 
-    const genResult = await genResponse.json();
-    console.log("Arc42gen result:", genResult);
-
-    if (!genResult.success) {
-      await prisma.project.update({
-        where: { id: projectId },
-        data: { docGenStatus: "failed" },
-      });
+    if (!jobResponse.ok) {
+      const errText = await jobResponse.text();
+      logError(`Job submission failed: ${jobResponse.status} ${errText}`);
       return NextResponse.json(
-        { error: genResult.error || "Doc generation failed" },
+        { error: "Failed to submit generation job" },
         { status: 500 }
       );
     }
 
-    if (Object.keys(genResult.files).length === 0) {
-      await prisma.project.update({
-        where: { id: projectId },
-        data: { docGenStatus: "failed" },
-      });
-      return NextResponse.json(
-        { error: "No documentation files were generated" },
-        { status: 500 }
-      );
-    }
+    const jobResult = await jobResponse.json();
+    log(`Job submitted: ${jobResult.job_id}`);
 
-    // Commit files to docs repo
-    await commitFilesToRepo({
-      accessToken,
-      owner: project.githubOwner!,
-      repo: project.repoName,
-      files: genResult.files,
-      message: `docs: regenerate from ${project.sourceRepoOwner}/${project.sourceRepoName}`,
-    });
-
-    // Success!
+    // Store job_id and set status to running
     await prisma.project.update({
       where: { id: projectId },
       data: {
-        docGenStatus: "success",
-        lastDocGenAt: new Date(),
+        docGenStatus: "running",
+        docGenJobId: jobResult.job_id,
       },
     });
 
-    console.log(`Docs regenerated successfully for ${project.name}`);
-
-    return NextResponse.json({
-      success: true,
-      message: "Documentation regenerated and committed",
-      filesCommitted: Object.keys(genResult.files).length,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        job_id: jobResult.job_id,
+        message: "Documentation generation job submitted",
+      },
+      { status: 202 }
+    );
 
   } catch (error: any) {
-    console.error("Regenerate error:", error);
-    
+    logError(`Failed to submit job: ${error.message}`, error);
+
     // Try to update status to failed
     try {
       const { id } = await params;
@@ -144,90 +137,8 @@ export async function POST(
     } catch {}
 
     return NextResponse.json(
-      { error: error.message || "Failed to regenerate docs" },
+      { error: error.message || "Failed to submit generation job" },
       { status: 500 }
     );
   }
-}
-
-/**
- * Commit files to a GitHub repository
- */
-async function commitFilesToRepo(options: {
-  accessToken: string;
-  owner: string;
-  repo: string;
-  files: Record<string, string>;
-  message: string;
-}) {
-  const { accessToken, owner, repo, files, message } = options;
-  const octokit = new Octokit({ auth: accessToken });
-
-  console.log(`Committing ${Object.keys(files).length} files to ${owner}/${repo}`);
-
-  // Get default branch
-  const { data: repoData } = await octokit.request("GET /repos/{owner}/{repo}", {
-    owner, repo,
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-  const branch = repoData.default_branch;
-
-  // Get latest commit
-  const { data: ref } = await octokit.request("GET /repos/{owner}/{repo}/git/ref/{ref}", {
-    owner, repo, ref: `heads/${branch}`,
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-  const latestCommitSha = ref.object.sha;
-
-  // Get commit tree
-  const { data: commit } = await octokit.request("GET /repos/{owner}/{repo}/git/commits/{commit_sha}", {
-    owner, repo, commit_sha: latestCommitSha,
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-
-  // Create blobs for each file
-  const blobs = await Promise.all(
-    Object.entries(files).map(async ([path, content]) => {
-      const { data: blob } = await octokit.request("POST /repos/{owner}/{repo}/git/blobs", {
-        owner, repo,
-        content: Buffer.from(content).toString("base64"),
-        encoding: "base64",
-        headers: { "X-GitHub-Api-Version": "2022-11-28" },
-      });
-      // Put files in docs/ folder
-      return { path: `docs/${path}`, sha: blob.sha };
-    })
-  );
-
-  // Create tree
-  const { data: newTree } = await octokit.request("POST /repos/{owner}/{repo}/git/trees", {
-    owner, repo,
-    base_tree: commit.tree.sha,
-    tree: blobs.map((b) => ({
-      path: b.path,
-      mode: "100644" as const,
-      type: "blob" as const,
-      sha: b.sha,
-    })),
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-
-  // Create commit
-  const { data: newCommit } = await octokit.request("POST /repos/{owner}/{repo}/git/commits", {
-    owner, repo,
-    message,
-    tree: newTree.sha,
-    parents: [latestCommitSha],
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-
-  // Update branch
-  await octokit.request("PATCH /repos/{owner}/{repo}/git/refs/{ref}", {
-    owner, repo,
-    ref: `heads/${branch}`,
-    sha: newCommit.sha,
-    headers: { "X-GitHub-Api-Version": "2022-11-28" },
-  });
-
-  console.log(`Committed to ${owner}/${repo}@${branch}`);
 }

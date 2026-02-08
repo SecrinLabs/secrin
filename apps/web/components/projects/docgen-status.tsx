@@ -1,12 +1,21 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import { RefreshCw, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
 import { DocGenStatus } from "@/types/project";
 import { cn } from "@/lib/utils";
 
+interface JobProgress {
+  status: string;
+  progress: number;
+  current_step: string | null;
+  error: string | null;
+}
+
 interface DocGenStatusBadgeProps {
   status?: DocGenStatus | null;
   lastDocGenAt?: string | null;
+  projectId?: string;
   className?: string;
 }
 
@@ -39,30 +48,95 @@ const statusConfig: Record<
 export function DocGenStatusBadge({
   status,
   lastDocGenAt,
+  projectId,
   className,
 }: DocGenStatusBadgeProps) {
-  if (!status) {
+  const [jobProgress, setJobProgress] = useState<JobProgress | null>(null);
+  const [currentStatus, setCurrentStatus] = useState(status);
+
+  const pollStatus = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/regenerate/status`);
+      if (!res.ok) return;
+      const data: JobProgress = await res.json();
+      setJobProgress(data);
+
+      if (data.status === "success" || data.status === "failed") {
+        setCurrentStatus(data.status as DocGenStatus);
+      }
+    } catch {
+      // Silently ignore polling errors
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    setCurrentStatus(status);
+  }, [status]);
+
+  useEffect(() => {
+    if (currentStatus !== "running" || !projectId) {
+      setJobProgress(null);
+      return;
+    }
+
+    // Start polling
+    pollStatus();
+    const interval = setInterval(pollStatus, 3000);
+    return () => clearInterval(interval);
+  }, [currentStatus, projectId, pollStatus]);
+
+  if (!currentStatus) {
     return null;
   }
 
-  const config = statusConfig[status];
+  const config = statusConfig[currentStatus];
   const Icon = config.icon;
-  const isAnimated = status === "running";
+  const isAnimated = currentStatus === "running";
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-        config.className,
-        className
+    <div className="space-y-1">
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+          config.className,
+          className
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5", isAnimated && "animate-spin")} />
+        <span>{config.label}</span>
+        {lastDocGenAt && currentStatus === "success" && (
+          <span className="text-muted-foreground ml-1">
+            · {formatRelativeTime(lastDocGenAt)}
+          </span>
+        )}
+      </div>
+
+      {/* Progress details when running */}
+      {currentStatus === "running" && jobProgress && jobProgress.progress > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                style={{ width: `${jobProgress.progress}%` }}
+              />
+            </div>
+            <span className="tabular-nums">{jobProgress.progress}%</span>
+          </div>
+          {jobProgress.current_step && (
+            <p className="text-xs text-muted-foreground truncate">
+              {jobProgress.current_step}
+            </p>
+          )}
+        </div>
       )}
-    >
-      <Icon className={cn("h-3.5 w-3.5", isAnimated && "animate-spin")} />
-      <span>{config.label}</span>
-      {lastDocGenAt && status === "success" && (
-        <span className="text-muted-foreground ml-1">
-          · {formatRelativeTime(lastDocGenAt)}
-        </span>
+
+      {/* Error message */}
+      {currentStatus === "failed" && jobProgress?.error && (
+        <p className="text-xs text-red-500 truncate max-w-xs">
+          {jobProgress.error}
+        </p>
       )}
     </div>
   );
@@ -90,6 +164,7 @@ interface SourceRepoInfoProps {
   sourceRepoBranch?: string;
   docGenStatus?: DocGenStatus | null;
   lastDocGenAt?: string | null;
+  projectId?: string;
   onTriggerRegenerate?: () => void;
   isRegenerating?: boolean;
 }
@@ -101,6 +176,7 @@ export function SourceRepoInfo({
   sourceRepoBranch,
   docGenStatus,
   lastDocGenAt,
+  projectId,
   onTriggerRegenerate,
   isRegenerating,
 }: SourceRepoInfoProps) {
@@ -128,8 +204,12 @@ export function SourceRepoInfo({
       </div>
 
       <div className="flex items-center gap-3">
-        <DocGenStatusBadge status={docGenStatus} lastDocGenAt={lastDocGenAt} />
-        
+        <DocGenStatusBadge
+          status={docGenStatus}
+          lastDocGenAt={lastDocGenAt}
+          projectId={projectId}
+        />
+
         {onTriggerRegenerate && docGenStatus !== "running" && (
           <button
             onClick={onTriggerRegenerate}

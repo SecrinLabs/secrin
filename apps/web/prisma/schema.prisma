@@ -45,6 +45,7 @@ model Project {
   webhookId        String? // GitHub webhook ID for cleanup
   lastDocGenAt     DateTime? // Last successful doc generation
   docGenStatus     String? // "pending", "running", "success", "failed"
+  docGenJobId      String? // RQ job ID for status polling
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

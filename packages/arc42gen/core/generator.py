@@ -98,6 +98,7 @@ class Arc42Generator:
                 "Must provide either config, provider, or api_key"
             )
 
+        self.last_llm_call: Optional[dict] = None
         logger.info(f"Arc42Generator initialized with {self.provider.provider_name} provider")
 
     def generate_section_5(self, analysis: AnalysisResult) -> Section5:
@@ -1092,6 +1093,8 @@ class Arc42Generator:
         If citation facts are available (via generate_section_with_citations),
         they are appended as evidence context to the prompt.
 
+        Stores call metrics in self.last_llm_call for progress tracking.
+
         Args:
             prompt: The prompt to send
             max_tokens: Maximum tokens in response
@@ -1099,19 +1102,38 @@ class Arc42Generator:
         Returns:
             Generated text response
         """
+        import time
+
         # Inject fact evidence if available
         current_facts = getattr(self, '_current_facts', None)
         if current_facts:
             prompt = prompt + self._build_facts_context(current_facts)
 
         try:
+            start = time.time()
             response = self.provider.generate(
                 prompt=prompt,
                 max_tokens=max_tokens,
                 temperature=0.7,
             )
+            duration = time.time() - start
+
+            # Extract usage info from response
+            usage = response.usage or {}
+            input_tokens = usage.get("input_tokens", 0) or usage.get("prompt_tokens", 0)
+            output_tokens = usage.get("output_tokens", 0) or usage.get("completion_tokens", 0)
+
+            self.last_llm_call = {
+                "provider": self.provider.provider_name,
+                "model": response.model,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "duration": duration,
+            }
+
             return response.content
         except Exception as e:
+            self.last_llm_call = None
             logger.error(f"LLM API error ({self.provider.provider_name}): {e}")
             raise
 
