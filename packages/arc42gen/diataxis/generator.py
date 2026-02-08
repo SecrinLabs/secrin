@@ -7,9 +7,11 @@ import re
 from typing import List, Optional
 
 from ..models.analysis import AnalysisResult
+from ..models.citation import Fact, GroundedDocument
 from ..models.config import LLMConfig
 from ..providers.base import BaseLLMProvider
 from ..providers.factory import create_llm_provider
+from ..templates import load_prompt
 from .models import (
     Tutorial,
     TutorialStep,
@@ -74,50 +76,12 @@ class DiátaxisGenerator:
 
     def _build_tutorial_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are a technical writer creating developer documentation.
-
-Create a "Getting Started" tutorial for this codebase:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-LOC: {analysis.statistics.total_loc}
-
-Generate a tutorial with EXACTLY this format:
-
-GOAL:
-[What the developer will accomplish after completing this tutorial]
-
-PREREQUISITES:
-- [Prerequisite 1]
-- [Prerequisite 2]
-
-TIME:
-[Estimated time, e.g., "15 minutes"]
-
-STEP_1:
-TITLE: [Step title]
-INSTRUCTIONS: [What to do in this step]
-CODE: [Shell commands if any]
-CHECKPOINT: [How to verify this step worked]
-
-STEP_2:
-TITLE: [Step title]
-INSTRUCTIONS: [What to do]
-CODE: [Commands]
-CHECKPOINT: [Verification]
-
-STEP_3:
-TITLE: [Step title]
-INSTRUCTIONS: [What to do]
-CODE: [Commands]
-CHECKPOINT: [Verification]
-
-NEXT_STEPS:
-- [What to explore next]
-- [Related documentation]
-
-Create 3-5 clear steps for getting the project running locally."""
+        return load_prompt("diataxis/tutorial",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+            total_loc=analysis.statistics.total_loc,
+        )
 
     def _parse_tutorial_response(self, response: str, default_title: str) -> Tutorial:
         goal = self._extract_section(response, "GOAL") or "Complete the tutorial"
@@ -200,70 +164,17 @@ Create 3-5 clear steps for getting the project running locally."""
         return self._parse_howto_response(response, "Troubleshooting Common Issues")
 
     def _build_howto_prompt(self, analysis: AnalysisResult, topic: str) -> str:
-        return f"""You are a technical writer creating developer documentation.
-
-Create a How-To guide for "{topic}" for this codebase:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-
-Generate a how-to guide with EXACTLY this format:
-
-PROBLEM:
-[What problem does this guide solve]
-
-PREREQUISITES:
-- [Prerequisite 1]
-- [Prerequisite 2]
-
-TIME:
-[Estimated time]
-
-STEPS:
-- [Step 1]
-- [Step 2]
-- [Step 3]
-
-TROUBLESHOOTING:
-PROBLEM_1: [Common problem]
-SOLUTION_1: [How to fix it]
-
-PROBLEM_2: [Another common problem]
-SOLUTION_2: [How to fix it]"""
+        return load_prompt("diataxis/howto",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            topic=topic,
+        )
 
     def _build_troubleshooting_prompt(self, analysis: AnalysisResult) -> str:
-        return f"""You are a technical writer creating developer documentation.
-
-Create a Troubleshooting guide for this codebase:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-
-Generate a troubleshooting guide with EXACTLY this format:
-
-PROBLEM:
-Help developers fix common issues when working with this project
-
-PREREQUISITES:
-- Basic knowledge of {analysis.language}
-- Project set up locally
-
-STEPS:
-- Identify the error message
-- Check the troubleshooting section below
-- Follow the solution steps
-
-TROUBLESHOOTING:
-PROBLEM_1: [Common issue like "Dependencies fail to install"]
-SOLUTION_1: [How to fix it]
-
-PROBLEM_2: [Common issue like "Tests fail"]
-SOLUTION_2: [How to fix it]
-
-PROBLEM_3: [Common issue]
-SOLUTION_3: [How to fix it]
-
-List 3-5 common problems developers might face."""
+        return load_prompt("diataxis/troubleshooting",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+        )
 
     def _parse_howto_response(self, response: str, default_title: str) -> HowToGuide:
         problem = self._extract_section(response, "PROBLEM") or ""
@@ -317,30 +228,11 @@ List 3-5 common problems developers might face."""
 
     def _build_reference_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are a technical writer creating developer documentation.
-
-Create a Reference guide for this codebase:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-
-Generate a reference with EXACTLY this format:
-
-OVERVIEW:
-[Brief overview of the system and its main components]
-
-SECTION_Architecture:
-[Description of the architecture and main components]
-
-SECTION_Modules:
-[Description of main modules and their purpose]
-
-CONFIGURATION:
-- [Option Name]|[Description]
-- [Option Name]|[Description]
-
-Create factual, information-focused content."""
+        return load_prompt("diataxis/reference",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+        )
 
     def _parse_reference_response(self, response: str, repo_name: str) -> Reference:
         overview = self._extract_section(response, "OVERVIEW") or ""
@@ -381,42 +273,12 @@ Create factual, information-focused content."""
 
     def _build_explanation_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are a technical writer creating developer documentation.
-
-Create an Architecture Explanation for this codebase:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-LOC: {analysis.statistics.total_loc}
-
-Generate an explanation with EXACTLY this format:
-
-TITLE:
-Architecture Overview
-
-PROBLEM:
-[What architectural challenges does this system solve]
-
-SOLUTION:
-[How the architecture addresses these challenges]
-
-BENEFITS:
-- [Benefit 1]
-- [Benefit 2]
-
-TRADEOFFS:
-- [Trade-off 1]
-- [Trade-off 2]
-
-WHEN_TO_USE:
-- [When this approach is appropriate]
-
-WHEN_NOT_TO_USE:
-- [When this approach may not be ideal]
-
-RELATED:
-- [Related documentation or concepts]"""
+        return load_prompt("diataxis/explanation",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+            total_loc=analysis.statistics.total_loc,
+        )
 
     def _parse_explanation_response(self, response: str) -> Explanation:
         title = self._extract_section(response, "TITLE") or "Architecture Overview"
@@ -475,6 +337,58 @@ RELATED:
         )
 
     # =========================================================================
+    # Citation-Aware Generation
+    # =========================================================================
+
+    def generate_all_with_citations(
+        self,
+        analysis: AnalysisResult,
+        facts: List[Fact],
+    ) -> tuple:
+        """
+        Generate Diataxis documentation with citation grounding.
+
+        Returns (diataxis_doc, grounded_document) tuple.
+        """
+        self._current_facts = facts
+
+        try:
+            doc = self.generate_all(analysis)
+        finally:
+            self._current_facts = None
+
+        # Build grounded document from all generated content
+        all_content = []
+        for tutorial in doc.tutorials:
+            all_content.append(tutorial.to_markdown())
+        for guide in doc.how_to_guides:
+            all_content.append(guide.to_markdown())
+        for ref in doc.references:
+            all_content.append(ref.to_markdown())
+        for exp in doc.explanations:
+            all_content.append(exp.to_markdown())
+
+        grounded = GroundedDocument(
+            content="\n\n".join(all_content),
+            citations_count=len(facts),
+        )
+
+        return doc, grounded
+
+    def _build_facts_context(self, facts: List[Fact]) -> str:
+        """Format facts as evidence context for LLM prompts."""
+        if not facts:
+            return ""
+
+        lines = ["\nEVIDENCE FROM CODEBASE (reference these in your response):"]
+        for fact in facts[:50]:
+            lines.append(
+                f"- [{fact.id}] {fact.text} "
+                f"(source: {fact.citation.source_file}:{fact.citation.line_start})"
+            )
+        return "\n".join(lines)
+
+    # =========================================================================
     # Helpers
     # =========================================================================
 
@@ -487,7 +401,11 @@ RELATED:
         return None
 
     def _call_llm(self, prompt: str, max_tokens: int = 3000) -> str:
-        """Call the LLM provider."""
+        """Call the LLM provider. Injects fact evidence if available."""
+        current_facts = getattr(self, '_current_facts', None)
+        if current_facts:
+            prompt = prompt + self._build_facts_context(current_facts)
+
         try:
             response = self.provider.generate(
                 prompt=prompt,

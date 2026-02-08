@@ -1,0 +1,27 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and describe Deployment:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+DEPENDENCIES: {dependencies}
+
+Generate Arc42 Section 7. Respond with EXACTLY this format:
+
+INFRASTRUCTURE_OVERVIEW:
+[Description of likely infrastructure based on the tech stack]
+
+DEPLOYMENT_DIAGRAM:
+```mermaid
+flowchart TB
+    subgraph Production
+        [Add deployment nodes]
+    end
+```
+
+DEPLOYMENT_PROCESS:
+- [Step 1]
+- [Step 2]
+- [Step 3]
+
+Infer deployment based on the technology stack (e.g., Docker, cloud services, databases).

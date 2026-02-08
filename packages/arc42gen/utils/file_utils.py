@@ -6,6 +6,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from ..constants import get_language_for_extension, is_supported_extension
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,20 @@ def get_file_extension(file_path: str) -> str:
     return Path(file_path).suffix.lstrip('.')
 
 
+def get_file_language(file_path: str) -> str:
+    """
+    Get the programming language for a file.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        Language name (e.g., 'python', 'typescript')
+    """
+    ext = get_file_extension(file_path)
+    return get_language_for_extension(ext)
+
+
 def is_python_file(file_path: str) -> bool:
     """
     Check if file is a Python file.
@@ -34,6 +50,19 @@ def is_python_file(file_path: str) -> bool:
         True if Python file
     """
     return get_file_extension(file_path) == 'py'
+
+
+def is_supported_file(file_path: str) -> bool:
+    """
+    Check if file is a supported source file.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        True if the file extension is supported
+    """
+    return is_supported_extension(get_file_extension(file_path))
 
 
 def read_file_safe(file_path: str, encoding: str = 'utf-8') -> Optional[str]:

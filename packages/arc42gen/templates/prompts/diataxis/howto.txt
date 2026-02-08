@@ -1,0 +1,30 @@
+You are a technical writer creating developer documentation.
+
+Create a How-To guide for "{topic}" for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+
+Generate a how-to guide with EXACTLY this format:
+
+PROBLEM:
+[What problem does this guide solve]
+
+PREREQUISITES:
+- [Prerequisite 1]
+- [Prerequisite 2]
+
+TIME:
+[Estimated time]
+
+STEPS:
+- [Step 1]
+- [Step 2]
+- [Step 3]
+
+TROUBLESHOOTING:
+PROBLEM_1: [Common problem]
+SOLUTION_1: [How to fix it]
+
+PROBLEM_2: [Another common problem]
+SOLUTION_2: [How to fix it]

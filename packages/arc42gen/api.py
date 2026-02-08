@@ -16,6 +16,8 @@ from .core.orchestrator import Orchestrator
 from .core.analyzer import CodebaseAnalyzer
 from .diagrams import C4Generator
 from .diataxis import DiátaxisGenerator
+from .citation import FactExtractor
+from .publishing import DocumentationPublisher
 
 logger = logging.getLogger(__name__)
 
@@ -257,6 +259,55 @@ async def generate_docs(request: GenerateRequest) -> GenerateResponse:
 
         except Exception as e:
             logger.error(f"Diataxis documentation generation failed: {e}")
+
+        # =====================================================================
+        # Step 4.5: Extract facts and add provenance (if citation enabled)
+        # =====================================================================
+        facts = []
+        try:
+            if cfg.citation.require_citations:
+                logger.info("Extracting codebase facts for citation...")
+                fact_extractor = FactExtractor(repo_path=analysis.repo_path)
+                facts = fact_extractor.extract_all_facts(analysis)
+                logger.info(f"Extracted {len(facts)} facts")
+
+            # Always add provenance
+            publisher = DocumentationPublisher(llm_config=cfg.llm)
+
+            # Get source commit if available
+            source_commit = ""
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=analysis.repo_path,
+                    capture_output=True, text=True, timeout=5,
+                )
+                if result.returncode == 0:
+                    source_commit = result.stdout.strip()
+            except Exception:
+                pass
+
+            if cfg.maintenance.include_provenance:
+                publish_result = publisher.publish_with_provenance(
+                    files=files,
+                    facts=facts,
+                    source_commit=source_commit,
+                )
+                logger.info(f"Added provenance to {publish_result.files_published} files")
+
+            # Add citation index if facts were extracted
+            if facts and cfg.citation.require_citations:
+                citation_index = publisher.create_citation_index(facts)
+                citation_mdx = add_mdx_frontmatter(
+                    citation_index,
+                    "Citation Index",
+                    "Source code references for all documented claims"
+                )
+                files["reference/citation-index.mdx"] = citation_mdx
+
+        except Exception as e:
+            logger.error(f"Citation/provenance generation failed: {e}")
 
         # =====================================================================
         # Step 5: Generate index page

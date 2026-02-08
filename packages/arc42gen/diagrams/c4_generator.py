@@ -17,6 +17,7 @@ from ..models.analysis import AnalysisResult, Module
 from ..models.config import LLMConfig
 from ..providers.base import BaseLLMProvider
 from ..providers.factory import create_llm_provider
+from ..templates import load_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -137,32 +138,11 @@ class C4Generator:
 
     def _build_level_1_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
-        return f"""Generate a C4 System Context diagram (Level 1) for this system.
-
-SYSTEM: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-EXTERNAL DEPENDENCIES: {', '.join(deps)}
-
-Create a Mermaid C4 diagram showing:
-- The main system
-- External users/actors
-- External systems it interacts with
-
-Output ONLY the mermaid code block:
-
-```mermaid
-C4Context
-title System Context for {analysis.repo_name}
-
-Person(user, "User", "Uses the system")
-System(system, "{analysis.repo_name}", "Main system")
-System_Ext(external1, "External System", "Description")
-
-Rel(user, system, "Uses")
-Rel(system, external1, "Calls")
-```
-
-Identify external systems from the dependencies list."""
+        return load_prompt("c4/level_1",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+        )
 
     def _fallback_level_1(self, analysis: AnalysisResult) -> str:
         return f"""```mermaid
@@ -197,38 +177,12 @@ Rel(user, system, "Uses")
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
 
-        return f"""Generate a C4 Container diagram (Level 2) for this system.
-
-SYSTEM: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-DEPENDENCIES: {', '.join(deps)}
-
-Create a Mermaid C4 diagram showing containers (deployable units):
-- API/Web applications
-- Databases
-- Message queues
-- Background workers
-- External services
-
-Output ONLY the mermaid code block:
-
-```mermaid
-C4Container
-title Container Diagram for {analysis.repo_name}
-
-Person(user, "User")
-
-System_Boundary(system, "{analysis.repo_name}") {{
-    Container(api, "API", "{analysis.language}", "Main application")
-    ContainerDb(db, "Database", "PostgreSQL", "Stores data")
-}}
-
-Rel(user, api, "Uses", "HTTPS")
-Rel(api, db, "Reads/Writes")
-```
-
-Infer containers from dependencies (databases, message queues, etc.)."""
+        return load_prompt("c4/level_2",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+            dependencies=', '.join(deps),
+        )
 
     def _fallback_level_2(self, analysis: AnalysisResult) -> str:
         return f"""```mermaid
@@ -281,24 +235,10 @@ Rel(user, app, "Uses")
 
     def _generate_system_component_diagram(self, analysis: AnalysisResult) -> C4Diagram:
         modules = analysis.module_tree.get_top_level_modules()[:7]
-        prompt = f"""Generate a C4 Component diagram showing internal structure.
-
-SYSTEM: {analysis.repo_name}
-MODULES: {', '.join([m.name for m in modules])}
-
-Output ONLY the mermaid code:
-
-```mermaid
-C4Component
-title Component Diagram for {analysis.repo_name}
-
-Container_Boundary(app, "Application") {{
-    Component(comp1, "Module 1", "Description")
-    Component(comp2, "Module 2", "Description")
-}}
-
-Rel(comp1, comp2, "Uses")
-```"""
+        prompt = load_prompt("c4/level_3_system",
+            repo_name=analysis.repo_name,
+            modules=', '.join([m.name for m in modules]),
+        )
         response = self._call_llm(prompt, max_tokens=2000)
         mermaid = self._extract_mermaid(response)
 
@@ -311,25 +251,12 @@ Rel(comp1, comp2, "Uses")
 
     def _build_level_3_prompt(self, module: Module, analysis: AnalysisResult) -> str:
         children = [c.name for c in module.children[:10]]
-        return f"""Generate a C4 Component diagram for this module.
-
-MODULE: {module.name}
-COMPONENTS: {', '.join(children)}
-INTERFACES: {', '.join(module.interfaces[:5]) if module.interfaces else 'None'}
-
-Output ONLY the mermaid code block:
-
-```mermaid
-C4Component
-title Component Diagram for {module.name}
-
-Container_Boundary({module.name.replace('-', '_')}, "{module.name}") {{
-    Component(comp1, "Component 1", "Description")
-    Component(comp2, "Component 2", "Description")
-}}
-
-Rel(comp1, comp2, "Uses")
-```"""
+        return load_prompt("c4/level_3",
+            module_name=module.name,
+            module_safe_name=module.name.replace('-', '_'),
+            components=', '.join(children),
+            interfaces=', '.join(module.interfaces[:5]) if module.interfaces else 'None',
+        )
 
     def _fallback_level_3(self, module: Module) -> str:
         safe_name = module.name.replace('-', '_').replace('.', '_')
@@ -397,29 +324,11 @@ Container_Boundary(app, "Application") {{
 
     def _build_level_4_prompt(self, module: Module) -> str:
         interfaces = module.interfaces[:10] if module.interfaces else []
-        return f"""Generate a Mermaid class diagram for this module.
-
-MODULE: {module.name}
-INTERFACES/CLASSES: {', '.join(interfaces)}
-LOC: {module.size_loc}
-
-Output ONLY the mermaid code block:
-
-```mermaid
-classDiagram
-    class ClassName {{
-        +property: Type
-        +method(): ReturnType
-    }}
-
-    class AnotherClass {{
-        +property: Type
-    }}
-
-    ClassName --> AnotherClass
-```
-
-Create a simple class diagram based on the interfaces/classes listed."""
+        return load_prompt("c4/level_4",
+            module_name=module.name,
+            interfaces=', '.join(interfaces),
+            module_loc=module.size_loc,
+        )
 
     def _fallback_level_4(self, module: Module) -> str:
         safe_name = module.name.replace('-', '_').replace('.', '_').title()

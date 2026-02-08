@@ -1,0 +1,34 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and generate Section 1 (Introduction and Goals):
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+TOTAL FILES: {total_files}
+TOTAL LOC: {total_loc}
+MODULES: {modules}
+
+Generate Arc42 Section 1. Respond with EXACTLY this format:
+
+OVERVIEW:
+[1-2 paragraph description of what this system does and its purpose]
+
+BUSINESS_GOALS:
+- [Goal 1]
+- [Goal 2]
+- [Goal 3]
+
+KEY_FEATURES:
+- [Feature 1]
+- [Feature 2]
+- [Feature 3]
+
+QUALITY_GOALS:
+- [Attribute]|[Priority: Critical/High/Medium]|[Target]|[Measurement]
+- [Attribute]|[Priority]|[Target]|[Measurement]
+
+STAKEHOLDERS:
+- [Role]|[Expectations]
+- [Role]|[Expectations]
+
+Base your analysis on the code structure and module names visible.

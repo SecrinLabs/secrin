@@ -1,8 +1,5 @@
 """
 Codebase analysis using tree-sitter.
-
-Implements hierarchical decomposition inspired by CodeWiki.
-Supports Python, JavaScript, and TypeScript.
 """
 
 import logging
@@ -24,23 +21,10 @@ from ..parsers.python_parser import PythonParser
 from ..parsers.javascript_parser import JavaScriptParser
 from ..parsers.typescript_parser import TypeScriptParser
 from ..utils.git_utils import is_remote_url, clone_repository, cleanup_cloned_repo
+from ..constants import EXTENSION_TO_LANGUAGE, DEFAULT_LANGUAGE
 
 
 logger = logging.getLogger(__name__)
-
-
-# File extension to language mapping
-EXTENSION_TO_LANGUAGE = {
-    ".py": "python",
-    ".js": "javascript",
-    ".jsx": "javascript",
-    ".mjs": "javascript",
-    ".cjs": "javascript",
-    ".ts": "typescript",
-    ".tsx": "typescript",
-    ".mts": "typescript",
-    ".cts": "typescript",
-}
 
 
 class CodebaseAnalyzer:
@@ -118,7 +102,7 @@ class CodebaseAnalyzer:
                 language_counts[language] = language_counts.get(language, 0) + 1
 
         if not language_counts:
-            return "python"  # Default fallback
+            return DEFAULT_LANGUAGE  # Default fallback
 
         # Return language with most files
         return max(language_counts, key=language_counts.get)

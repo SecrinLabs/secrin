@@ -1,0 +1,26 @@
+Generate a C4 System Context diagram (Level 1) for this system.
+
+SYSTEM: {repo_name}
+LANGUAGE: {language}
+EXTERNAL DEPENDENCIES: {dependencies}
+
+Create a Mermaid C4 diagram showing:
+- The main system
+- External users/actors
+- External systems it interacts with
+
+Output ONLY the mermaid code block:
+
+```mermaid
+C4Context
+title System Context for {repo_name}
+
+Person(user, "User", "Uses the system")
+System(system, "{repo_name}", "Main system")
+System_Ext(external1, "External System", "Description")
+
+Rel(user, system, "Uses")
+Rel(system, external1, "Calls")
+```
+
+Identify external systems from the dependencies list.

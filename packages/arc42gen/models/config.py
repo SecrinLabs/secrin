@@ -9,6 +9,12 @@ from typing import List, Optional, Dict, Any
 
 import yaml
 
+from ..constants import (
+    DEFAULT_INCLUDE_PATTERNS,
+    DEFAULT_EXCLUDE_PATTERNS,
+    VALID_LANGUAGE_CONFIG,
+)
+
 
 @dataclass
 class LLMConfig:
@@ -43,13 +49,8 @@ class LLMConfig:
 @dataclass
 class RepositoryConfig:
     """Repository analysis configuration."""
-    include: List[str] = field(default_factory=lambda: [
-        "**/*.py", "**/*.js", "**/*.ts", "**/*.jsx", "**/*.tsx"
-    ])
-    exclude: List[str] = field(default_factory=lambda: [
-        "**/test/**", "**/tests/**", "**/__pycache__/**",
-        "**/node_modules/**", "**/dist/**", "**/build/**"
-    ])
+    include: List[str] = field(default_factory=lambda: list(DEFAULT_INCLUDE_PATTERNS))
+    exclude: List[str] = field(default_factory=lambda: list(DEFAULT_EXCLUDE_PATTERNS))
     language: Optional[str] = "auto"  # python, javascript, typescript, auto
     focus_modules: List[str] = field(default_factory=list)
 
@@ -79,6 +80,53 @@ class Arc42Config:
 
 
 @dataclass
+class CitationConfig:
+    """Citation and grounding settings."""
+    require_citations: bool = False  # When True, enables citation grounding
+    allow_hallucinations: bool = True  # When False, rejects ungrounded claims
+    validation_mode: str = "warn"  # "strict", "warn", "off"
+    max_facts_per_prompt: int = 50
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "require_citations": self.require_citations,
+            "allow_hallucinations": self.allow_hallucinations,
+            "validation_mode": self.validation_mode,
+            "max_facts_per_prompt": self.max_facts_per_prompt,
+        }
+
+
+@dataclass
+class QualityConfig:
+    """Quality metrics settings."""
+    readability_target: float = 0.6  # Target readability score (0-1)
+    citation_coverage_min: float = 0.5  # Minimum citation coverage
+    run_validation: bool = False  # Run multi-pass validation
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "readability_target": self.readability_target,
+            "citation_coverage_min": self.citation_coverage_min,
+            "run_validation": self.run_validation,
+        }
+
+
+@dataclass
+class MaintenanceConfig:
+    """Documentation maintenance settings."""
+    auto_drift_detection: bool = False  # Run drift detection on generate
+    freshness_check_interval: str = "7d"  # How often to check staleness
+    include_provenance: bool = False  # Add provenance footer to docs
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "auto_drift_detection": self.auto_drift_detection,
+            "freshness_check_interval": self.freshness_check_interval,
+            "include_provenance": self.include_provenance,
+        }
+
+
+@dataclass
 class Config:
     """Main configuration object."""
     llm: LLMConfig
@@ -86,7 +134,18 @@ class Config:
     arc42: Arc42Config
     decomposition: DecompositionConfig
     output: OutputConfig
+    citation: CitationConfig = None
+    quality: QualityConfig = None
+    maintenance: MaintenanceConfig = None
     version: str = "1.0"
+
+    def __post_init__(self):
+        if self.citation is None:
+            self.citation = CitationConfig()
+        if self.quality is None:
+            self.quality = QualityConfig()
+        if self.maintenance is None:
+            self.maintenance = MaintenanceConfig()
 
     @classmethod
     def from_yaml(cls, path: str) -> 'Config':
@@ -112,6 +171,9 @@ class Config:
         arc42_data = data.get('arc42', {})
         decomp_data = data.get('decomposition', {})
         output_data = data.get('output', {})
+        citation_data = data.get('citation', {})
+        quality_data = data.get('quality', {})
+        maintenance_data = data.get('maintenance', {})
 
         return cls(
             llm=LLMConfig(**llm_data),
@@ -119,6 +181,9 @@ class Config:
             arc42=Arc42Config(**arc42_data),
             decomposition=DecompositionConfig(**decomp_data),
             output=OutputConfig(**output_data),
+            citation=CitationConfig(**citation_data) if citation_data else CitationConfig(),
+            quality=QualityConfig(**quality_data) if quality_data else QualityConfig(),
+            maintenance=MaintenanceConfig(**maintenance_data) if maintenance_data else MaintenanceConfig(),
             version=data.get('version', '1.0')
         )
 
@@ -172,6 +237,9 @@ class Config:
                 'create_diagrams_folder': self.output.create_diagrams_folder,
                 'include_statistics': self.output.include_statistics,
             },
+            'citation': self.citation.to_dict() if self.citation else {},
+            'quality': self.quality.to_dict() if self.quality else {},
+            'maintenance': self.maintenance.to_dict() if self.maintenance else {},
         }
 
     def validate(self) -> List[str]:
@@ -190,8 +258,12 @@ class Config:
         if not self.repository.include:
             errors.append("No include patterns specified for repository analysis.")
 
-        if self.repository.language not in ['python', 'javascript', 'typescript', 'auto', None]:
-            errors.append(f"Unsupported language: {self.repository.language}. Supported: python, javascript, typescript, auto")
+        valid_langs = VALID_LANGUAGE_CONFIG + [None]
+        if self.repository.language not in valid_langs:
+            errors.append(
+                f"Unsupported language: {self.repository.language}. "
+                f"Supported: {', '.join(VALID_LANGUAGE_CONFIG)}"
+            )
 
         # Validate Arc42 config
         if 5 not in self.arc42.sections:

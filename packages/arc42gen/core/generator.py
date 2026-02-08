@@ -39,8 +39,10 @@ from ..models.documentation import (
     TechnicalDebt,
     GlossaryTerm,
 )
+from ..models.citation import Fact, CitedClaim, GroundedDocument
 from ..providers.base import BaseLLMProvider
 from ..providers.factory import create_llm_provider
+from ..templates import load_prompt
 
 
 logger = logging.getLogger(__name__)
@@ -152,43 +154,14 @@ class Arc42Generator:
         module_tree_text = self._format_module_tree(analysis.module_tree.root)
         dependency_list = self._format_dependencies(analysis.dependency_graph)
 
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Given the following codebase analysis:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-TOTAL FILES: {analysis.statistics.total_files}
-TOTAL LOC: {analysis.statistics.total_loc}
-
-MODULE STRUCTURE:
-{module_tree_text}
-
-DEPENDENCIES:
-{dependency_list}
-
-Generate Arc42 Section 5.1 (Level 1 Whitebox) content. Respond with EXACTLY this format:
-
-OVERVIEW:
-[1-2 paragraph description of system purpose and architecture]
-
-COMPONENTS:
-- [Component Name 1]: [Responsibility description]
-- [Component Name 2]: [Responsibility description]
-(list 3-7 main components based on the module structure)
-
-INTERFACES:
-[Description of how components communicate and key interfaces between them]
-
-RATIONALE:
-[Explanation of architectural decisions evident from the code structure]
-
-REQUIREMENTS:
-- Use ACTUAL module/package names from the analysis
-- Be SPECIFIC about responsibilities (not generic)
-- Focus on ARCHITECTURAL patterns visible in the code
-- Keep descriptions CONCISE (1-2 sentences each)
-- Only describe what is evident from the code structure"""
+        return load_prompt("level_1",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            total_files=analysis.statistics.total_files,
+            total_loc=analysis.statistics.total_loc,
+            module_tree=module_tree_text,
+            dependencies=dependency_list,
+        )
 
     def _format_module_tree(self, module: Module, indent: int = 0) -> str:
         """Format module tree for prompt."""
@@ -312,32 +285,14 @@ REQUIREMENTS:
                 info += f": {', '.join(child.interfaces[:3])}"
             children_info.append(info)
 
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this module and generate a Level 2 Whitebox description:
-
-MODULE: {module.name}
-TYPE: {module.type}
-LOC: {module.size_loc}
-
-CONTENTS:
-{chr(10).join(children_info)}
-
-INTERFACES: {', '.join(module.interfaces[:5]) if module.interfaces else 'None detected'}
-DEPENDENCIES: {', '.join(module.dependencies[:5]) if module.dependencies else 'None detected'}
-
-Generate a Level 2 Whitebox. Respond with EXACTLY this format:
-
-PURPOSE:
-[1-2 sentences describing this module's purpose]
-
-INTERNAL_STRUCTURE:
-- [SubComponent 1]: [Responsibility]
-- [SubComponent 2]: [Responsibility]
-(list main internal components)
-
-DEPENDENCIES:
-[List external dependencies this module relies on]"""
+        return load_prompt("level_2",
+            module_name=module.name,
+            module_type=module.type,
+            module_loc=module.size_loc,
+            contents=chr(10).join(children_info),
+            interfaces=', '.join(module.interfaces[:5]) if module.interfaces else 'None detected',
+            dependencies=', '.join(module.dependencies[:5]) if module.dependencies else 'None detected',
+        )
 
     def _parse_level_2_response(self, response: str, module: Module) -> Level2Whitebox:
         """Parse Claude response into Level2Whitebox."""
@@ -405,25 +360,11 @@ DEPENDENCIES:
         for m in modules:
             module_info.append(f"- {m.name}: {m.size_loc} LOC, deps: {m.dependencies[:3]}")
 
-        return f"""Generate a Mermaid flowchart diagram for this system architecture.
-
-SYSTEM: {analysis.repo_name}
-MODULES:
-{chr(10).join(module_info)}
-
-DEPENDENCIES:
-{self._format_dependencies(analysis.dependency_graph)}
-
-Generate a simple Mermaid flowchart. Output ONLY the mermaid code block, nothing else:
-
-```mermaid
-flowchart TB
-    subgraph System["{analysis.repo_name}"]
-        ... components and relationships ...
-    end
-```
-
-Keep it simple with 3-7 nodes maximum. Use actual module names."""
+        return load_prompt("diagram",
+            system_name=analysis.repo_name,
+            modules=chr(10).join(module_info),
+            dependencies=self._format_dependencies(analysis.dependency_graph),
+        )
 
     def _extract_mermaid_code(self, response: str) -> Optional[str]:
         """Extract mermaid code block from response."""
@@ -465,40 +406,13 @@ Keep it simple with 3-7 nodes maximum. Use actual module names."""
         return self._parse_section_1_response(response)
 
     def _build_section_1_prompt(self, analysis: AnalysisResult) -> str:
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and generate Section 1 (Introduction and Goals):
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-TOTAL FILES: {analysis.statistics.total_files}
-TOTAL LOC: {analysis.statistics.total_loc}
-MODULES: {', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]])}
-
-Generate Arc42 Section 1. Respond with EXACTLY this format:
-
-OVERVIEW:
-[1-2 paragraph description of what this system does and its purpose]
-
-BUSINESS_GOALS:
-- [Goal 1]
-- [Goal 2]
-- [Goal 3]
-
-KEY_FEATURES:
-- [Feature 1]
-- [Feature 2]
-- [Feature 3]
-
-QUALITY_GOALS:
-- [Attribute]|[Priority: Critical/High/Medium]|[Target]|[Measurement]
-- [Attribute]|[Priority]|[Target]|[Measurement]
-
-STAKEHOLDERS:
-- [Role]|[Expectations]
-- [Role]|[Expectations]
-
-Base your analysis on the code structure and module names visible."""
+        return load_prompt("arc42/section_01",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            total_files=analysis.statistics.total_files,
+            total_loc=analysis.statistics.total_loc,
+            modules=', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]]),
+        )
 
     def _parse_section_1_response(self, response: str) -> Section01:
         overview = self._extract_section(response, "OVERVIEW") or "System overview not available."
@@ -568,30 +482,12 @@ Base your analysis on the code structure and module names visible."""
 
     def _build_section_2_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:20] if analysis.module_tree.root.dependencies else []
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and infer Architecture Constraints:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-DEPENDENCIES: {', '.join(deps)}
-STRUCTURE: {', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]])}
-
-Generate Arc42 Section 2. Respond with EXACTLY this format:
-
-TECHNICAL_CONSTRAINTS:
-- [Name]|[Description]|[Impact]
-- [Name]|[Description]|[Impact]
-
-ORGANIZATIONAL_CONSTRAINTS:
-- [Name]|[Description]
-- [Name]|[Description]
-
-CONVENTIONS:
-- [Name]|[Description]
-- [Name]|[Description]
-
-Infer constraints from the technology stack and code structure."""
+        return load_prompt("arc42/section_02",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+            structure=', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]]),
+        )
 
     def _parse_section_2_response(self, response: str) -> Section02:
         technical = []
@@ -656,38 +552,12 @@ Infer constraints from the technology stack and code structure."""
 
     def _build_section_3_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:20] if analysis.module_tree.root.dependencies else []
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and identify System Context:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-EXTERNAL DEPENDENCIES: {', '.join(deps)}
-MODULES: {', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]])}
-
-Generate Arc42 Section 3. Respond with EXACTLY this format:
-
-SYSTEM_PURPOSE:
-[One paragraph describing what this system does]
-
-BUSINESS_CONTEXT:
-[Description of business context and users]
-
-EXTERNAL_SYSTEMS:
-- [Name]|[Description]|[Protocol]|[Purpose]
-- [Name]|[Description]|[Protocol]|[Purpose]
-
-CONTEXT_DIAGRAM:
-```mermaid
-C4Context
-title System Context for {analysis.repo_name}
-Person(user, "User", "Uses the system")
-System(system, "{analysis.repo_name}", "The main system")
-[Add external systems as System_Ext nodes]
-[Add relationships with Rel]
-```
-
-Identify external systems from dependencies (databases, APIs, message queues, etc.)."""
+        return load_prompt("arc42/section_03",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+            modules=', '.join([m.name for m in analysis.module_tree.get_top_level_modules()[:10]]),
+        )
 
     def _parse_section_3_response(self, response: str, analysis: AnalysisResult) -> Section03:
         purpose = self._extract_section(response, "SYSTEM_PURPOSE") or f"{analysis.repo_name} system"
@@ -731,30 +601,12 @@ Identify external systems from dependencies (databases, APIs, message queues, et
     def _build_section_4_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:20] if analysis.module_tree.root.dependencies else []
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and identify the Solution Strategy:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-DEPENDENCIES: {', '.join(deps)}
-MODULE STRUCTURE: {', '.join(modules)}
-
-Generate Arc42 Section 4. Respond with EXACTLY this format:
-
-TECHNOLOGY_DECISIONS:
-- [Technology]|[Rationale]
-- [Technology]|[Rationale]
-
-ARCHITECTURAL_PATTERNS:
-- [Pattern description]
-- [Pattern description]
-
-QUALITY_STRATEGIES:
-- [Quality Attribute]|[Strategy to achieve it]
-- [Quality Attribute]|[Strategy to achieve it]
-
-Infer technology choices and patterns from the code structure and dependencies."""
+        return load_prompt("arc42/section_04",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+            modules=', '.join(modules),
+        )
 
     def _parse_section_4_response(self, response: str) -> Section04:
         tech_decisions = []
@@ -807,41 +659,12 @@ Infer technology choices and patterns from the code structure and dependencies."
 
     def _build_section_6_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and describe Runtime Scenarios:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-DEPENDENCIES: {self._format_dependencies(analysis.dependency_graph)}
-
-Generate Arc42 Section 6. Respond with EXACTLY this format:
-
-OVERVIEW:
-[Brief description of how the system operates at runtime]
-
-SCENARIO_1:
-NAME: [Scenario name like "User Authentication" or "Data Processing"]
-DESCRIPTION: [What happens in this scenario]
-DIAGRAM:
-```mermaid
-sequenceDiagram
-    participant User
-    participant API
-    [Add participants and interactions]
-```
-
-SCENARIO_2:
-NAME: [Another key scenario]
-DESCRIPTION: [What happens]
-DIAGRAM:
-```mermaid
-sequenceDiagram
-    [Sequence diagram]
-```
-
-Identify 2-3 key runtime scenarios based on the module structure."""
+        return load_prompt("arc42/section_06",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+            dependencies=self._format_dependencies(analysis.dependency_graph),
+        )
 
     def _parse_section_6_response(self, response: str) -> Section06:
         overview = self._extract_section(response, "OVERVIEW") or ""
@@ -886,33 +709,11 @@ Identify 2-3 key runtime scenarios based on the module structure."""
 
     def _build_section_7_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and describe Deployment:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-DEPENDENCIES: {', '.join(deps)}
-
-Generate Arc42 Section 7. Respond with EXACTLY this format:
-
-INFRASTRUCTURE_OVERVIEW:
-[Description of likely infrastructure based on the tech stack]
-
-DEPLOYMENT_DIAGRAM:
-```mermaid
-flowchart TB
-    subgraph Production
-        [Add deployment nodes]
-    end
-```
-
-DEPLOYMENT_PROCESS:
-- [Step 1]
-- [Step 2]
-- [Step 3]
-
-Infer deployment based on the technology stack (e.g., Docker, cloud services, databases)."""
+        return load_prompt("arc42/section_07",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+        )
 
     def _parse_section_7_response(self, response: str, analysis: AnalysisResult) -> Section07:
         overview = self._extract_section(response, "INFRASTRUCTURE_OVERVIEW") or ""
@@ -946,30 +747,12 @@ Infer deployment based on the technology stack (e.g., Docker, cloud services, da
     def _build_section_8_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and identify Cross-Cutting Concepts:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-DEPENDENCIES: {', '.join(deps)}
-
-Generate Arc42 Section 8. Respond with EXACTLY this format:
-
-CONCEPT_Logging:
-[Description of logging approach]
-
-CONCEPT_Error Handling:
-[Description of error handling approach]
-
-CONCEPT_Security:
-[Description of security approach]
-
-CONCEPT_Testing:
-[Description of testing approach]
-
-Add other relevant concepts based on the codebase (e.g., Caching, Configuration, etc.)."""
+        return load_prompt("arc42/section_08",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+            dependencies=', '.join(deps),
+        )
 
     def _parse_section_8_response(self, response: str) -> Section08:
         concepts = {}
@@ -994,32 +777,12 @@ Add other relevant concepts based on the codebase (e.g., Caching, Configuration,
     def _build_section_9_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and infer Architecture Decisions:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-DEPENDENCIES: {', '.join(deps)}
-MODULES: {', '.join(modules)}
-
-Generate Arc42 Section 9. Respond with EXACTLY this format:
-
-ADR_001:
-TITLE: [Decision title]
-STATUS: Accepted
-CONTEXT: [Why this decision was needed]
-DECISION: [What was decided]
-CONSEQUENCES: [Positive and negative consequences, separated by |]
-
-ADR_002:
-TITLE: [Another decision]
-STATUS: Accepted
-CONTEXT: [Context]
-DECISION: [Decision]
-CONSEQUENCES: [Consequences]
-
-Infer 3-5 major architecture decisions from the technology stack and code structure."""
+        return load_prompt("arc42/section_09",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            dependencies=', '.join(deps),
+            modules=', '.join(modules),
+        )
 
     def _parse_section_9_response(self, response: str) -> Section09:
         decisions = []
@@ -1078,36 +841,12 @@ Infer 3-5 major architecture decisions from the technology stack and code struct
         return self._parse_section_10_response(response)
 
     def _build_section_10_prompt(self, analysis: AnalysisResult) -> str:
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and define Quality Requirements:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-LOC: {analysis.statistics.total_loc}
-FILES: {analysis.statistics.total_files}
-
-Generate Arc42 Section 10. Respond with EXACTLY this format:
-
-QUALITY_TREE:
-Quality
-├── Performance
-│   ├── Response Time
-│   └── Throughput
-├── Reliability
-│   ├── Availability
-│   └── Fault Tolerance
-├── Security
-│   └── Data Protection
-└── Maintainability
-    ├── Testability
-    └── Modifiability
-
-QUALITY_SCENARIOS:
-- [Scenario]|[Stimulus]|[Response]|[Measure]
-- [Scenario]|[Stimulus]|[Response]|[Measure]
-
-Define realistic quality scenarios for this type of system."""
+        return load_prompt("arc42/section_10",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            total_loc=analysis.statistics.total_loc,
+            total_files=analysis.statistics.total_files,
+        )
 
     def _parse_section_10_response(self, response: str) -> Section10:
         tree = self._extract_section(response, "QUALITY_TREE") or ""
@@ -1142,27 +881,13 @@ Define realistic quality scenarios for this type of system."""
 
     def _build_section_11_prompt(self, analysis: AnalysisResult) -> str:
         deps = analysis.module_tree.root.dependencies[:15] if analysis.module_tree.root.dependencies else []
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and identify Risks and Technical Debt:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-LOC: {analysis.statistics.total_loc}
-FILES: {analysis.statistics.total_files}
-DEPENDENCIES: {', '.join(deps)}
-
-Generate Arc42 Section 11. Respond with EXACTLY this format:
-
-RISKS:
-- [Risk Name]|[Probability: Low/Medium/High]|[Impact: Low/Medium/High]|[Mitigation]
-- [Risk Name]|[Probability]|[Impact]|[Mitigation]
-
-TECHNICAL_DEBT:
-- [Description]|[Priority: High/Medium/Low]|[Location/Area]
-- [Description]|[Priority]|[Location/Area]
-
-Identify realistic risks and potential technical debt based on the codebase size and structure."""
+        return load_prompt("arc42/section_11",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            total_loc=analysis.statistics.total_loc,
+            total_files=analysis.statistics.total_files,
+            dependencies=', '.join(deps),
+        )
 
     def _parse_section_11_response(self, response: str) -> Section11:
         risks = []
@@ -1209,25 +934,11 @@ Identify realistic risks and potential technical debt based on the codebase size
 
     def _build_section_12_prompt(self, analysis: AnalysisResult) -> str:
         modules = [m.name for m in analysis.module_tree.get_top_level_modules()[:10]]
-        return f"""You are an expert software architect generating Arc42 documentation.
-
-Analyze this codebase and create a Glossary:
-
-REPOSITORY: {analysis.repo_name}
-LANGUAGE: {analysis.language}
-MODULES: {', '.join(modules)}
-
-Generate Arc42 Section 12. Respond with EXACTLY this format:
-
-TECHNICAL_TERMS:
-- [Term]|[Definition]
-- [Term]|[Definition]
-
-DOMAIN_TERMS:
-- [Term]|[Definition]
-- [Term]|[Definition]
-
-Include common technical terms and any domain-specific terms from module names."""
+        return load_prompt("arc42/section_12",
+            repo_name=analysis.repo_name,
+            language=analysis.language,
+            modules=', '.join(modules),
+        )
 
     def _parse_section_12_response(self, response: str) -> Section12:
         terms = []
@@ -1306,12 +1017,80 @@ Include common technical terms and any domain-specific terms from module names."
         return doc
 
     # =========================================================================
+    # Citation-Aware Generation
+    # =========================================================================
+
+    def generate_section_with_citations(
+        self,
+        section_num: int,
+        analysis: AnalysisResult,
+        facts: List[Fact],
+    ) -> tuple:
+        """
+        Generate an Arc42 section with citation grounding.
+
+        Returns (section_object, grounded_document) tuple.
+        The section is generated normally but the prompt includes fact evidence.
+        """
+        section_generators = {
+            1: self.generate_section_1,
+            2: self.generate_section_2,
+            3: self.generate_section_3,
+            4: self.generate_section_4,
+            5: self.generate_section_5,
+            6: self.generate_section_6,
+            7: self.generate_section_7,
+            8: self.generate_section_8,
+            9: self.generate_section_9,
+            10: self.generate_section_10,
+            11: self.generate_section_11,
+            12: self.generate_section_12,
+        }
+
+        generator = section_generators.get(section_num)
+        if not generator:
+            raise ValueError(f"Invalid section number: {section_num}")
+
+        # Store facts for use in _call_llm_with_facts
+        self._current_facts = facts
+
+        try:
+            section = generator(analysis)
+        finally:
+            self._current_facts = None
+
+        # Create grounded document from the section's markdown
+        content = section.to_markdown() if hasattr(section, 'to_markdown') else str(section)
+        grounded = GroundedDocument(
+            content=content,
+            citations_count=len(facts),
+        )
+
+        return section, grounded
+
+    def _build_facts_context(self, facts: List[Fact]) -> str:
+        """Format facts as evidence context for LLM prompts."""
+        if not facts:
+            return ""
+
+        lines = ["\nEVIDENCE FROM CODEBASE (reference these in your response):"]
+        for fact in facts[:50]:
+            lines.append(
+                f"- [{fact.id}] {fact.text} "
+                f"(source: {fact.citation.source_file}:{fact.citation.line_start})"
+            )
+        return "\n".join(lines)
+
+    # =========================================================================
     # LLM Helpers
     # =========================================================================
 
     def _call_llm(self, prompt: str, max_tokens: int = 4000) -> str:
         """
         Call the LLM provider.
+
+        If citation facts are available (via generate_section_with_citations),
+        they are appended as evidence context to the prompt.
 
         Args:
             prompt: The prompt to send
@@ -1320,6 +1099,11 @@ Include common technical terms and any domain-specific terms from module names."
         Returns:
             Generated text response
         """
+        # Inject fact evidence if available
+        current_facts = getattr(self, '_current_facts', None)
+        if current_facts:
+            prompt = prompt + self._build_facts_context(current_facts)
+
         try:
             response = self.provider.generate(
                 prompt=prompt,

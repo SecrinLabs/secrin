@@ -1,0 +1,24 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and identify Cross-Cutting Concepts:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+DEPENDENCIES: {dependencies}
+
+Generate Arc42 Section 8. Respond with EXACTLY this format:
+
+CONCEPT_Logging:
+[Description of logging approach]
+
+CONCEPT_Error Handling:
+[Description of error handling approach]
+
+CONCEPT_Security:
+[Description of security approach]
+
+CONCEPT_Testing:
+[Description of testing approach]
+
+Add other relevant concepts based on the codebase (e.g., Caching, Configuration, etc.).

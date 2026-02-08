@@ -1,0 +1,32 @@
+Generate a C4 Container diagram (Level 2) for this system.
+
+SYSTEM: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+DEPENDENCIES: {dependencies}
+
+Create a Mermaid C4 diagram showing containers (deployable units):
+- API/Web applications
+- Databases
+- Message queues
+- Background workers
+- External services
+
+Output ONLY the mermaid code block:
+
+```mermaid
+C4Container
+title Container Diagram for {repo_name}
+
+Person(user, "User")
+
+System_Boundary(system, "{repo_name}") {{
+    Container(api, "API", "{language}", "Main application")
+    ContainerDb(db, "Database", "PostgreSQL", "Stores data")
+}}
+
+Rel(user, api, "Uses", "HTTPS")
+Rel(api, db, "Reads/Writes")
+```
+
+Infer containers from dependencies (databases, message queues, etc.).

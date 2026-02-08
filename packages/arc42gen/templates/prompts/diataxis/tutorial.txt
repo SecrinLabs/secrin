@@ -1,0 +1,44 @@
+You are a technical writer creating developer documentation.
+
+Create a "Getting Started" tutorial for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+MODULES: {modules}
+LOC: {total_loc}
+
+Generate a tutorial with EXACTLY this format:
+
+GOAL:
+[What the developer will accomplish after completing this tutorial]
+
+PREREQUISITES:
+- [Prerequisite 1]
+- [Prerequisite 2]
+
+TIME:
+[Estimated time, e.g., "15 minutes"]
+
+STEP_1:
+TITLE: [Step title]
+INSTRUCTIONS: [What to do in this step]
+CODE: [Shell commands if any]
+CHECKPOINT: [How to verify this step worked]
+
+STEP_2:
+TITLE: [Step title]
+INSTRUCTIONS: [What to do]
+CODE: [Commands]
+CHECKPOINT: [Verification]
+
+STEP_3:
+TITLE: [Step title]
+INSTRUCTIONS: [What to do]
+CODE: [Commands]
+CHECKPOINT: [Verification]
+
+NEXT_STEPS:
+- [What to explore next]
+- [Related documentation]
+
+Create 3-5 clear steps for getting the project running locally.

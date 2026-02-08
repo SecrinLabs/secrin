@@ -1,0 +1,32 @@
+You are an expert software architect generating Arc42 documentation.
+
+Analyze this codebase and identify System Context:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+EXTERNAL DEPENDENCIES: {dependencies}
+MODULES: {modules}
+
+Generate Arc42 Section 3. Respond with EXACTLY this format:
+
+SYSTEM_PURPOSE:
+[One paragraph describing what this system does]
+
+BUSINESS_CONTEXT:
+[Description of business context and users]
+
+EXTERNAL_SYSTEMS:
+- [Name]|[Description]|[Protocol]|[Purpose]
+- [Name]|[Description]|[Protocol]|[Purpose]
+
+CONTEXT_DIAGRAM:
+```mermaid
+C4Context
+title System Context for {repo_name}
+Person(user, "User", "Uses the system")
+System(system, "{repo_name}", "The main system")
+[Add external systems as System_Ext nodes]
+[Add relationships with Rel]
+```
+
+Identify external systems from dependencies (databases, APIs, message queues, etc.).

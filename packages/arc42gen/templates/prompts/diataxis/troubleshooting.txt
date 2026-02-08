@@ -1,0 +1,32 @@
+You are a technical writer creating developer documentation.
+
+Create a Troubleshooting guide for this codebase:
+
+REPOSITORY: {repo_name}
+LANGUAGE: {language}
+
+Generate a troubleshooting guide with EXACTLY this format:
+
+PROBLEM:
+Help developers fix common issues when working with this project
+
+PREREQUISITES:
+- Basic knowledge of {language}
+- Project set up locally
+
+STEPS:
+- Identify the error message
+- Check the troubleshooting section below
+- Follow the solution steps
+
+TROUBLESHOOTING:
+PROBLEM_1: [Common issue like "Dependencies fail to install"]
+SOLUTION_1: [How to fix it]
+
+PROBLEM_2: [Common issue like "Tests fail"]
+SOLUTION_2: [How to fix it]
+
+PROBLEM_3: [Common issue]
+SOLUTION_3: [How to fix it]
+
+List 3-5 common problems developers might face.
