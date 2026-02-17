@@ -31,6 +31,11 @@ redis_conn = Redis.from_url(REDIS_URL)
 queue = Queue(connection=redis_conn, default_timeout=7200)  # 2 hour timeout
 
 
+class PublicJobRequest(BaseModel):
+    """Request to submit a public doc generation job (no GitHub commit)."""
+    source_repo_url: str
+
+
 class JobSubmitRequest(BaseModel):
     """Request to submit a doc generation job."""
     source_repo_url: str
@@ -102,6 +107,32 @@ def _build_config_dict() -> dict:
             "max_depth": settings.ARC42GEN_MAX_DEPTH,
         },
     }
+
+
+@app.post("/public/generate", response_model=JobSubmitResponse)
+async def submit_public_job(request: PublicJobRequest) -> JobSubmitResponse:
+    """Submit a public doc generation job (no GitHub commit). Returns instantly with a job_id."""
+    logger.info("=" * 60)
+    logger.info("PUBLIC JOB SUBMIT")
+    logger.info("  repo: %s", request.source_repo_url)
+    logger.info("=" * 60)
+
+    repo_url = request.source_repo_url
+    if not repo_url.endswith(".git"):
+        repo_url = f"{repo_url}.git"
+
+    config_dict = _build_config_dict()
+
+    job = queue.enqueue(
+        "packages.arc42gen.jobs.generate_only",
+        repo_url=repo_url,
+        config_dict=config_dict,
+        job_timeout=7200,
+        result_ttl=86400,
+    )
+
+    logger.info("Public job enqueued: %s", job.id)
+    return JobSubmitResponse(job_id=job.id, status="queued")
 
 
 @app.post("/jobs", response_model=JobSubmitResponse)
