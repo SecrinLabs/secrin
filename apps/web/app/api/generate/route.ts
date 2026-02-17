@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ARC42GEN_API = process.env.ARC42GEN_API_URL || "http://localhost:8001";
+const ARC42GEN_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 export async function POST(req: NextRequest) {
   try {

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
 
-const ARC42GEN_API_URL = process.env.ARC42GEN_API_URL || "http://localhost:8001";
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 /**
  * GET /api/projects/[id]/regenerate/status
@@ -49,7 +49,7 @@ export async function GET(
 
     // Poll the arc42gen API for job status
     const statusResponse = await fetch(
-      `${ARC42GEN_API_URL}/jobs/${project.docGenJobId}`,
+      `${NEXT_PUBLIC_API_URL}/jobs/${project.docGenJobId}`,
       { signal: AbortSignal.timeout(5_000) }
     );
 

@@ -4,7 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authoptions";
 import { prisma } from "@/lib/prisma";
 import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
 
-const ARC42GEN_API_URL = process.env.ARC42GEN_API_URL || "http://localhost:8001";
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 function log(msg: string) {
   console.log(`[regenerate] ${new Date().toISOString().slice(11, 19)} ${msg}`);
@@ -74,11 +74,11 @@ export async function POST(
     log(`  Project: ${project.name}`);
     log(`  Source: ${project.sourceRepoUrl}`);
     log(`  Docs repo: ${project.githubOwner}/${project.repoName}`);
-    log(`  API URL: ${ARC42GEN_API_URL}`);
+    log(`  API URL: ${NEXT_PUBLIC_API_URL}`);
     log(`========================================`);
 
     // Submit job to arc42gen API (returns instantly)
-    const jobResponse = await fetch(`${ARC42GEN_API_URL}/jobs`, {
+    const jobResponse = await fetch(`${NEXT_PUBLIC_API_URL}/jobs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

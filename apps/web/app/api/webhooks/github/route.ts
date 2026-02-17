@@ -4,7 +4,7 @@ import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
 import { Octokit } from "octokit";
 import crypto from "crypto";
 
-const ARC42GEN_API_URL = process.env.ARC42GEN_API_URL || "http://localhost:8001";
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 /**
  * Verify GitHub webhook signature
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
         });
 
         // Call arc42gen API
-        const genResponse = await fetch(`${ARC42GEN_API_URL}/generate`, {
+        const genResponse = await fetch(`${NEXT_PUBLIC_API_URL}/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
