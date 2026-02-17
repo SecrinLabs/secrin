@@ -1,0 +1,24 @@
+# Dockerfile.backend
+FROM python:3.13-slim
+
+# Install git
+RUN apt-get update && apt-get install -y git
+
+# Install poetry
+RUN pip install poetry
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency definition files
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry install --no-root
+
+# Copy application code
+COPY packages/ ./packages/
+COPY scripts/ ./scripts/
+
+# Expose port
+EXPOSE 8001

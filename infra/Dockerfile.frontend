@@ -1,0 +1,23 @@
+# Dockerfile.frontend
+FROM node:20-slim
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency definition files from apps/web
+COPY apps/web/package.json apps/web/pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install
+
+# Copy application code from apps/web
+COPY apps/web/ ./
+
+# Expose port
+EXPOSE 3000
+
+# Start the app
+CMD ["pnpm", "run", "dev"]

@@ -1,0 +1,24 @@
+# Docker ignore
+.git
+.github
+.pytest_cache
+.next
+node_modules
+*.pyc
+*.pyo
+*.pyd
+__pycache__
+dump.rdb
+.env
+.env.example
+.env.local
+.claude
+infra
+.DS_Store
+README.md
+LICENSE
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+PULL_REQUEST_TEMPLATE.md
+ISSUE_TEMPLATE
