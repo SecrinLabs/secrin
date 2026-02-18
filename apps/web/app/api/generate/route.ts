@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const ARC42GEN_API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const DOCS_OUTPUT_DIR = process.env.DOCS_OUTPUT_DIR || "./docs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,10 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${ARC42GEN_API}/public/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source_repo_url: repo_url }),
+      body: JSON.stringify({
+        source_repo_url: repo_url,
+        local_output_dir: DOCS_OUTPUT_DIR,
+      }),
     });
 
     if (!res.ok) {

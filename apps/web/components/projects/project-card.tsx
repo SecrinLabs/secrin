@@ -75,6 +75,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                     status={project.docGenStatus}
                     lastDocGenAt={project.lastDocGenAt}
                     projectId={project.id}
+                    projectSlug={project.slug}
                   />
                 )}
               </CardTitle>
@@ -116,6 +117,7 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
                 docGenStatus={project.docGenStatus}
                 lastDocGenAt={project.lastDocGenAt}
                 projectId={project.id}
+                projectSlug={project.slug}
                 onTriggerRegenerate={handleTriggerRegenerate}
                 isRegenerating={isRegenerating}
               />
@@ -139,9 +141,9 @@ export function ProjectCard({ project, onUpdate }: ProjectCardProps) {
           )}
 
           {/* View Docs Link */}
-          {project.slug && (
+          {(project.slug || project.docGenStatus === "success") && (
             <a
-              href={`${process.env.NEXT_PUBLIC_DOCS_URL || "http://localhost:3001"}/${project.slug}`}
+              href={`${process.env.NEXT_PUBLIC_DOCS_URL || "http://localhost:3001"}/${project.slug || project.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block"

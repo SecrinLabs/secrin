@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getValidAccessTokenFromInstallation } from "@/lib/github-token";
 
 const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const DOCS_OUTPUT_DIR = process.env.DOCS_OUTPUT_DIR || "./docs";
 
 function log(msg: string) {
   console.log(`[regenerate] ${new Date().toISOString().slice(11, 19)} ${msg}`);
@@ -90,6 +91,7 @@ export async function POST(
         source_owner: project.sourceRepoOwner,
         source_name: project.sourceRepoName,
         project_id: projectId,
+        local_output_dir: DOCS_OUTPUT_DIR,
       }),
       signal: AbortSignal.timeout(10_000), // 10s — should be instant
     });

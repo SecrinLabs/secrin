@@ -84,6 +84,11 @@ export async function GET(
       status: jobStatus.status,
       progress: jobStatus.progress,
       current_step: jobStatus.current_step,
+      step_number: jobStatus.step_number ?? null,
+      total_steps: jobStatus.total_steps ?? null,
+      substep: jobStatus.substep ?? null,
+      substep_total: jobStatus.substep_total ?? null,
+      substep_message: jobStatus.substep_message ?? null,
       error: jobStatus.error,
       result: jobStatus.result,
     });

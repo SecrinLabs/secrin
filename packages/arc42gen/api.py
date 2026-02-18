@@ -34,6 +34,7 @@ queue = Queue(connection=redis_conn, default_timeout=7200)  # 2 hour timeout
 class PublicJobRequest(BaseModel):
     """Request to submit a public doc generation job (no GitHub commit)."""
     source_repo_url: str
+    local_output_dir: str = "./docs"
 
 
 class JobSubmitRequest(BaseModel):
@@ -46,6 +47,7 @@ class JobSubmitRequest(BaseModel):
     source_owner: str  # Owner of source repo
     source_name: str  # Name of source repo
     project_id: str
+    local_output_dir: str = "./docs"
 
 
 class JobSubmitResponse(BaseModel):
@@ -58,6 +60,11 @@ class JobStatusResponse(BaseModel):
     status: str  # queued, running, success, failed, cancelled
     progress: int = 0
     current_step: Optional[str] = None
+    step_number: Optional[int] = None
+    total_steps: Optional[int] = None
+    substep: Optional[int] = None
+    substep_total: Optional[int] = None
+    substep_message: Optional[str] = None
     result: Optional[dict] = None
     error: Optional[str] = None
 
@@ -127,6 +134,7 @@ async def submit_public_job(request: PublicJobRequest) -> JobSubmitResponse:
         "packages.arc42gen.jobs.generate_only",
         repo_url=repo_url,
         config_dict=config_dict,
+        local_output_dir=request.local_output_dir,
         job_timeout=7200,
         result_ttl=86400,
     )
@@ -168,6 +176,7 @@ async def submit_job(request: JobSubmitRequest) -> JobSubmitResponse:
         source_name=request.source_name,
         project_id=request.project_id,
         config_dict=config_dict,
+        local_output_dir=request.local_output_dir,
         job_timeout=7200,  # 2 hours
         result_ttl=86400,  # keep result 24 hours
     )
@@ -216,6 +225,11 @@ async def get_job_status(job_id: str) -> JobStatusResponse:
         status=status,
         progress=meta.get("progress", 0),
         current_step=meta.get("current_step"),
+        step_number=meta.get("step_number"),
+        total_steps=meta.get("total_steps"),
+        substep=meta.get("substep"),
+        substep_total=meta.get("substep_total"),
+        substep_message=meta.get("substep_message"),
         result=result if job.is_finished else None,
         error=error,
     )
