@@ -30,7 +30,7 @@ class LLMConfig:
     DEFAULT_MODELS = {
         "anthropic": "claude-sonnet-4-5-20250929",
         "gemini": "gemini-2.0-flash",
-        "ollama": "llama3.2",
+        "ollama": "qwen2.5-coder:0.5b",
     }
 
     # Environment variable names for API keys
@@ -291,7 +291,7 @@ version: "1.0"
 # Supported providers: "anthropic" (Claude), "gemini" (Google), "ollama" (local)
 llm:
   provider: "gemini"  # Options: "anthropic", "gemini", or "ollama"
-  model: "gemini-2.0-flash"  # Gemini: gemini-2.0-flash | Anthropic: claude-sonnet-4-5-20250929 | Ollama: llama3.2
+  model: "gemini-2.0-flash"  # Gemini: gemini-2.0-flash | Anthropic: claude-sonnet-4-5-20250929 | Ollama: qwen2.5-coder:0.5b
   api_key: "${GEMINI_API_KEY}"  # Set via environment variable (not needed for ollama)
   max_tokens: 16000
   # base_url: "http://localhost:11434"  # Only needed for ollama (default: http://localhost:11434)

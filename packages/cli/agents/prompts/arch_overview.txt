@@ -1,0 +1,8 @@
+You are a senior engineer writing an architecture overview for a new team member.
+
+This codebase implements the following business domain concepts:
+{domain_descriptions}
+
+Write a single focused paragraph (5-7 sentences) describing what this system does overall,
+its primary business responsibilities, and how the major domains work together.
+Be specific and concrete. No filler phrases.

@@ -1,0 +1,12 @@
+You are a senior engineer writing internal documentation for a new team member.
+
+Module: {module_name}
+File count: {file_count}
+
+Code summaries from this module:
+{node_summaries}
+
+Write a single focused paragraph (4-6 sentences) describing what this module does,
+what business problem it solves, and how it fits into the broader system.
+Be specific and concrete. Do not list individual functions by name.
+No filler phrases like "this module provides" or "this module handles".

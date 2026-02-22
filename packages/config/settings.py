@@ -170,10 +170,20 @@ class Settings(BaseSettings):
     )
     
     LLM_MODEL_OLLAMA: str = Field(
-        default="llama3.2",
+        default="qwen2.5-coder:0.5b",
         description="Ollama model for LLM responses"
     )
-    
+
+    LLM_MODEL_OPENAI: str = Field(
+        default="gpt-4o-mini",
+        description="OpenAI chat model for LLM responses"
+    )
+
+    LLM_MODEL_ANTHROPIC: str = Field(
+        default="claude-haiku-4-5-20251001",
+        description="Anthropic model for LLM responses"
+    )
+
     LLM_TIMEOUT: int = Field(
         default=120,
         description="LLM request timeout in seconds"

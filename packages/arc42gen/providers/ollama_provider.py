@@ -26,7 +26,7 @@ class OllamaProvider(BaseLLMProvider):
     DEFAULT_MODEL = "llama3"
     MODEL_ALIASES = {
         "codellama": "codellama:7b",
-        "llama3": "llama3.2",
+        "llama3": "qwen2.5-coder:0.5b",
         "mistral": "mistral:7b",
     }
 

@@ -58,3 +58,5 @@ gemini_store/
 chroma_db/
 
 .arc42gen.yaml
+
+.secrin/
