@@ -19,7 +19,7 @@ Coverage       98% summarized  ·  96% embedded
 Last analyzed  2 hours ago  (main @ a3f9c12)
 Neo4j          ● connected  bolt://localhost:7687
 Wiki           docs/wiki/  ·  47 pages
-.secrin.yml    ✓  ollama / llama3
+.secrin.yml    ✓  ollama / qwen2.5-coder:0.5b
 ──────────────────────────────────────────────────────────────
 """
 from __future__ import annotations

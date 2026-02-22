@@ -9,8 +9,8 @@ Interactive flow
 ----------------
   ? LLM provider (ollama / openai / anthropic): ollama
   ? Ollama host [http://localhost:11434]:
-  ? Ollama model [llama3]:
-  ? Embed model [nomic-embed-text]:
+  ? Ollama model [qwen2.5-coder:0.5b]:
+  ? Embed model [mxbai-embed-large]:
   ? Neo4j URI [bolt://localhost:7687]:
   ? Neo4j username [neo4j]:
   ? Neo4j password:
@@ -20,7 +20,7 @@ Interactive flow
   ✓ Created .secrin.yml
   ✓ Updated .env  (NEO4J_PASS)
   ✓ Connected to Neo4j  (42 nodes found)
-  ✓ Connected to Ollama  (llama3 available)
+  ✓ Connected to Ollama  (qwen2.5-coder:0.5b available)
 
   Run `secrin graph build --repo <url-or-path>` to index your repo.
 
@@ -52,14 +52,14 @@ console = Console()
 
 # Provider → default completion model
 _COMPLETION_DEFAULTS: dict[str, str] = {
-    "ollama":    "llama3",
+    "ollama":    "qwen2.5-coder:0.5b",
     "openai":    "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5-20251001",
 }
 
 # Provider → default embed model
 _EMBED_DEFAULTS: dict[str, str] = {
-    "ollama":    "nomic-embed-text",
+    "ollama":    "mxbai-embed-large",
     "openai":    "text-embedding-3-small",
     "anthropic": "nomic-embed-text",  # via Ollama
 }
