@@ -1,7 +1,13 @@
 """
 Secrin CLI entry point.
+
+  secrin init --repo <url>   Clone, parse, analyse, generate wiki.
+  secrin ask "<question>"    Ask a question answered from the wiki.
 """
 import typer
+
+from packages.cli.commands.init import init
+from packages.cli.commands.ask import ask
 
 app = typer.Typer(
     name="secrin",
@@ -9,12 +15,8 @@ app = typer.Typer(
     add_completion=False,
 )
 
-
-@app.callback(invoke_without_command=True)
-def main(ctx: typer.Context) -> None:
-    if ctx.invoked_subcommand is None:
-        typer.echo(ctx.get_help())
-
+app.command("init")(init)
+app.command("ask")(ask)
 
 if __name__ == "__main__":
     app()
