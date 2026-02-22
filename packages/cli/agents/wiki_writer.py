@@ -21,8 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from packages.arc42gen.models.config import LLMConfig
-from packages.arc42gen.providers.factory import create_llm_provider
+from packages.cli.agents.llm_client import LLMClient, client_from_settings
 from packages.cli.graph.neo4j_client import NeoClient
 from packages.config.settings import Settings
 
@@ -146,35 +145,13 @@ def _mermaid_id(name: str) -> str:
 # LLM
 # ---------------------------------------------------------------------------
 
-def _build_llm(settings: Settings) -> Any:
-    provider = settings.LLM_PROVIDER.lower()
-    if provider == "ollama":
-        cfg = LLMConfig(
-            provider="ollama", model=settings.LLM_MODEL_OLLAMA,
-            api_key="", base_url=settings.OLLAMA_BASE_URL, max_tokens=500,
-        )
-    elif provider == "anthropic":
-        cfg = LLMConfig(
-            provider="anthropic", model=LLMConfig.DEFAULT_MODELS["anthropic"],
-            api_key=settings.ANTHROPIC_API_KEY, max_tokens=500,
-        )
-    elif provider == "gemini":
-        cfg = LLMConfig(
-            provider="gemini", model=LLMConfig.DEFAULT_MODELS["gemini"],
-            api_key=settings.GEMINI_API_KEY, max_tokens=500,
-        )
-    else:
-        raise ValueError(f"Unsupported LLM_PROVIDER '{provider}'")
-    return create_llm_provider(cfg)
-
-
-def _llm_call(llm: Any, template: str, **kwargs: str) -> str:
+def _llm_call(llm: LLMClient, template: str, **kwargs: str) -> str:
     """Substitute {placeholders} via str.replace() then call LLM."""
     prompt = template
     for key, val in kwargs.items():
         prompt = prompt.replace("{" + key + "}", val)
     try:
-        return llm.generate(prompt=prompt, temperature=0.2).content.strip()
+        return llm.complete(prompt, max_tokens=500, temperature=0.2)
     except Exception as exc:
         return f"*(summary unavailable: {exc})*"
 
@@ -500,7 +477,7 @@ def run_wiki_writer(
     (output_dir / "modules").mkdir(parents=True, exist_ok=True)
     (output_dir / "domains").mkdir(parents=True, exist_ok=True)
 
-    llm = None if skip_llm else _build_llm(settings)
+    llm = None if skip_llm else client_from_settings(settings)
 
     # ── 1. Modules ─────────────────────────────────────────────────────────────
     module_rows = client.run(_Q_ALL_MODULES)

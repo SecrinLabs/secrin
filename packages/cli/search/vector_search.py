@@ -5,15 +5,17 @@ Uses the pre-built summary_embeddings_{function|class|file} indexes
 to find the top-K nearest neighbours for an embedded query string.
 
 Config from packages.config.settings.Settings:
-    OLLAMA_BASE_URL         Ollama host (default http://localhost:11434)
-    OLLAMA_EMBEDDING_MODEL  Model for embeddings (default mxbai-embed-large)
+    LLM_PROVIDER            ollama | openai | anthropic
+    OLLAMA_BASE_URL         Ollama host  (ollama + anthropic embed back-end)
+    OLLAMA_EMBEDDING_MODEL  Embed model  (ollama + anthropic)
+    OPENAI_EMBEDDING_MODEL  Embed model  (openai)
+    OPENAI_API_KEY          Required when LLM_PROVIDER=openai
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-import requests
-
+from packages.cli.agents.llm_client import LLMClient, client_from_settings
 from packages.cli.graph.neo4j_client import NeoClient
 from packages.config.settings import Settings
 
@@ -31,15 +33,8 @@ class VectorHit:
 
 
 def embed_query(query: str, settings: Settings) -> list[float]:
-    """Embed a query string via Ollama and return the vector."""
-    url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/embeddings"
-    resp = requests.post(
-        url,
-        json={"model": settings.OLLAMA_EMBEDDING_MODEL, "prompt": query},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()["embedding"]
+    """Embed a query string via the configured LLM client and return the vector."""
+    return client_from_settings(settings).embed(query)
 
 
 _VECTOR_KNN = """

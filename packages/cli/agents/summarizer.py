@@ -4,12 +4,14 @@ Summarization agent.
 Fetches Function, Class, and File nodes that have no summary from Neo4j,
 calls the configured LLM, and writes the summary back.
 
-LLM config is driven entirely by packages.config.settings.Settings:
-    LLM_PROVIDER        ollama | anthropic | gemini
-    LLM_MODEL_OLLAMA    model name when provider=ollama
-    ANTHROPIC_API_KEY   required when provider=anthropic
-    GEMINI_API_KEY      required when provider=gemini
-    OLLAMA_BASE_URL     Ollama host when provider=ollama
+LLM config is driven by packages.config.settings.Settings:
+    LLM_PROVIDER         ollama | openai | anthropic
+    LLM_MODEL_OLLAMA     model name when provider=ollama
+    LLM_MODEL_OPENAI     model name when provider=openai
+    LLM_MODEL_ANTHROPIC  model name when provider=anthropic
+    ANTHROPIC_API_KEY    required when provider=anthropic
+    OPENAI_API_KEY       required when provider=openai
+    OLLAMA_BASE_URL      Ollama host when provider=ollama
 """
 from __future__ import annotations
 
@@ -17,8 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from packages.arc42gen.models.config import LLMConfig
-from packages.arc42gen.providers.factory import create_llm_provider
+from packages.cli.agents.llm_client import client_from_settings
 from packages.cli.graph.neo4j_client import NeoClient
 from packages.config.settings import Settings
 
@@ -49,41 +50,6 @@ SET n.summary = $summary,
 """
 
 _LABELS = ("Function", "Class", "File")
-
-
-# ---------------------------------------------------------------------------
-# LLM config builder
-# ---------------------------------------------------------------------------
-
-def _build_llm_config(settings: Settings) -> LLMConfig:
-    provider = settings.LLM_PROVIDER.lower()
-    if provider == "ollama":
-        return LLMConfig(
-            provider="ollama",
-            model=settings.LLM_MODEL_OLLAMA,
-            api_key="",
-            base_url=settings.OLLAMA_BASE_URL,
-            max_tokens=300,
-        )
-    elif provider == "anthropic":
-        return LLMConfig(
-            provider="anthropic",
-            model=LLMConfig.DEFAULT_MODELS["anthropic"],
-            api_key=settings.ANTHROPIC_API_KEY,
-            max_tokens=300,
-        )
-    elif provider == "gemini":
-        return LLMConfig(
-            provider="gemini",
-            model=LLMConfig.DEFAULT_MODELS["gemini"],
-            api_key=settings.GEMINI_API_KEY,
-            max_tokens=300,
-        )
-    else:
-        raise ValueError(
-            f"Unsupported LLM_PROVIDER '{provider}'. "
-            "Set LLM_PROVIDER to ollama, anthropic, or gemini in .env"
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -136,8 +102,7 @@ def run_summarizer(
     Returns:
         dict mapping label → count of nodes summarized this run.
     """
-    llm_config = _build_llm_config(settings)
-    llm = create_llm_provider(llm_config)
+    llm = client_from_settings(settings)
 
     counts: dict[str, int] = {label: 0 for label in _LABELS}
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -156,8 +121,7 @@ def run_summarizer(
             for node in rows:
                 prompt = _build_prompt(label, node)
                 try:
-                    response = llm.generate(prompt=prompt, temperature=0.2)
-                    summary = response.content.strip()[:1000]  # cap at 1000 chars
+                    summary = llm.complete(prompt, max_tokens=300, temperature=0.2)[:1000]
                 except Exception as exc:
                     summary = f"[summarization failed: {exc}]"
 

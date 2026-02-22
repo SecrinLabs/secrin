@@ -26,8 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from packages.arc42gen.models.config import LLMConfig
-from packages.arc42gen.providers.factory import create_llm_provider
+from packages.cli.agents.llm_client import client_from_settings
 from packages.cli.graph.neo4j_client import NeoClient
 from packages.config.settings import Settings
 
@@ -81,41 +80,6 @@ RETURN count(*) AS linked
 
 _COUNT_DOMAINS = "MATCH (d:DomainEntity) RETURN count(d) AS c"
 _COUNT_EDGES = "MATCH ()-[r:IMPLEMENTS_DOMAIN]->() RETURN count(r) AS c"
-
-
-# ---------------------------------------------------------------------------
-# LLM config builder (mirrors summarizer pattern)
-# ---------------------------------------------------------------------------
-
-def _build_llm_config(settings: Settings) -> LLMConfig:
-    provider = settings.LLM_PROVIDER.lower()
-    if provider == "ollama":
-        return LLMConfig(
-            provider="ollama",
-            model=settings.LLM_MODEL_OLLAMA,
-            api_key="",
-            base_url=settings.OLLAMA_BASE_URL,
-            max_tokens=2000,
-        )
-    elif provider == "anthropic":
-        return LLMConfig(
-            provider="anthropic",
-            model=LLMConfig.DEFAULT_MODELS["anthropic"],
-            api_key=settings.ANTHROPIC_API_KEY,
-            max_tokens=2000,
-        )
-    elif provider == "gemini":
-        return LLMConfig(
-            provider="gemini",
-            model=LLMConfig.DEFAULT_MODELS["gemini"],
-            api_key=settings.GEMINI_API_KEY,
-            max_tokens=2000,
-        )
-    else:
-        raise ValueError(
-            f"Unsupported LLM_PROVIDER '{provider}'. "
-            "Set LLM_PROVIDER to ollama, anthropic, or gemini in .env"
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -258,8 +222,7 @@ def run_domain_extractor(
         progress_cb("fetch", f"Loaded {len(nodes)} nodes.")
 
     # 2. Call LLM in batches; merge domains across responses
-    llm_config = _build_llm_config(settings)
-    llm = create_llm_provider(llm_config)
+    llm = client_from_settings(settings)
 
     merged: dict[str, dict] = {}
     batches = [nodes[i : i + batch_size] for i in range(0, len(nodes), batch_size)]
@@ -269,8 +232,8 @@ def run_domain_extractor(
             progress_cb("llm", f"LLM call {i}/{len(batches)} ({len(batch)} nodes)...")
         prompt = _build_batch_prompt(batch)
         try:
-            response = llm.generate(prompt=prompt, temperature=0.1)
-            parsed   = _extract_json(response.content)
+            raw_text = llm.complete(prompt, max_tokens=2000, temperature=0.1)
+            parsed   = _extract_json(raw_text)
             domains  = parsed.get("domains", [])
             _merge_domains(merged, domains)
         except Exception as exc:

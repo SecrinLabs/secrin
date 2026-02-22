@@ -2,21 +2,23 @@
 Embedding agent.
 
 Fetches nodes that have a summary but no embedding from Neo4j,
-generates a vector via Ollama, and writes it back.
+generates a vector via the configured LLM client, and writes it back.
 
 Also creates Neo4j vector indexes on first run.
 
 Config from packages.config.settings.Settings:
-    OLLAMA_BASE_URL         Ollama host (default http://localhost:11434)
-    OLLAMA_EMBEDDING_MODEL  Model for embeddings (default mxbai-embed-large)
-    EMBEDDING_DIMENSION     Vector dimensions (must match the model, default 1024)
+    LLM_PROVIDER            ollama | openai | anthropic
+    OLLAMA_BASE_URL         Ollama host  (ollama + anthropic embed back-end)
+    OLLAMA_EMBEDDING_MODEL  Embed model  (ollama + anthropic)
+    OPENAI_EMBEDDING_MODEL  Embed model  (openai)
+    OPENAI_API_KEY          Required when LLM_PROVIDER=openai
+    EMBEDDING_DIMENSION     Vector dimensions (must match the model)
 """
 from __future__ import annotations
 
 from typing import Any
 
-import requests
-
+from packages.cli.agents.llm_client import client_from_settings
 from packages.cli.graph.neo4j_client import NeoClient
 from packages.config.settings import Settings
 
@@ -57,22 +59,6 @@ SET n.summary_embedding = $embedding
 
 
 # ---------------------------------------------------------------------------
-# Ollama embed call
-# ---------------------------------------------------------------------------
-
-def _embed(text: str, settings: Settings) -> list[float]:
-    """Call Ollama /api/embeddings and return the embedding vector."""
-    url = f"{settings.OLLAMA_BASE_URL.rstrip('/')}/api/embeddings"
-    resp = requests.post(
-        url,
-        json={"model": settings.OLLAMA_EMBEDDING_MODEL, "prompt": text},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    return resp.json()["embedding"]
-
-
-# ---------------------------------------------------------------------------
 # Core runner
 # ---------------------------------------------------------------------------
 
@@ -96,6 +82,7 @@ def run_embedder(
     """
     ensure_vector_indexes(client, settings.EMBEDDING_DIMENSION)
 
+    llm = client_from_settings(settings)
     counts: dict[str, int] = {label: 0 for label in _LABELS}
 
     def _write(tx: Any, node_id: str, embedding: list[float]) -> None:
@@ -111,7 +98,7 @@ def run_embedder(
 
             for node in rows:
                 try:
-                    embedding = _embed(node["summary"], settings)
+                    embedding = llm.embed(node["summary"])
                 except Exception as exc:
                     print(f"    [warn] embedding failed for {node['id']}: {exc}")
                     continue
