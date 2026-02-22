@@ -26,7 +26,7 @@ Note on embeddings for Anthropic
 ---------------------------------
 Anthropic does not expose an embeddings API.  When provider="anthropic",
 embed() uses Ollama (base_url + embed_model).  Ensure Ollama is running
-and embed_model is set to a local embedding model (e.g. nomic-embed-text).
+and embed_model is set to a local embedding model (e.g. mxbai-embed-large).
 """
 from __future__ import annotations
 
@@ -43,15 +43,15 @@ from packages.cli.core.secrin_yml import SecrinYml
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MODELS: dict[str, str] = {
-    "ollama":    "llama3",
+    "ollama":    "qwen2.5-coder:0.5b",
     "openai":    "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5-20251001",
 }
 
 _DEFAULT_EMBED_MODELS: dict[str, str] = {
-    "ollama":    "nomic-embed-text",
+    "ollama":    "mxbai-embed-large",
     "openai":    "text-embedding-3-small",
-    "anthropic": "nomic-embed-text",  # via Ollama
+    "anthropic": "mxbai-embed-large",  # via Ollama
 }
 
 

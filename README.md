@@ -88,8 +88,8 @@ poetry run python scripts/verify.py
 
 ```bash
 # Install Ollama → https://ollama.com
-ollama pull llama3               # completion model
-ollama pull nomic-embed-text     # embedding model (768d)
+ollama pull qwen2.5-coder:0.5b               # completion model
+ollama pull mxbai-embed-large     # embedding model (768d)
 ```
 
 ### Cloud LLM
@@ -119,8 +119,8 @@ then writes `.secrin.yml`. Commit this file so teammates share the same defaults
 ```
 ? LLM provider (ollama / openai / anthropic): ollama
 ? Ollama host [http://localhost:11434]:
-? Ollama model [llama3]:
-? Embed model [nomic-embed-text]:
+? Ollama model [qwen2.5-coder:0.5b]:
+? Embed model [mxbai-embed-large]:
 ? Neo4j URI [bolt://localhost:7687]:
 ? Neo4j username [neo4j]:
 ? Neo4j password:
@@ -130,7 +130,7 @@ then writes `.secrin.yml`. Commit this file so teammates share the same defaults
 ✓ Created .secrin.yml
 ✓ Updated .env  (NEO4J_PASS)
 ✓ Connected to Neo4j  (0 nodes found)
-✓ Connected to Ollama  (llama3 available)
+✓ Connected to Ollama  (qwen2.5-coder:0.5b available)
 
 Run `secrin graph build --repo <url-or-path>` to index your repo.
 ```
@@ -154,8 +154,8 @@ secrin analyze
 Runs in two phases:
 
 ```
-⠋ [Phase 1] Summarizing  ollama / llama3  Function 48  Class 12  File 21
-⠋ [Phase 2] Embedding    nomic-embed-text  Function 48  Class 12  File 21
+⠋ [Phase 1] Summarizing  ollama / qwen2.5-coder:0.5b  Function 48  Class 12  File 21
+⠋ [Phase 2] Embedding    mxbai-embed-large  Function 48  Class 12  File 21
 
 ╭─ Analysis Results ────────────────────────╮
 │ Label      Summarized   Embedded           │
@@ -220,7 +220,7 @@ Coverage       98% summarized  ·  96% embedded
 Last analyzed  2 hours ago  (main @ a3f9c12)
 Neo4j          ● connected  bolt://localhost:7687
 Wiki           docs/wiki/  ·  47 pages
-.secrin.yml    ✓  ollama / llama3
+.secrin.yml    ✓  ollama / qwen2.5-coder:0.5b
 ──────────────────────────────────────────────────────────────
 ```
 
@@ -233,8 +233,8 @@ Wiki           docs/wiki/  ·  47 pages
 ```yaml
 llm:
   provider: ollama          # ollama | openai | anthropic
-  model: llama3
-  embed_model: nomic-embed-text
+  model: qwen2.5-coder:0.5b
+  embed_model: mxbai-embed-large
   base_url: http://localhost:11434   # Ollama only; omitted for cloud providers
 
 neo4j:
@@ -260,7 +260,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Optional overrides (if you don't use .secrin.yml)
 LLM_PROVIDER=ollama
 LLM_MODEL_OLLAMA=qwen2.5-coder:0.5b
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+OLLAMA_EMBEDDING_MODEL=mxbai-embed-large
 EMBEDDING_DIMENSION=768
 ```
 

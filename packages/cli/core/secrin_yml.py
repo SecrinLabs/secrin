@@ -9,8 +9,8 @@ Format
 ------
 llm:
   provider: ollama          # ollama | openai | anthropic
-  model: llama3
-  embed_model: nomic-embed-text
+  model: qwen2.5-coder:0.5b
+  embed_model: mxbai-embed-large
   base_url: http://localhost:11434   # Ollama only
 
 neo4j:
@@ -38,8 +38,8 @@ _FILENAME = ".secrin.yml"
 class SecrinYml:
     # LLM
     provider:        str        = "ollama"
-    model:           str        = "llama3"
-    embed_model:     str        = "nomic-embed-text"
+    model:           str        = "qwen2.5-coder:0.5b"
+    embed_model:     str        = "mxbai-embed-large"
     base_url:        str        = "http://localhost:11434"  # Ollama host
 
     # Neo4j
@@ -72,8 +72,8 @@ def load(cwd: Path) -> Optional[SecrinYml]:
 
     return SecrinYml(
         provider        = llm.get("provider",   "ollama"),
-        model           = llm.get("model",       "llama3"),
-        embed_model     = llm.get("embed_model", "nomic-embed-text"),
+        model           = llm.get("model",       "qwen2.5-coder:0.5b"),
+        embed_model     = llm.get("embed_model", "mxbai-embed-large"),
         base_url        = llm.get("base_url",    "http://localhost:11434"),
         neo4j_uri       = neo4j.get("uri",       "bolt://localhost:7687"),
         neo4j_user      = neo4j.get("username",  "neo4j"),

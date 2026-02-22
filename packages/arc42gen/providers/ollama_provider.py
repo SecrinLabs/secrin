@@ -23,10 +23,10 @@ class OllamaProvider(BaseLLMProvider):
     No API key required - models run on the local machine.
     """
 
-    DEFAULT_MODEL = "llama3"
+    DEFAULT_MODEL = "qwen2.5-coder:0.5b"
     MODEL_ALIASES = {
         "codellama": "codellama:7b",
-        "llama3": "qwen2.5-coder:0.5b",
+        "qwen2.5-coder:0.5b": "qwen2.5-coder:0.5b",
         "mistral": "mistral:7b",
     }
 
