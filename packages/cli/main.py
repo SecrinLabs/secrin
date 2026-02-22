@@ -1,15 +1,17 @@
 """
 Secrin CLI entry point.
 
-  secrin init --repo <url>         Clone, parse, analyse, generate wiki.
-  secrin ask "<question>"          Ask a question answered from the wiki.
-  secrin graph build --path <dir>  Build the Neo4j code knowledge graph.
+  secrin init --repo <url>     Clone, parse, analyse, generate wiki.
+  secrin ask "<question>"      Ask a question answered from the wiki.
+  secrin graph build --repo … Build the Neo4j code knowledge graph.
+  secrin analyze               Summarize graph nodes + store embeddings.
 """
 import typer
 
 from packages.cli.commands.init import init
 from packages.cli.commands.ask import ask
 from packages.cli.commands.graph import graph_app
+from packages.cli.commands.analyze import analyze_app
 
 app = typer.Typer(
     name="secrin",
@@ -19,7 +21,8 @@ app = typer.Typer(
 
 app.command("init")(init)
 app.command("ask")(ask)
-app.add_typer(graph_app, name="graph")
+app.add_typer(graph_app,   name="graph")
+app.add_typer(analyze_app, name="analyze")
 
 if __name__ == "__main__":
     app()

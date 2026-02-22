@@ -170,7 +170,7 @@ class Settings(BaseSettings):
     )
     
     LLM_MODEL_OLLAMA: str = Field(
-        default="llama3.2",
+        default="qwen2.5-coder:0.5b",
         description="Ollama model for LLM responses"
     )
     

@@ -75,7 +75,7 @@ def get_default_model(provider: str) -> str:
     defaults = {
         "anthropic": "claude-sonnet-4-5-20250929",
         "gemini": "gemini-2.0-flash",
-        "ollama": "llama3.2",
+        "ollama": "qwen2.5-coder:0.5b",
     }
     return defaults.get(provider.lower(), "")
 

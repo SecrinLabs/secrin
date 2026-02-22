@@ -1,0 +1,8 @@
+You are a senior engineer writing internal docs for a startup engineering team.
+Given this {node_type} named "{name}" from the file "{path}":
+
+{code_snippet}
+
+Write a 2-3 sentence plain English summary of what this does and why it exists.
+Be specific. Assume the reader is a new engineer joining the team.
+No filler. Do not start with "This function".

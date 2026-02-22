@@ -23,7 +23,7 @@ from packages.arc42gen.providers.factory import get_default_model
 _DEFAULT_MODELS: dict[str, str] = {
     "anthropic": "claude-sonnet-4-5-20250929",
     "gemini": "gemini-2.0-flash",
-    "ollama": "llama3.2",
+    "ollama": "qwen2.5-coder:0.5b",
 }
 
 _API_KEY_ENVS: dict[str, str] = {
