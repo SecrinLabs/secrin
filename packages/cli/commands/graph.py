@@ -107,4 +107,46 @@ def build(
     rel_table.add_row("[bold]TOTAL[/bold]", f"[bold]{total_rels}[/bold]")
     console.print(rel_table)
 
-    typer.echo("\nGraph ready. Open Neo4j Browser and run: MATCH (n) RETURN count(n)")
+    typer.echo("")
+    console.print(
+        "[green]✓ Graph ready.[/green]  "
+        "Run [bold]secrin analyze[/bold] to generate summaries and embeddings."
+    )
+    typer.echo("")
+
+
+@graph_app.command("visualize")
+def visualize() -> None:
+    """
+    Open Neo4j Browser pointed at the Secrin database.
+
+    For local Neo4j: opens http://localhost:7474/browser/
+    For AuraDB (neo4j+s:// URI): opens https://console.neo4j.io/
+    """
+    import webbrowser
+
+    settings = Settings()
+    uri      = settings.NEO4J_URI
+
+    console.print()
+    if uri.startswith("neo4j+s://") or uri.startswith("neo4j+scc://"):
+        url = "https://console.neo4j.io/"
+        console.print(f"[green]Opening AuraDB Console[/green]: {url}")
+        console.print(f"  Connect URI: [bold]{uri}[/bold]")
+    else:
+        url = "http://localhost:7474/browser/"
+        console.print(f"[green]Opening Neo4j Browser[/green]: {url}")
+        console.print(f"  Connect URI: [bold]{uri}[/bold]")
+        console.print(
+            f"  Username:    [bold]{settings.NEO4J_USER}[/bold]  "
+            f"[dim](password from NEO4J_PASS in .env)[/dim]"
+        )
+
+    webbrowser.open(url)
+
+    console.print()
+    console.print("[dim]Useful Cypher queries:[/dim]")
+    console.print("  MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 100")
+    console.print("  MATCH (m:Module) RETURN m.name, count{ (m)-[:CONTAINS]->() } AS files")
+    console.print("  MATCH (d:DomainEntity) RETURN d.name, d.subdomain ORDER BY d.subdomain")
+    console.print()
