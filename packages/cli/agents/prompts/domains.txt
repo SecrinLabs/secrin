@@ -1,0 +1,19 @@
+You are a software architect analyzing an engineering codebase.
+
+Given these code summaries from a team's repository:
+
+{summaries}
+
+Identify the distinct business/domain concepts this codebase implements.
+Focus on meaningful business capabilities, not technical layers like "Database" or "API".
+
+For each concept provide:
+- name: Short title (2-3 words max)
+- description: One sentence describing the business purpose
+- subdomain: Category (e.g. Security, Payments, Notifications, Data, Infrastructure, User Management)
+- implements: List of the exact function or class names from the summaries above that implement this concept
+
+Return ONLY valid JSON with no explanation and no markdown fences.
+
+Example format:
+{"domains": [{"name": "Authentication", "description": "Verifies user identity and manages login sessions.", "subdomain": "Security", "implements": ["verify_token", "create_session", "AuthMiddleware"]}]}
