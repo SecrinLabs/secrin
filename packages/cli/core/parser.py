@@ -372,6 +372,41 @@ def _parse_js_ts(rel_path: str, src: bytes, language: Language, lang_name: str) 
 # Public API
 # ---------------------------------------------------------------------------
 
+def parse_files(repo_path: Path, relative_paths: list[str]) -> list[ParsedFile]:
+    """
+    Parse a specific set of files by their relative paths (no progress output).
+
+    Useful for incremental updates where only changed files need re-parsing.
+    Files whose extension is not in SUPPORTED_EXTENSIONS are silently skipped.
+    """
+    results: list[ParsedFile] = []
+    for rel_path in relative_paths:
+        abs_path = repo_path / rel_path
+        suffix = abs_path.suffix
+        if suffix not in SUPPORTED_EXTENSIONS:
+            continue
+        lang = SUPPORTED_EXTENSIONS[suffix]
+        try:
+            src = abs_path.read_bytes()
+        except OSError:
+            continue
+        try:
+            if lang == "python":
+                pf = _parse_python(rel_path, src)
+            elif lang == "typescript":
+                pf = _parse_js_ts(rel_path, src, _TS_LANGUAGE, "typescript")
+            elif lang == "tsx":
+                pf = _parse_js_ts(rel_path, src, _TSX_LANGUAGE, "tsx")
+            elif lang in ("javascript", "jsx"):
+                pf = _parse_js_ts(rel_path, src, _JS_LANGUAGE, lang)
+            else:
+                continue
+        except Exception:
+            continue
+        results.append(pf)
+    return results
+
+
 def parse_repo(repo_path: Path) -> list[ParsedFile]:
     """
     Walk repo_path, parse every supported source file with tree-sitter.
