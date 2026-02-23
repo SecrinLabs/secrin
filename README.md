@@ -1,8 +1,11 @@
+# Secrin - The living wiki that writes itself
+
 ![Secrin Banner](/public/brand_banner.png)
 
 <p align="center">
-<strong>Don't waste time on Q&A. Search less. Build more.</strong><br>
-Your engineering knowledge deserves better than scattered repos, Slack threads, and tribal memory.
+<strong>The living wiki that writes itself.</strong><br>
+Point Secrin at any codebase. It builds a knowledge graph, summarizes every function and class,<br>
+extracts your business domains, generates a Markdown wiki — and keeps it all in sync on every commit.
 </p>
 
 <p align="center">
@@ -21,19 +24,20 @@ Your engineering knowledge deserves better than scattered repos, Slack threads, 
 
 ## What is Secrin?
 
-Secrin indexes any codebase into a **Neo4j knowledge graph**, generates plain-English summaries for every function, class, and file via your LLM of choice, and produces a searchable Markdown wiki — fully automated, living alongside your code.
+Most wikis go stale the moment they're written. Secrin doesn't because it never needed a human to write it in the first place.
 
-```
+Secrin parses your codebase into a **Neo4j knowledge graph**, uses your LLM to generate plain-English summaries for every function, class, and file, identifies your business domains, and writes a structured Markdown wiki. A git hook keeps everything in sync automatically after every commit.
+
+```bash
 secrin init                          # interactive setup → .secrin.yml
 secrin graph build --repo .          # parse repo → Neo4j graph
 secrin analyze                       # LLM summaries + vector embeddings
 secrin domains                       # extract business domain concepts
 secrin generate                      # write docs/wiki/
-secrin chat "how does auth work?"    # Q&A from the graph
+secrin chat "how does auth work?"    # Q&A grounded in the graph
 ```
 
-> Teams don't slow down because they forget how to code.
-> They slow down because they forget *why* the code exists.
+New engineer on the team? Run `secrin chat "where should I add the billing endpoint?"` and get a direct, sourced answer — no archaeology required.
 
 ---
 
@@ -464,5 +468,5 @@ and add its extension to `SUPPORTED_EXTENSIONS`.
 
 Open an issue, propose a feature, or jump into the codebase.
 
-> The goal isn't just to index code.
-> The goal is to remember as a team.
+> Documentation shouldn't be a second job.
+> It should be a side effect of writing good code.
