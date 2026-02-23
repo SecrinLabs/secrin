@@ -1,3 +1,5 @@
+# Secrin - The living wiki that writes itself
+
 ![Secrin Banner](/public/brand_banner.png)
 
 <p align="center">
@@ -22,7 +24,7 @@ extracts your business domains, generates a Markdown wiki — and keeps it all i
 
 ## What is Secrin?
 
-Most wikis go stale the moment they're written. Secrin doesn't — because it never needed a human to write it in the first place.
+Most wikis go stale the moment they're written. Secrin doesn't because it never needed a human to write it in the first place.
 
 Secrin parses your codebase into a **Neo4j knowledge graph**, uses your LLM to generate plain-English summaries for every function, class, and file, identifies your business domains, and writes a structured Markdown wiki. A git hook keeps everything in sync automatically after every commit.
 
