@@ -5,7 +5,7 @@
 <p align="center">
 <strong>The living wiki that writes itself.</strong><br>
 Point Secrin at any codebase. It builds a knowledge graph, summarizes every function and class,<br>
-extracts your business domains, generates a Markdown wiki — and keeps it all in sync on every commit.
+extracts your business domains, generates a Markdown wiki and keeps it all in sync on every commit.
 </p>
 
 <p align="center">
@@ -37,7 +37,7 @@ secrin generate                      # write docs/wiki/
 secrin chat "how does auth work?"    # Q&A grounded in the graph
 ```
 
-New engineer on the team? Run `secrin chat "where should I add the billing endpoint?"` and get a direct, sourced answer — no archaeology required.
+New engineer on the team? Run `secrin chat "where should I add the billing endpoint?"` and get a direct, sourced answer, no archaeology required.
 
 ---
 
